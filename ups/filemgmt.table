@@ -1,0 +1,7 @@
+envPrepend(PATH, ${PRODUCT_DIR}/bin)
+envPrepend(C_INCLUDE_PATH, ${PRODUCT_DIR}/include)
+envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
+envPrepend(PERL5LIB, ${PRODUCT_DIR}/perl)
+#setupRequired(python)
+#setupOptional(cx_Oracle)
+#setupOptional(psycopg2)
