@@ -347,15 +347,15 @@ class Cache(object):
 
 
 #### Embedded simple test
-if __name__ ==  '__main__' :
-    cache = Cache()
-    #list = ['/home/ankitc/work/cache_test_runsite/dec021593_11_scamp.fits','/home/ankitc/work/cache_test_runsite/DES2219-4147_g.fits.fz']
-    list = {}
-    list2 = {}
-    list = {'/home/ankitc/work/cache_test_runsite/dec021593_11_scamp.fits' : 'random','/home/ankitc/work/cache_test_runsite/DES2219-4147_g.fits.fdfd' : 'random/random1'}
-    list2 = {'/home/ankitc/work/cache_test_runsite/dec021593_11_scamp.fits','/home/ankitc/work/cache_test_runsite/DES2219-4147_g.fits.fdfd'}
+#if __name__ ==  '__main__' :
+#    cache = Cache()
+#    #list = ['/home/ankitc/work/cache_test_runsite/dec021593_11_scamp.fits','/home/ankitc/work/cache_test_runsite/DES2219-4147_g.fits.fz']
+#    list = {}
+#    list2 = {}
+#    list = {'/home/ankitc/work/cache_test_runsite/dec021593_11_scamp.fits' : 'random','/home/ankitc/work/cache_test_runsite/DES2219-4147_g.fits.fdfd' : 'random/random1'}
+#    list2 = {'/home/ankitc/work/cache_test_runsite/dec021593_11_scamp.fits','/home/ankitc/work/cache_test_runsite/DES2219-4147_g.fits.fdfd'}
    # cache.put_within_job_wrapper(list,'destest_cache','destest_site')
 
-    cache.get_within_job_wrapper(list2,'destest_cache')
+#    cache.get_within_job_wrapper(list2,'destest_cache')
 #    print dbh.get_column_names('archive_sites')
 
