@@ -32,20 +32,25 @@ import fileutils
 from subprocess import call
 import subprocess
 import os.path
+import intgutils.wclutils as wclutils
 
 #import serviceaccess
 # importing of DB specific modules done down inside code
 
 #import coreutils.errors
-
+#fdict['filename'] = wclutils.getFilename(fdict['fullname'])
 class Cache(object):
     """
     need to write the description here
     """
 
-    _dbh = coreutils.desdbi.DesDbi()
-    _cur = _dbh.cursor()
 
+
+    def __init__(self, noDBConnect = None):
+        if noDBConnect is None:
+            self._dbh = coreutils.desdbi.DesDbi()
+            self._cur = self._dbh.cursor()
+            
     def internal_put():
         
         return status 
@@ -57,9 +62,6 @@ class Cache(object):
             mount_point = find_mount_point(input_item[key])
         return status
 
-    def get_from_cache():
-
-        return status
 
     def put_after_job(self,file_list,cache_name):
         "this is the new comment I am trying from within the function"
@@ -71,6 +73,7 @@ class Cache(object):
         inputs are an array of files to be moved to cache
         the name of the cache
         name of the site where this move is happening
+        # NOT USED BY MICHELLE CURRENTLY #
         """
         colList = {}#['name','on_target','not_on_target','root','cache_name']
         returnCodeDict = {}
@@ -85,15 +88,15 @@ class Cache(object):
         the result dict has an array of one element in this case so just pick up the first one
         """
         cacheDict = resultDict[0]
-        print "put within job inputs: file Dictionary"
-        print file_list
-        print "runsite_root: "
-        print runsite_root
-        print "cache Dictionary from Table: "
-        print cacheDict
+        #print "put within job inputs: file Dictionary"
+        #print file_list
+        #print "runsite_root: "
+        #print runsite_root
+        #print "cache Dictionary from Table: "
+        #print cacheDict
         retCodeDict = self.put_within_job(file_list,cacheDict)
-        print "the final return"
-        print retCodeDict
+        #print "the final return"
+        #print retCodeDict
 
 
     def put_within_job(self,file_list,cacheDict):
@@ -121,8 +124,17 @@ class Cache(object):
             """create the absolute destination path for the location in cache for the incoming file.
              this is done by adding the root of cache location to the relative path of the source file"""
             #print "another attempt: " + os.path.realpath(file).replace(os.path.realpath(runsite_root),'')
-
-            destination = cacheDict['root'] + '/' + fileDestWithinCache
+            """
+            Append the directory path in the source filename to the end of the destination filepath 
+            """
+            FileSourceDir = os.path.dirname(fileSource)
+            if FileSourceDir != '':
+                #print "\n there was YES filesourcedir "
+                FileSourceDir = '/' + FileSourceDir
+            #else:
+                #print "\n there was no filesourcedir "
+            destination = cacheDict['root'] + '/' + fileDestWithinCache + FileSourceDir 
+            #print "\n the destination is %s" % (destination)
             if not os.path.exists(destination):
                 os.makedirs(destination)
             #print "the destination filepath is %s" % destination
@@ -138,7 +150,7 @@ class Cache(object):
             if retErrorMsg == '':
                 dataBaseInsertDict[fileName] = {}
                 dataBaseInsertDict[fileName]['filename'] = fileName
-                dataBaseInsertDict[fileName]['path'] = os.path.dirname(destination)
+                dataBaseInsertDict[fileName]['path'] = destination
                 dataBaseInsertDict[fileName]['cache_name'] = cacheDict['name']
                 dataBaseInsertDict[fileName]['site_name'] = cacheDict['sitename']
 
@@ -154,9 +166,9 @@ class Cache(object):
         
         insertArr = []
         selectArr = []
-        p = re.compile("(\.fits)(\.fz)?")
+        p = re.compile("(\.fz)?")
         for file, fileDets in fileDict.iteritems():
-            print "looping over" + file
+            #print "looping over" + file
             #if fileDets['transfer_status'] is 0:
             "remove the fits and fz from the filename"
             file = p.sub("",file)
@@ -218,62 +230,76 @@ class Cache(object):
     def pre_put (self,list,cache_name):
         "comments go here"
         return
-    def get_within_job_wrapper(self,fileList,cache_name):
+    def get_within_job_wrapper(self,fileList,cache_name,cache_root = None):
         """
         this function will get the files from a cache and put them into the runsite directory. 
         Inputs are an array of files with their complete path to which they need to be moved
+        # USED IN ORCHESTRATION #
         """
+        try:
+           self._cur
+        except:
+           self._cur = None
+             
         colList = {}#['name','on_target','not_on_target','root','cache_name']
         fileNameDict = {}
         returnDict = {}
         fileStr = ""
-        p = re.compile("(\.fits)(\.fz)?")
-        for filePath in fileList:
-            fileBaseName = os.path.basename(os.path.realpath(filePath))
-            fileBaseName = p.sub("",fileBaseName)
-            fileStr = fileStr + "'" + fileBaseName + "', "
-            fileNameDict[fileBaseName] = filePath 
-            returnDict[fileBaseName] = "Did not find the file in the database"
-        "remove the last 2 characters"    
-        fileStr = "(" + fileStr[:-2] + ")" 
-        
-        """get the files which are registered in cache. 
-        this means that the files should be present in cache (unless some scientist deletes them by hand ;) )"""
-        sqlQueryForFilesInCache = "select path,filename from ops_cache_location where filename in " +  fileStr
-        #print "sql to get files" + sqlQueryForFilesInCache
-        resultFilesInCache = fileutils.get_queryresult_dictionay(sqlQueryForFilesInCache,self._cur)
-        #print "the files in cache are"
-        #print resultFilesInCache
-        for key in resultFilesInCache:
-            tempFileName = key['filename']
-            #print "deleting the filename is: " 
-            #print tempFileName
-            "delete the returnDict files which were found in the database"
-            del returnDict[tempFileName]
-            key['destination_path']  =   fileNameDict[tempFileName]
-        #print "the files in cache AFTER are"
-        #print resultFilesInCache
-        
-        """
-        get the details of cache in a dictionary
-        """
-        sqlGetCacheInfo = "select * from ops_data_defs where type = 'cache' and name = '%s'" % cache_name
-        cacheInfoDict = fileutils.get_queryresult_dictionay(sqlGetCacheInfo,self._cur)
-#        print " the query sqlGetCacheInfo %s returned %s" % (sqlGetCacheInfo,cacheInfoDict)
-        
-       # sqlGetSiteInfo = "select * from ops_data_defs where type = 'runsite' and name = '%s'" % site_name
-        #print sqlGetSiteInfo
-       # resultSite = fileutils.get_queryresult_dictionay(sqlGetSiteInfo,self._cur)
-        #runsite_root = resultSite[0]['root']
-#        print "inputs for get_within_job filesDictionary: "
-#        print resultFilesInCache
-#        print "runsite root: "
-#        print runsite_root
-#        print "cache table information: "
-#        print cacheInfoDict[0]
-        returnDictJob = self.get_within_job(resultFilesInCache,cacheInfoDict[0])
-        for retFileName,retStatus in returnDictJob.iteritems(): 
-            returnDict[retFileName] = retStatus
+        if self._cur is not None:
+            p = re.compile("(\.fz)?")
+            for filePath in fileList:
+                fileBaseName = os.path.basename(os.path.realpath(filePath))
+                fileBaseNameWithExt = fileBaseName
+                fileBaseName = p.sub("",fileBaseName)
+                fileStr = fileStr + "'" + fileBaseName + "', "
+                fileNameDict[fileBaseName] = {}
+                fileNameDict[fileBaseName]['path'] = filePath 
+                fileNameDict[fileBaseName]['extension_name'] = fileBaseNameWithExt 
+                returnDict[fileBaseName] = "Did not find the file in the database"
+            "remove the last 2 characters"    
+            fileStr = "(" + fileStr[:-2] + ")" 
+            
+            """get the files which are registered in cache. 
+            this means that the files should be present in cache (unless some scientist deletes them by hand ;) )"""
+            sqlQueryForFilesInCache = "select path,filename from ops_cache_location where filename in " +  fileStr
+            #print "sql to get files" + sqlQueryForFilesInCache
+            resultFilesInCache = fileutils.get_queryresult_dictionay(sqlQueryForFilesInCache,self._cur)
+            #print "the files in cache are"
+            #print resultFilesInCache
+            for key in resultFilesInCache:
+                tempFileName = key['filename']
+                #print "deleting the filename is: " 
+            # print tempFileName
+                "delete the returnDict files which were found in the database"
+                del returnDict[tempFileName]
+                key['destination_path']  =   fileNameDict[tempFileName]['path']
+                key['extension_name']  =   fileNameDict[tempFileName]['extension_name']
+            #print "the files in cache AFTER are"
+            #print resultFilesInCache
+            
+            """
+            get the details of cache in a dictionary
+            """
+            sqlGetCacheInfo = "select * from ops_data_defs where type = 'cache' and name = '%s'" % cache_name
+            cacheInfoDict = fileutils.get_queryresult_dictionay(sqlGetCacheInfo,self._cur)
+    #        print " the query sqlGetCacheInfo %s returned %s" % (sqlGetCacheInfo,cacheInfoDict)
+            
+        # sqlGetSiteInfo = "select * from ops_data_defs where type = 'runsite' and name = '%s'" % site_name
+            #print sqlGetSiteInfo
+        # resultSite = fileutils.get_queryresult_dictionay(sqlGetSiteInfo,self._cur)
+            #runsite_root = resultSite[0]['root']
+    #        print "inputs for get_within_job filesDictionary: "
+    #        print resultFilesInCache
+    #        print "runsite root: "
+    #        print runsite_root
+    #        print "cache table information: "
+    #        print cacheInfoDict[0]
+            returnDictJob = self.get_within_job(resultFilesInCache,cacheInfoDict[0])
+            for retFileName,retStatus in returnDictJob.iteritems(): 
+                returnDict[retFileName] = retStatus
+
+        else:
+            returnDict = self.get_from_cache(fileList,cache_root)
 
         #print "the final return is "
         #print returnDict
@@ -345,6 +371,24 @@ class Cache(object):
      
         return (stdouttxt, stderrtxt)
 
+    def get_from_cache(self,filelist,cacheroot):
+        """ Dummy get routine:  assumes cache is same directory as runtime """
+        probfiles = []
+        #cacheroot = "/Users/mgower/cache"
+        #cacheroot = "/work/users/mgower/cache"
+        for f in filelist:
+            print "Getting file", f
+            fdir = os.path.dirname(f)
+            if len(fdir) > 0 and not os.path.exists(fdir):
+                os.makedirs(fdir)
+            cfile = "%s/%s" % (cacheroot, f)
+            if os.path.exists(cfile):
+                os.symlink(cfile, f)
+                #shutil.copy2(cfile, f)
+            else:
+                print "Error: Could not find %s in cache (%s)" % (f ,cfile)
+                probfiles.append(f)
+            return probfiles
 
 #### Embedded simple test
 #if __name__ ==  '__main__' :
@@ -359,3 +403,4 @@ class Cache(object):
 #    cache.get_within_job_wrapper(list2,'destest_cache')
 #    print dbh.get_column_names('archive_sites')
 
+# put function no wrapper Get function yes wrapper
