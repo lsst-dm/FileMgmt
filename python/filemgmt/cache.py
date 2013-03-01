@@ -97,6 +97,7 @@ class Cache(object):
         retCodeDict = self.put_within_job(file_list,cacheDict)
         #print "the final return"
         #print retCodeDict
+        return retCodeDict
 
 
     def put_within_job(self,file_list,cacheDict):
@@ -124,16 +125,9 @@ class Cache(object):
             """create the absolute destination path for the location in cache for the incoming file.
              this is done by adding the root of cache location to the relative path of the source file"""
             #print "another attempt: " + os.path.realpath(file).replace(os.path.realpath(runsite_root),'')
-            """
-            Append the directory path in the source filename to the end of the destination filepath 
-            """
-            FileSourceDir = os.path.dirname(fileSource)
-            if FileSourceDir != '':
-                #print "\n there was YES filesourcedir "
-                FileSourceDir = '/' + FileSourceDir
-            #else:
-                #print "\n there was no filesourcedir "
-            destination = cacheDict['root'] + '/' + fileDestWithinCache + FileSourceDir 
+
+            #destination = cacheDict['root'] + '/' + fileDestWithinCache + FileSourceDir 
+            destination = cacheDict['root'] + '/' + fileDestWithinCache 
             #print "\n the destination is %s" % (destination)
             if not os.path.exists(destination):
                 os.makedirs(destination)
@@ -147,6 +141,7 @@ class Cache(object):
             fileName = os.path.basename(fileSource)
 
             retErrorMsg = self.transportFile(fileSource,destination,onTargetMethod)
+            #print "the retErrorMsg found is %s" % (retErrorMsg)
             if retErrorMsg == '':
                 dataBaseInsertDict[fileName] = {}
                 dataBaseInsertDict[fileName]['filename'] = fileName
@@ -197,10 +192,7 @@ class Cache(object):
         stdinput = ''
         stdoutput =''
         stderror = ''
-        #print 'method is ->%s<-' % method
-        #print type (method)
         if 'cp' in method:
-      #  if method is 'cp':
         #    print "going to cp the file %s" % source
             finalTransportCall = "%s %s %s" % (method, source, destination)
         elif method is 'ln':
@@ -214,10 +206,6 @@ class Cache(object):
             finalTransportCall = ''
         if finalTransportCall != '':
 #            print "going to %s the file: %s with the finalTransportCall: %s" %(method,source,finalTransportCall)
-            #returnCode = os.system(finalTransportCall)
-#            returnCode = subprocess.call(finalTransportCall.split(),stdinput,stdoutput,stderror)
-          #  returnCode = subprocess.call(['cp','/home/ankitc/devel/FileMgmt/trunk/python/filemgmt/test.txt','/home/ankitc/test/'],stdinput,stdoutput,stderror)
-            #returnCode = subprocess.call(['cp','/home/ankitc/devel/FileMgmt/trunk/python/filemgmt/testingcache.txt','/home/ankitc/test/'])
             "run the cp/ln/grid-ftp command"
             returnStats = self.runCommand(finalTransportCall)
         else:
