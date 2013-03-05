@@ -120,7 +120,7 @@ class Cache(object):
         onTargetMethod = cacheDict['on_target']
         #for file in file_list:
         #for filesource, fileDestWithinCache in file_list:
-        for fileSource,fileDestWithinCache in file_list.iteritems():
+        for fileSource,fileDestWithinCache in sorted(file_list.items()):
            # print "putting file" + file
             """create the absolute destination path for the location in cache for the incoming file.
              this is done by adding the root of cache location to the relative path of the source file"""
@@ -307,7 +307,8 @@ class Cache(object):
                without confusion
             """
             #print "looping over file 1"
-            #print filePath
+            #print "filePath = ", filePath
+    
             canonicalizedDestinationFilePath = os.path.realpath(filePath['destination_path'])
                 
             """create the absolute source path for the file
