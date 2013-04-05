@@ -249,8 +249,8 @@ class Cache(object):
             
             """get the files which are registered in cache. 
             this means that the files should be present in cache (unless some scientist deletes them by hand ;) )"""
-            sqlQueryForFilesInCache = "select path,filename from ops_cache_location where filename in " +  fileStr
-            #print "sql to get files" + sqlQueryForFilesInCache
+            sqlQueryForFilesInCache = "select path,filename from ops_cache_location where cache_name='%s' and filename in %s" % (cache_name, fileStr)
+            print "sql to get files" + sqlQueryForFilesInCache
             resultFilesInCache = fileutils.get_queryresult_dictionay(sqlQueryForFilesInCache,self._cur)
             #print "the files in cache are"
             #print resultFilesInCache
