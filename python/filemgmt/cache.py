@@ -130,7 +130,12 @@ class Cache(object):
             destination = cacheDict['root'] + '/' + fileDestWithinCache 
             #print "\n the destination is %s" % (destination)
             if not os.path.exists(destination):
-                os.makedirs(destination)
+                try:    # still do try for race condition
+                    os.makedirs(destination)
+                except OSError as err:
+                    if 'exists' not in str(err).lower():
+                        raise
+ 
             #print "the destination filepath is %s" % destination
 
             """
