@@ -217,8 +217,13 @@ class Cache(object):
             print "did not transfer file. we are not ready for that yet"
         
         #if return != '':
-        #print "the returnStat for runCommand is " 
-        return returnStats[1]
+        #print "the returncode is "+str(returnStats[0])
+        #print "the stdout is "+str(returnStats[1])
+        #print "the stderr is "+str(returnStats[2])
+	if returnStats[0] != 0:
+         return returnStats[2]
+        else:
+         return ''
     
     def pre_put (self,list,cache_name):
         "comments go here"
@@ -360,10 +365,11 @@ class Cache(object):
         p = subprocess.Popen(cmd, shell=True,stdin= open("/dev/null"), 
                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         (stdouttxt, stderrtxt) = p.communicate()
+	rcode = p.returncode
         stdouttxt = " ".join(stdouttxt.splitlines()) # get rid of newlines
         stderrtxt = " ".join(stderrtxt.splitlines()) # get rid of newlines 
      
-        return (stdouttxt, stderrtxt)
+        return (rcode, stdouttxt, stderrtxt)
 
     def get_from_cache(self,filelist,cacheroot):
         """ Dummy get routine:  assumes cache is same directory as runtime """
