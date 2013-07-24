@@ -61,8 +61,8 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         if missing_files is not None and len(missing_files) > 0:
             print "Error:  Could not find the following files on the src archive"
             for f in missing_files:
-                print "\tf"
-            fwdie("Error: Missing files", FW_EXIT_FAILURE)
+                print "\t%s" % f
+            fwdie("Error: Missing files", 1)
 
         # dst rel path will be same as src rel path
         # create full paths for home archive and target archive
