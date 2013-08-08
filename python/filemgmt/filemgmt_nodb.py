@@ -178,7 +178,7 @@ class FileMgmtNoDB ():
         root = self.config['archive'][arname]['root']
         root = root.rstrip("/")  # canonicalize - remove trailing / to ensure 
         
-        for (dirpath, dirnames, filenames) in os.walk(root):
+        for (dirpath, dirnames, filenames) in os.walk(root, followlinks=True):
             for fname in filenames:
                 d = {}
                 (d['filename'], d['compression']) = parse_fullname(fname, 3)
@@ -197,6 +197,63 @@ class FileMgmtNoDB ():
         # go through given list of filenames and find archive location and compreesion
         archiveinfo = {}
         for name in filelist:
+            #print name
+            for p in compress_order:    # follow compression preference
+                #print "p = ", p
+                if name in fullnames[p]:
+                    archiveinfo[name] = fullnames[p][name]
+                    break
+
+        print "archiveinfo = ", archiveinfo
+        return archiveinfo
+
+
+
+    # compression = compressed_only, uncompressed_only, prefer uncompressed, prefer compressed, either (treated as prefer compressed)
+    def get_file_archive_info_path(self, path, arname, compress_order=FM_PREFER_COMPRESSED):
+
+        # sanity checks
+        if 'archive' not in self.config:
+            fwdie('Error: Missing archive section in config', 1)
+
+        if arname not in self.config['archive']:
+            fwdie('Error: Invalid archive name (%s)' % arname, 1)
+
+        if 'root' not in self.config['archive'][arname]:
+            fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
+
+        if not isinstance(compress_order, list):
+            fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)')
+
+        # walk archive to get all files
+        fullnames = {}
+        for p in compress_order:
+            fullnames[p] = {}
+
+        root = self.config['archive'][arname]['root']
+        root = root.rstrip("/")  # canonicalize - remove trailing / to ensure 
+        
+        list_by_name = {}
+        for (dirpath, dirnames, filenames) in os.walk(root + '/' + path):
+            for fname in filenames:
+                d = {}
+                (d['filename'], d['compression']) = parse_fullname(fname, 3)
+                d['filesize'] = os.path.getsize("%s/%s" % (dirpath, fname))
+                d['path'] = dirpath[len(root)+1:]
+                if d['compression'] is None:
+                    compext = ""
+                else:
+                    compext = d['compression']
+                d['rel_filename'] = "%s/%s%s" % (d['path'], d['filename'], compext)
+                fullnames[d['compression']][d['filename']] = d
+                list_by_name[d['filename']] = True
+                
+        print "uncompressed:", len(fullnames[None])
+        print "compressed:", len(fullnames['.fz'])
+
+        # go through given list of filenames and find archive location and compreesion
+        archiveinfo = {}
+        for name in list_by_name.keys():
             #print name
             for p in compress_order:    # follow compression preference
                 #print "p = ", p

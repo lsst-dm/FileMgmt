@@ -108,8 +108,9 @@ def main(args):
     
     # non-file tables
     for tname in [ 'qc_processed_value', 'qc_processed_message',
-        'pfw_exec', 'pfw_wrapper', 'pfw_job', 'pfw_exec',
-        'pfw_blktask', 'pfw_block',
+        'pfw_timing', 'pfw_job_exec_task', 'pfw_job_wrapper_task', 
+        'pfw_job_task', 'pfw_block_task', 'pfw_attempt_task',
+        'pfw_exec', 'pfw_wrapper', 'pfw_job', 'pfw_block', 
         'pfw_attempt', 'pfw_unit', 'pfw_request']:
         delete_from_table(dbh, tname)
     
@@ -121,7 +122,7 @@ def main(args):
         delete_from_table_by_ftype(dbh, 'CALIBRATION', ftype)
     
     # delete output files 
-    for ftype in ['cat_psfex','cat_satstars','cat_scamp','cat_scamp_full','cat_trailbox','head_scamp','head_scamp_full','psfex_model','qa_scamp','red_bkg','red_check','xml_psfex','xml_scamp','wcl','log','list']:
+    for ftype in ['cat_psfex','cat_satstars','cat_scamp','cat_scamp_full','cat_trailbox','head_scamp','head_scamp_full','psfex_model','qa_scamp','red_bkg','red_check','xml_psfex','xml_scamp','wcl','log','list','junk_tar']:
         delete_from_genfile_table(dbh, ftype)
 
     if args['inputs']:
@@ -147,4 +148,5 @@ def main(args):
         dbh.rollback()
 
 if __name__ == '__main__':
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout
     sys.exit(main(sys.argv))

@@ -39,7 +39,7 @@ class FileMgmtDB (coreutils.DesDbi):
 
     @staticmethod
     def requested_config_vals():
-        return {'archive':'req', FILE_HEADER_INFO:'opt', 'filetype_metadata':'req'}
+        return {'use_db':'opt', 'archive':'req', FILE_HEADER_INFO:'opt', 'filetype_metadata':'req'}
 
     def __init__ (self, config=None, argv=None):
         parser = argparse.ArgumentParser(description='FileMgmtDB')
@@ -50,7 +50,12 @@ class FileMgmtDB (coreutils.DesDbi):
         args, unknown_args = parser.parse_known_args()
         args = vars(args)   # turn into dictionary
         
-        if not use_db(args):
+        if args['use_db'] is None:
+            self.use_db = use_db(config)
+        else:
+            self.use_db = use_db(args)
+
+        if not self.use_db:
             fwdie("Error:  FileMgmtDB class requires DB but was told not to use DB", 1)
 
         self.desservices = args['desservices']
@@ -665,14 +670,14 @@ class FileMgmtDB (coreutils.DesDbi):
             for key, filedata in filemeta.iteritems():
                 foundError = 0
                 if FILENAME not in filedata.keys():
-                    fullMessage = '\n'.join("ERROR: cannot upload file <" + key + ">, no FILENAME provided.",fullMessage)
+                    fullMessage = '\n'.join(["ERROR: cannot upload file <" + key + ">, no FILENAME provided.",fullMessage])
                     continue
                 if FILETYPE not in filedata.keys():
-                    fullMessage = '\n'.join("ERROR: cannot upload file " + filedata[FILENAME] + ": no FILETYPE provided.",fullMessage)
+                    fullMessage = '\n'.join(["ERROR: cannot upload file " + filedata[FILENAME] + ": no FILETYPE provided.",fullMessage])
                     continue
                 if filedata[FILETYPE] not in dbdict:
-                    fullMessage = '\n'.join("ERROR: cannot upload " + filedata[FILENAME] + ": " + \
-                            filedata[FILETYPE] + " is not a known FILETYPE.",fullMessage)
+                    fullMessage = '\n'.join(["ERROR: cannot upload " + filedata[FILENAME] + ": " + \
+                            filedata[FILETYPE] + " is not a known FILETYPE.",fullMessage])
                     continue
                 # check that all required are present
                 allReqHeaders = self._get_required_headers(dbdict[filedata[FILETYPE]])
@@ -803,6 +808,65 @@ class FileMgmtDB (coreutils.DesDbi):
         # go through given list of filenames and find archive location and compreesion
         archiveinfo = {}
         for name in filelist:
+            #print name
+            for p in compress_order:    # follow compression preference
+                #print "p = ", p
+                if name in fullnames[p]:
+                    archiveinfo[name] = fullnames[p][name]
+                    break
+
+        #print "archiveinfo = ", archiveinfo
+        return archiveinfo
+
+
+    def get_file_archive_info_path(self, path, arname, compress_order=FM_PREFER_COMPRESSED):
+        """ Return information about file stored in archive (e.g., filename, size, rel_filename, ...) """
+
+        # sanity checks
+        if 'archive' not in self.config:
+            fwdie('Error: Missing archive section in config', 1)
+
+        if arname not in self.config['archive']:
+            fwdie('Error: Invalid archive name (%s)' % arname, 1)
+
+        if 'root' not in self.config['archive'][arname]:
+            fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
+
+        if not isinstance(compress_order, list):
+            fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)')
+
+        likestr = self.get_regex_clause('path', '%s/.*' % path)
+
+        # query DB getting all files regardless of compression
+        sql = "select filetype,file_archive_info.* from genfile,file_archive_info where archive_name='%s' and genfile.filename=file_archive_info.filename and %s" % (arname, likestr)
+        print "sql>", sql
+        curs = self.cursor()
+        curs.execute(sql)
+        desc = [d[0].lower() for d in curs.description]
+
+        fullnames = {}
+        for p in compress_order:
+            fullnames[p] = {}
+
+        list_by_name = {}
+        for line in curs:
+            d = dict(zip(desc, line))
+            
+            #print "line = ", line
+            if d['compression'] is None:
+                compext = ""
+            else:
+                compext = d['compression']
+            d['rel_filename'] = "%s/%s%s" % (d['path'], d['filename'], compext)
+            fullnames[d['compression']][d['filename']] = d
+            list_by_name[d['filename']] = True
+
+        #print "uncompressed:", len(fullnames[None])
+        #print "compressed:", len(fullnames['.fz'])
+
+        # go through given list of filenames and find archive location and compreesion
+        archiveinfo = {}
+        for name in list_by_name.keys():
             #print name
             for p in compress_order:    # follow compression preference
                 #print "p = ", p

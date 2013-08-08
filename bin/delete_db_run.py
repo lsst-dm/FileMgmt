@@ -12,6 +12,23 @@ import coreutils.desdbi as desdbi
 from coreutils.miscutils import *
 
 
+def delete_using_run_vals(dbh, tablename, reqnum, unitname, attnum, verbose=0):
+    if verbose >= 1: print "%25s" % tablename,
+    sql = "delete from %s where unitname='%s' and reqnum='%s' and attnum='%s'" % (tablename, unitname, reqnum, attnum) 
+    if verbose >= 2: print "\n%s\n" % sql
+    curs = dbh.cursor()
+    curs.execute(sql)
+    if verbose >= 1: print "%3s deleted rows" % curs.rowcount
+
+
+def delete_using_in(dbh, tablename, incol, inlist, verbose=0):
+    if verbose >= 1: print "%25s" % tablename,
+    sql = "delete from %s where %s in ('%s')" % (tablename, incol, "','".join(inlist)) 
+    if verbose >= 2: print "\n%s\n" % sql
+    curs = dbh.cursor()
+    curs.execute(sql)
+    if verbose >= 1: print "%3s deleted rows" % curs.rowcount
+
 
 # verbose
 #   0 - no printing 
@@ -34,7 +51,7 @@ def delete_db_run(dbh, unitname, reqnum, attnum, verbose=0):
         files2del.append(line[1])
     
     
-    sql = "select inputwcl, outputwcl, log from pfw_wrapper where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum)
+    sql = "select log from pfw_wrapper where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum)
     if verbose >= 2: print sql
     curs = dbh.cursor()
     curs.execute(sql)
@@ -43,13 +60,16 @@ def delete_db_run(dbh, unitname, reqnum, attnum, verbose=0):
         if line[0] is not None:
             del_by_table['genfile'].append(line[0])
             files2del.append(line[0])
-        if line[1] is not None:
-            del_by_table['genfile'].append(line[1])
-            files2del.append(line[1])
-        if line[2] is not None:
-            del_by_table['genfile'].append(line[2])
-            files2del.append(line[2])
     
+    sql = "select junktar from pfw_job where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum)
+    if verbose >= 2: print sql
+    curs = dbh.cursor()
+    curs.execute(sql)
+    for line in curs:
+    #    print line
+        if line[0] is not None:
+            del_by_table['genfile'].append(line[0])
+            files2del.append(line[0])
 
     if verbose > 3:
         pretty_print_dict(del_by_table, None, True, 4)
@@ -75,125 +95,34 @@ def delete_db_run(dbh, unitname, reqnum, attnum, verbose=0):
 
 
     # deletions
-
-    if verbose >= 1: print "opm_was_generated_by"
-    sql = "delete from opm_was_generated_by where opm_process_id in ('%s')" % "','".join(execids)
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
+    delete_using_in(dbh, 'opm_was_generated_by', 'opm_process_id', execids, verbose)
+    delete_using_in(dbh, 'opm_used', 'opm_process_id', execids, verbose)
+    delete_using_in(dbh, 'opm_was_derived_from', 'child_opm_artifact_id', artids, verbose)
+    delete_using_in(dbh, 'qc_processed_value', 'pfw_wrapper_id', wrapids, verbose)
+    delete_using_in(dbh, 'qc_processed_message', 'pfw_wrapper_id', wrapids, verbose)
     
-
-    if verbose >= 1: print "opm_used"
-    sql = "delete from opm_used where opm_process_id in ('%s')" % "','".join(execids)
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-
-    if verbose >= 1: print "opm_was_derived_from"
-    sql = "delete from opm_was_derived_from where CHILD_OPM_ARTIFACT_ID in ('%s')" % "','".join(artids)
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-
-
-
-    if verbose >= 1: print "pfw_exec"
-    sql = "delete from pfw_exec where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-
-
-    if verbose >= 1: print "opm_process"
-    sql = "delete from opm_process where id in ('%s')" % "','".join(execids)
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-    
-    if verbose >= 1: print "qc_processed_value"
-    sql = "delete from qc_processed_value where PFW_WRAPPER_ID in ('%s')" % "','".join(wrapids) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-    
-    if verbose >= 1: print "qc_processed_message"
-    sql = "delete from qc_processed_message where PFW_WRAPPER_ID in ('%s')" % "','".join(wrapids) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-            
-    if verbose >= 1: print "pfw_wrapper"
-    sql = "delete from pfw_wrapper where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-    
-    if verbose >= 1: print "pfw_job"
-    sql = "delete from pfw_job where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-    
-    if verbose >= 1: print "pfw_blktask"
-    sql = "delete from pfw_blktask where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-    
-    if verbose >= 1: print "pfw_block"
-    sql = "delete from pfw_block where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-    
-    if verbose >= 1: print "pfw_attempt"
-    sql = "delete from pfw_attempt where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum) 
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
+    delete_using_run_vals(dbh, 'pfw_job_exec_task', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_exec', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_job_wrapper_task', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_wrapper', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_job_task', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_job', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_block_task', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_block', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_attempt_task', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_attempt', reqnum, unitname, attnum, verbose)
     
     ## Do we want it to remove pfw_unit and pfw_request if that was the only run for those?
     
-    if verbose >= 1: print "objects_current"
-    sql = "delete from objects_current where filename in ('%s')" % "','".join(files2del)
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-
-
-    if verbose >= 1: print "file_archive_info"
-    sql = "delete from file_archive_info where filename in ('%s')" % "','".join(files2del+del_by_table['genfile'])
-    if verbose >= 2: print sql
-    curs.execute(sql)
-    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
+    delete_using_in(dbh, 'objects_current', 'filename', files2del, verbose)
+    delete_using_in(dbh, 'file_archive_info', 'filename', files2del+del_by_table['genfile'], verbose)
 
     for table,filelist in del_by_table.items():
         if filelist is not None and len(filelist) > 0:
-            if verbose >= 1: print table
-            sql = "delete from %s where filename in ('%s')" % (table, "','".join(filelist))
-            if verbose >= 2: print sql
-            curs.execute(sql)
-            if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
+            delete_using_in(dbh, table, 'filename', filelist, verbose)
 
-
-#    if verbose >= 1: print "opm_artifact"
-#    sql = "delete from opm_artifact where id in ('%s')" % "','".join(artids)
-#    if verbose >= 2: print sql
-#    print sql
-#    curs = dbh.cursor()
-#    curs.execute(sql)
-#    if verbose >= 1: print "\tdeleted %s rows" % curs.rowcount
-    
-
-    
+    #delete_using_in(dbh, 'opm_artifact', 'id', artids, verbose)
+    delete_using_in(dbh, 'opm_process', 'id', execids, verbose)
     
 
 if __name__ == "__main__":
@@ -215,6 +144,7 @@ if __name__ == "__main__":
     print "unitname =", unitname
     print "reqnum =", reqnum
     print "attnum =", attnum
+    print "\n"
     
     dbh = desdbi.DesDbi() 
 

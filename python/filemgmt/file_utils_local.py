@@ -31,3 +31,6 @@ def get_file_disk_info(filelist):
             fileinfo[fname] = { 'err': "Could not find file" }
 
     return fileinfo
+
+
+
