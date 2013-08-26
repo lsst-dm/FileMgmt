@@ -14,7 +14,7 @@ import re
 import sys
 from collections import OrderedDict
 import wrappers.WrapperUtils as wraputils
-import intgutils.wclutils as wclutils
+#import intgutils.wclutils as wclutils
 #import processingfw.pfwdb as pfwdb
 
 from filemgmt.filemgmt_defs import *
@@ -24,6 +24,7 @@ from coreutils.miscutils import *
 #import processingfw.errors
 
 VERSION = '$Rev$'
+
 
 ###########################################################################
 def parse_provided_list(listname):
@@ -81,7 +82,7 @@ def add_basenames_list(filelist):
     #filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname}
    
     for fname in filelist:
-        (filename, compress_ext) = parse_fullname(fname, 3)
+        (filename, compress_ext) = parse_fullname(fname, CU_PARSE_FILENAME|CU_PARSE_EXTENSION)
         filelist[fname]['filename'] = filename
         filelist[fname]['compression'] = compress_ext
 
@@ -181,6 +182,10 @@ def list_not_in_archive(filenames, archive, dbh):
 def process_files(filelist, filemgmt, args):
     """ Ingests file metadata for all files in filelist """ 
 
+    verbose = 1
+    if 'verbose' in args:
+        verbose = args['verbose']
+
     print "\nProcessing %0d files" % (len(filelist))
     # group by filetype
     byfiletype = {}
@@ -194,11 +199,21 @@ def process_files(filelist, filemgmt, args):
     for ftype in sorted(byfiletype.keys()):
         print "\n%s:" % ftype
         print "\tTotal: %s file(s) of this type" % len(byfiletype[ftype])
+        if verbose >= 3:
+            print "filenames for files for filetype %s:" % ftype
+            for f in byfiletype[ftype]:
+                print "\t%s" % f
+            
 
         # check which files already have metadata in database
         #     don't bother with updating existing data, as files should be immutable
         filenames = list_missing_metadata(filelist, byfiletype[ftype], filemgmt)
         #print "filenames = ", filenames
+        if verbose >= 3:
+            print "filenames for files which do not already have metadata registered:"
+            for f in filenames:
+                print "\t%s" % f
+            
 
         if len(filenames) != 0:
             # create input list of files that need to have metadata gathered
@@ -220,29 +235,32 @@ def process_files(filelist, filemgmt, args):
             metaspecs['fullname'] = ','.join(sorted(afile['fullname'] for afile in insfilelist.values()))
             #print metaspecs['fullname']
 
-            print "\tGathering file metadata on %0d files...." % len(insfilelist), 
-            #print "\n\nmetaspecs = "
-            #import intgutils.wclutils as wclutils
-            #wclutils.write_wcl(metaspecs)
-            #print "\n\n"
+            print "\tGathering file metadata on %0d files (compressed and uncompressed are same file)...." % len(insfilelist), 
+            if verbose >= 3:
+                print "\n\nmetaspecs = "
+                import intgutils.wclutils as wclutils
+                wclutils.write_wcl(metaspecs)
+                print "\n\n"
 
      
             filemeta = {}
             filemeta = wraputils.get_file_metadata(metaspecs)   # get the metadata from the fits files
-            #print "\n\noutput wcl"
-            #wclutils.write_wcl(filemeta)
+            if verbose >= 3:
+                print "\n\noutput wcl"
+                import intgutils.wclutils as wclutils
+                wclutils.write_wcl(filemeta)
     
             if filemeta is not None:
                 # add filenames and filetypes to metadata
                 for fdict in filemeta.values():
-                    fdict['filename'] = wclutils.getFilename(fdict['fullname'])
+                    fdict['filename'] = parse_fullname(fdict['fullname'], CU_PARSE_FILENAME)
                     fdict['filetype'] = ftype
             else:
                 print "Creating filename/filetype metadata info"
                 filemeta = {}
                 fcnt = 0
                 for f in insfilelist:
-                    filemeta['file_%s' % fcnt] = {'filename': wclutils.getFilename(f), 
+                    filemeta['file_%s' % fcnt] = {'filename': parse_fullname(fd, CU_PARSE_FILENAME),
                                                   'filetype': ftype}
                     fcnt += 1
 
@@ -256,6 +274,7 @@ def process_files(filelist, filemgmt, args):
                     print "\n\n\nError: %s" % err
                     print "Rerun using --outcfg <outfile> to see config from DB, esp filetype_metadata"
                     print "---------- filemeta to ingest:"
+                    import intgutils.wclutils as wclutils
                     wclutils.write_wcl(filemeta)
                     print "----------"
                     raise
@@ -266,7 +285,7 @@ def process_files(filelist, filemgmt, args):
         # check which files already are in archive
         new_fnames = list_missing_archive(filelist, byfiletype[ftype], filemgmt, args)
 
-        # create input list of files that need to have metadata gathered
+        # create input list of files that need to be registered in archive
         if len(new_fnames) > 0:
             insfilelist = {}
             for f in new_fnames:
@@ -283,6 +302,9 @@ def process_files(filelist, filemgmt, args):
             else:
                 filemgmt.commit()
             print "DONE"
+        else:
+            filemgmt.commit()
+
 
      
 ###########################################################################
@@ -297,6 +319,7 @@ def main(args):
     parser.add_argument('--archive', action='store', help='single value')
     parser.add_argument('--filetype', action='store', help='single value, must also specify search path')
     parser.add_argument('--path', action='store', help='single value, must also specify filetype')
+    parser.add_argument('--verbose', action='store', default=1)
     parser.add_argument('--version', action='store_true', default=False)
 
     args = vars(parser.parse_args())   # convert to dict
@@ -348,6 +371,7 @@ def main(args):
         filemgmt_class = args['classmgmt']
     elif args['config']:
         if args['config'] is not None:
+            import intgutils.wclutils as wclutils
             with open(args['config'], 'w') as fh:
                 config = wclutils.read_wcl(fh)
         if archive in config['archive']:
@@ -394,6 +418,9 @@ def main(args):
     add_basenames_list(filelist)
 
 
+    print "Reminder:"
+    print "\tFor purposes of file metadata, uncompressed and compressed files are treated as same file (no checking is done)."
+    print "\tBut when tracking file locations within archive, they are tracked as 2 independent files.\n"
     process_files(filelist, filemgmt, args)
     
 if __name__ == '__main__':

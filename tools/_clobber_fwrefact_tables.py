@@ -114,7 +114,7 @@ def main(args):
         'pfw_attempt', 'pfw_unit', 'pfw_request']:
         delete_from_table(dbh, tname)
     
-    for tname in ['image', 'catalog']:
+    for tname in ['catalog', 'image']:
         delete_from_table(dbh, tname)
 
     
