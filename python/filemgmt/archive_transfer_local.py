@@ -11,7 +11,7 @@ __version__ = "$Rev$"
 
 from coreutils.miscutils import *
 from filemgmt.filemgmt_defs import *
-import filemgmt.mvmt_utils_local as mvmt_utils_local
+import filemgmt.disk_utils_local as disk_utils_local
 
 class ArchiveTransferLocal():
     """
@@ -56,6 +56,6 @@ class ArchiveTransferLocal():
                 
             files2copy[srcfile] = dstfile
 
-        problems = mvmt_utils_local.copyfiles(files2copy)
+        problems = disk_utils_local.copyfiles(files2copy)
 
         return problems 

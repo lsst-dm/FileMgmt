@@ -79,19 +79,21 @@ def del_file_disk_list(filelist):
     """ Deletes files on disk from given list """
     # deletes any directories it made empty by deleting files
 
-    fileinfo = {}
-    paths = {}
-    for fname in filelist:
-        if os.path.exists(fname):
-            paths[os.path.dirname(fname)] = True
-            fwdebug(0, "DISK_UTILS_LOCAL_DEBUG", "Deleting %s" % fname)
-            #os.unlink(fname)
-        else:
-            fileinfo[fname] = { 'err': "Could not find file" }
+    #### TODO
 
+    fileinfo = {}
+    #paths = {}
+    #for fname in filelist:
+    #    if os.path.exists(fname):
+    #        paths[os.path.dirname(fname)] = True
+    #        fwdebug(0, "DISK_UTILS_LOCAL_DEBUG", "Deleting %s" % fname)
+    #        #os.unlink(fname)
+    #    else:
+    #        fileinfo[fname] = { 'err': "Could not find file" }
+    #
     # check if empty paths and remove
-    for p in paths.keys():
-        :
+    # for p in paths.keys():
+    #
 
     return fileinfo
 

@@ -13,7 +13,7 @@ import shutil
 
 from coreutils.miscutils import *
 from filemgmt.filemgmt_defs import *
-import mvmt_utils_local
+import filemgmt.disk_utils_local as disk_utils_local
 
 class JobArchiveLocal():
     """
@@ -35,19 +35,19 @@ class JobArchiveLocal():
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
-        return mvmt_utils_local.copyfiles(filelist)
+        return disk_utils_local.copyfiles(filelist)
 
 
     def target2job(self, filelist):
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
-        return mvmt_utils_local.copyfiles(filelist)
+        return disk_utils_local.copyfiles(filelist)
 
 
     def job2target(self, filelist):
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
-        results = mvmt_utils_local.copyfiles(filelist)
+        results = disk_utils_local.copyfiles(filelist)
         return results
 
 
@@ -55,5 +55,5 @@ class JobArchiveLocal():
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
-        results = mvmt_utils_local.copyfiles(filelist)
+        results = disk_utils_local.copyfiles(filelist)
         return results
