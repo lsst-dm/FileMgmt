@@ -315,7 +315,7 @@ def main(args):
     parser.add_argument('--classmgmt', action='store')
     parser.add_argument('--classutils', action='store')
     parser.add_argument('--noingest', action='store_true', default=False)
-    parser.add_argument('--list', action='store', help='format:  fullname, filetype, archivepath')
+    parser.add_argument('--list', action='store', help='format:  fullname, filetype')
     parser.add_argument('--archive', action='store', help='single value')
     parser.add_argument('--filetype', action='store', help='single value, must also specify search path')
     parser.add_argument('--path', action='store', help='single value, must also specify filetype')
