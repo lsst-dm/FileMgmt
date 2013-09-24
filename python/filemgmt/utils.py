@@ -97,7 +97,7 @@ def create_update_items(metastatus, file_header_names, file_header_info, header_
     updateDict = OrderedDict()
     for name in file_header_names:
         if name not in file_header_info:
-            fwdie('Error: Missing entry in file_header_info for %s' % name, FW_EXIT_FAILURE)
+            fwdie('Error: Missing entry in file_header_info for %s' % name, FM_EXIT_FAILURE)
 
         # Example: $HDRFNC{BAND}/Filter identifier/str
         if header_value is not None and name in header_value:
