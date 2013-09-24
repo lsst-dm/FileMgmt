@@ -290,9 +290,9 @@ class FileMgmtDB (coreutils.DesDbi):
 
             try:
                 colnames = self.get_column_names('FILE_ARCHIVE_INFO');
-                self.insert_many('FILE_ARCHIVE_INFO', colnames, insfilelist)
+                self.insert_many_indiv('FILE_ARCHIVE_INFO', colnames, insfilelist)
             except:
-                print "Error from insert_many in register_file_archive"
+                print "Error from insert_many_indiv in register_file_archive"
                 print "colnames =", colnames
                 print "filelist =", filelist
                 raise
@@ -728,7 +728,7 @@ class FileMgmtDB (coreutils.DesDbi):
             # end looping through files
             
             for metaTable, dict in metadataTables.iteritems():
-                self.insert_many(metaTable, dict[COLMAP].keys(), dict[ROWS])
+                self.insert_many_indiv(metaTable, dict[COLMAP].keys(), dict[ROWS])
             #self.commit()
             
         except Exception as ex:

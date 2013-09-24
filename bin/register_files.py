@@ -270,7 +270,7 @@ def process_files(filelist, filemgmt, args):
                 print "\tCalling ingest_file_metadata on %s files..." % len(filemeta), 
                 try:
                     filemgmt.ingest_file_metadata(filemeta)
-                except FileMetadataIngestError as err:
+                except Exception as err: 
                     print "\n\n\nError: %s" % err
                     print "Rerun using --outcfg <outfile> to see config from DB, esp filetype_metadata"
                     print "---------- filemeta to ingest:"
