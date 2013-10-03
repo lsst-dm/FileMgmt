@@ -42,10 +42,12 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
 
     fwdebug(0, "ARCHIVE_COPY_DEBUG", "dst_archive = %s" % dst_archive)
     dst_file_archive_info = dstfilemgmt.get_file_archive_info(filelist, dst_archive, FM_PREFER_UNCOMPRESSED)
-    fwdebug(0, "ARCHIVE_COPY_DEBUG", "dst_file_archive_info %s" % dst_file_archive_info)
+    fwdebug(0, "ARCHIVE_COPY_DEBUG", "number of files already at dst %s" % len(dst_file_archive_info))
+    fwdebug(6, "ARCHIVE_COPY_DEBUG", "dst_file_archive_info %s" % dst_file_archive_info)
     files2stage = set(filelist) - set(dst_file_archive_info.keys())
 
-    fwdebug(0, "ARCHIVE_COPY_DEBUG", "files to stage %s" % files2stage)
+    fwdebug(0, "ARCHIVE_COPY_DEBUG", "number of files to stage %s" % len(files2stage))
+    fwdebug(6, "ARCHIVE_COPY_DEBUG", "files to stage %s" % files2stage)
 
     if files2stage is not None and len(files2stage) > 0:
         ## Stage files not already on dst
@@ -57,7 +59,6 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         # get archive paths for files in home archive
         src_file_archive_info = srcfilemgmt.get_file_archive_info(files2stage, src_archive, FM_PREFER_COMPRESSED)
         missing_files = set(files2stage) - set(src_file_archive_info.keys())
-        fwdebug(0, "ARCHIVE_COPY_DEBUG", "files not on src archive %s" % missing_files)
 
         if missing_files is not None and len(missing_files) > 0:
             print "Error:  Could not find the following files on the src archive"
@@ -71,7 +72,7 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         dst_root = dst_archive_info['root']
         files2copy = {}
         for filename, fileinfo in src_file_archive_info.items():
-            fwdebug(0, "ARCHIVE_COPY_DEBUG", "%s: fileinfo = %s" % (filename, fileinfo))
+            fwdebug(6, "ARCHIVE_COPY_DEBUG", "%s: fileinfo = %s" % (filename, fileinfo))
             files2copy[filename] = copy.deepcopy(fileinfo)
             files2copy[filename]['src'] = "%s/%s" % (src_root, fileinfo['rel_filename'])
             files2copy[filename]['dst'] = "%s/%s" % (dst_root, fileinfo['rel_filename'])

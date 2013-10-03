@@ -728,6 +728,7 @@ class FileMgmtDB (coreutils.DesDbi):
             # end looping through files
             
             for metaTable, dict in metadataTables.iteritems():
+                #self.insert_many(metaTable, dict[COLMAP].keys(), dict[ROWS])
                 self.insert_many_indiv(metaTable, dict[COLMAP].keys(), dict[ROWS])
             #self.commit()
             
@@ -782,9 +783,18 @@ class FileMgmtDB (coreutils.DesDbi):
             fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)')
 
         # query DB getting all files regardless of compression
-        sql = "select filetype,file_archive_info.* from genfile,file_archive_info where archive_name='%s' and genfile.filename=file_archive_info.filename and file_archive_info.filename in ('%s')" % (arname, "','".join(filelist))
+        #     Can't just use 'in' expression because could be more than 1000 filenames in list
+        #           ORA-01795: maximum number of expressions in a list is 1000
+    
+        # insert filenames into filename global temp table to use in join for query
+        gtt_name = self.load_filename_gtt(filelist)
+
+        # join to GTT_FILENAME for query
+        result = []
+        cursor = self.cursor()
+        sql = "select filetype,file_archive_info.* from genfile,file_archive_info,%(gtt)s where archive_name=%(ar)s and genfile.filename=%(gtt)s.filename and file_archive_info.filename=%(gtt)s.filename" % ({'ar':self.get_named_bind_string('archive_name'), 'gtt':gtt_name})
         curs = self.cursor()
-        curs.execute(sql)
+        curs.execute(sql, {'archive_name': arname})
         desc = [d[0].lower() for d in curs.description]
 
         fullnames = {}
@@ -801,7 +811,10 @@ class FileMgmtDB (coreutils.DesDbi):
                 compext = d['compression']
             d['rel_filename'] = "%s/%s%s" % (d['path'], d['filename'], compext)
             fullnames[d['compression']][d['filename']] = d
-
+        curs.close()
+        
+        self.empty_gtt(gtt_name)
+        
         #print "uncompressed:", len(fullnames[None])
         #print "compressed:", len(fullnames['.fz'])
 
