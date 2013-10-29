@@ -1,3 +1,8 @@
+# $Id$
+# $Rev::                                  $:  # Revision of last commit.
+# $LastChangedBy::                        $:  # Author of last commit.
+# $LastChangedDate::                      $:  # Date of last commit.
+
 from collections import OrderedDict
 from coreutils.miscutils import *
 from filemgmt.filemgmt_defs import *
