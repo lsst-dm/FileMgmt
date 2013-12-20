@@ -7,6 +7,7 @@
 META_HEADERS = 'h'
 META_COMPUTE = 'c'
 META_WCL = 'w'
+META_COPY = 'p'
 META_REQUIRED = 'r'
 META_OPTIONAL = 'o'
 

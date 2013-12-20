@@ -87,50 +87,50 @@ class FileMgmtDB (coreutils.DesDbi):
                     self.config.update(fileconfig)
 
 
-    def _get_all_filetype_metadata(self):
-        """
-        Gets a dictionary of dictionaries or string=value pairs representing
-        data from the OPS_METADATA, OPS_FILETYPE, and OPS_FILETYPE_METADATA tables.
-        This is intended to provide a complete set of filetype metadata required
-        during a run.
-        Note that the returned dictionary is nested based on the order of the
-        columns in the select clause.  Values in columns contained in the
-        "collections" list will be turned into dictionaries keyed by the value,
-        while the remaining columns will become "column_name=value" elements
-        of the parent dictionary.  Thus the sql query and collections list can be
-        altered without changing the rest of the code.
-        """
-        sql = """select f.filetype,f.metadata_table,fm.status,m.derived,
-                    fm.file_header_name,m.position,m.column_name
-                from OPS_METADATA m, OPS_FILETYPE f, OPS_FILETYPE_METADATA fm
-                where m.file_header_name=fm.file_header_name
-                    and f.filetype=fm.filetype
-                order by 1,2,3,4,5,6 """
-        collections = ['filetype','status','derived']
-        curs = self.cursor()
-        curs.execute(sql)
-        desc = [d[0].lower() for d in curs.description]
-        result = OrderedDict()
-
-        for row in curs:
-            ptr = result
-            for col, value in enumerate(row):
-                normvalue = str(value).lower()
-                if col >= (len(row)-3):
-                    if normvalue not in ptr:
-                        ptr[normvalue] = str(row[col+2]).lower()
-                    else:
-                        ptr[normvalue] += "," + str(row[col+2]).lower()
-                    break
-                if normvalue not in ptr:
-                    if desc[col] in collections:
-                        ptr[normvalue] = OrderedDict()
-                    else:
-                        ptr[desc[col]] = normvalue
-                if desc[col] in collections:
-                    ptr = ptr[normvalue]
-        curs.close()
-        self.config[FILETYPE_METADATA]=result
+#M     def _get_all_filetype_metadata(self):
+#M         """
+#M         Gets a dictionary of dictionaries or string=value pairs representing
+#M         data from the OPS_METADATA, OPS_FILETYPE, and OPS_FILETYPE_METADATA tables.
+#M         This is intended to provide a complete set of filetype metadata required
+#M         during a run.
+#M         Note that the returned dictionary is nested based on the order of the
+#M         columns in the select clause.  Values in columns contained in the
+#M         "collections" list will be turned into dictionaries keyed by the value,
+#M         while the remaining columns will become "column_name=value" elements
+#M         of the parent dictionary.  Thus the sql query and collections list can be
+#M         altered without changing the rest of the code.
+#M         """
+#M         sql = """select f.filetype,f.metadata_table,fm.status,fm.derived,
+#M                     fm.file_header_name,m.position,m.column_name
+#M                 from OPS_METADATA m, OPS_FILETYPE f, OPS_FILETYPE_METADATA fm
+#M                 where m.file_header_name=fm.file_header_name
+#M                     and f.filetype=fm.filetype
+#M                 order by 1,2,3,4,5,6 """
+#M         collections = ['filetype','status','derived']
+#M         curs = self.cursor()
+#M         curs.execute(sql)
+#M         desc = [d[0].lower() for d in curs.description]
+#M         result = OrderedDict()
+#M 
+#M         for row in curs:
+#M             ptr = result
+#M             for col, value in enumerate(row):
+#M                 normvalue = str(value).lower()
+#M                 if col >= (len(row)-3):
+#M                     if normvalue not in ptr:
+#M                         ptr[normvalue] = str(row[col+2]).lower()
+#M                     else:
+#M                         ptr[normvalue] += "," + str(row[col+2]).lower()
+#M                     break
+#M                 if normvalue not in ptr:
+#M                     if desc[col] in collections:
+#M                         ptr[normvalue] = OrderedDict()
+#M                     else:
+#M                         ptr[desc[col]] = normvalue
+#M                 if desc[col] in collections:
+#M                     ptr = ptr[normvalue]
+#M         curs.close()
+#M         self.config[FILETYPE_METADATA]=result
 
     def _get_config_from_db(self, args):
         self.config = OrderedDict()
@@ -139,66 +139,66 @@ class FileMgmtDB (coreutils.DesDbi):
         self.config[FILE_HEADER_INFO] = self.query_results_dict('select * from OPS_FILE_HEADER', 'name')
 
 
-    def get_metadata_specs(self, ftype, sectlabel=None, updatefits=False):
-        """ Return dict/wcl describing metadata to gather for given filetype """
-
-        #print "ftype =", ftype
-        metaspecs = OrderedDict()
-
-        # note:  When manually ingesting files generated externally to the framework, we do not want to modify the files (i.e., no updating/inserting headers
-        
-        file_header_info = None
-        if updatefits:
-            file_header_info = self.config[FILE_HEADER_INFO]
-
-        (reqmeta, optmeta, updatemeta) = fmutils.create_file_metadata_dict(ftype, self.config[FILETYPE_METADATA], sectlabel, file_header_info)
-
-        #print "reqmeta =", reqmeta
-        #print "======================================================================"
-        #print "optmeta =", optmeta
-        #print "======================================================================"
-        #print "updatemeta =", updatemeta
-        #print "======================================================================"
-        #sys.exit(1)
-
-        if reqmeta:
-            metaspecs[WCL_REQ_META] = OrderedDict()
-
-            # convert names from specs to wcl
-            valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
-            wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
-            for i in range(len(valspecs)):
-                if valspecs[i] in reqmeta:
-                    metaspecs[WCL_REQ_META][wclspecs[i]] = reqmeta[valspecs[i]]
-
-        if optmeta:
-            metaspecs[WCL_OPT_META] = OrderedDict()
-
-            # convert names from specs to wcl
-            valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
-            wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
-            for i in range(len(valspecs)):
-                if valspecs[i] in optmeta:
-                    metaspecs[WCL_OPT_META][wclspecs[i]] = optmeta[valspecs[i]]
-
-        #print 'keys = ', metaspecs.keys()
-        if updatefits:
-            if updatemeta:
-                updatemeta[WCL_UPDATE_WHICH_HEAD] = '0'  # framework always updates primary header
-                metaspecs[WCL_UPDATE_HEAD_PREFIX+'0'] = updatemeta               
-        elif updatemeta is not None:
-            print "WARNING:  create_file_metadata_dict incorrectly returned values to update."
-            print "\tContinuing but not updating these values."
-            print "\tReport this to code developer."
-            print "\t\t", updatemeta
-            updatemeta = None
-
-        # return None if no metaspecs
-        if len(metaspecs) == 0:
-            metaspecs = None
-
-        return metaspecs
-
+#M     def get_metadata_specs(self, ftype, sectlabel=None, updatefits=False):
+#M         """ Return dict/wcl describing metadata to gather for given filetype """
+#M 
+#M         #print "ftype =", ftype
+#M         metaspecs = OrderedDict()
+#M 
+#M         # note:  When manually ingesting files generated externally to the framework, we do not want to modify the files (i.e., no updating/inserting headers
+#M         
+#M         file_header_info = None
+#M         if updatefits:
+#M             file_header_info = self.config[FILE_HEADER_INFO]
+#M 
+#M         (reqmeta, optmeta, updatemeta) = metautils.create_file_metadata_dict(ftype, self.config[FILETYPE_METADATA], sectlabel, file_header_info)
+#M 
+#M         #print "reqmeta =", reqmeta
+#M         #print "======================================================================"
+#M         #print "optmeta =", optmeta
+#M         #print "======================================================================"
+#M         #print "updatemeta =", updatemeta
+#M         #print "======================================================================"
+#M         #sys.exit(1)
+#M 
+#M         if reqmeta:
+#M             metaspecs[WCL_REQ_META] = OrderedDict()
+#M 
+#M             # convert names from specs to wcl
+#M             valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
+#M             wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
+#M             for i in range(len(valspecs)):
+#M                 if valspecs[i] in reqmeta:
+#M                     metaspecs[WCL_REQ_META][wclspecs[i]] = reqmeta[valspecs[i]]
+#M 
+#M         if optmeta:
+#M             metaspecs[WCL_OPT_META] = OrderedDict()
+#M 
+#M             # convert names from specs to wcl
+#M             valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
+#M             wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
+#M             for i in range(len(valspecs)):
+#M                 if valspecs[i] in optmeta:
+#M                     metaspecs[WCL_OPT_META][wclspecs[i]] = optmeta[valspecs[i]]
+#M 
+#M         #print 'keys = ', metaspecs.keys()
+#M         if updatefits:
+#M             if updatemeta:
+#M                 updatemeta[WCL_UPDATE_WHICH_HEAD] = '0'  # framework always updates primary header
+#M                 metaspecs[WCL_UPDATE_HEAD_PREFIX+'0'] = updatemeta               
+#M         elif updatemeta is not None:
+#M             print "WARNING:  create_file_metadata_dict incorrectly returned values to update."
+#M             print "\tContinuing but not updating these values."
+#M             print "\tReport this to code developer."
+#M             print "\t\t", updatemeta
+#M             updatemeta = None
+#M 
+#M         # return None if no metaspecs
+#M         if len(metaspecs) == 0:
+#M             metaspecs = None
+#M 
+#M         return metaspecs
+#M 
 
 
 
