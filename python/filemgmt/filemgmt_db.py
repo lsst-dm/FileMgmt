@@ -130,14 +130,41 @@ class FileMgmtDB (coreutils.DesDbi):
                 if desc[col] in collections:
                     ptr = ptr[normvalue]
         curs.close()
-        self.config[FILETYPE_METADATA]=result
+        return result
+
+
+    def _get_all_datafile_metadata(self):
+        """ Gets a dictionary of all datafile (such as XML or fits table data files) metadata with filetype as the key. """
+        sql = """select df.filetype, table_name, attribute_name, position, column_name
+                from OPS_DATAFILE_TABLE df, OPS_DATAFILE_METADATA md
+                where df.filetype = md.filetype and current_flag=1
+                order by df.filetype, md.attribute_name, md.POSITION"""
+        TABLE_NAME = "table_name"
+        DATA = "data"
+        result = OrderedDict()
+        curs = self.cursor()
+        curs.execute(sql)
+        
+        for row in curs:
+            if row[0] not in result.keys():
+                result[row[0]] = OrderedDict()
+                result[row[0]][TABLE_NAME] = row[1]
+                result[row[0]][DATA] = OrderedDict()
+            if row[2] not in result[row[0]][DATA].keys():
+                result[row[0]][DATA][row[2]] = []
+            if len(result[row[0]][DATA][row[2]]) == row[3]:
+                result[row[0]][DATA][row[2]].append(row[4])
+            else:
+                result[row[0]][DATA][row[2]][row[3]] = row[4]
+        curs.close()
+        return result
 
     def _get_config_from_db(self, args):
         self.config = OrderedDict()
         self.config['archive']  = self.get_archive_info()
         self.config['filetype_metadata'] = self.get_all_filetype_metadata()  
         self.config[FILE_HEADER_INFO] = self.query_results_dict('select * from OPS_FILE_HEADER', 'name')
-
+        self.config['datafile_metadata'] = self._get_all_datafile_metadata()
 
     def get_metadata_specs(self, ftype, sectlabel=None, updatefits=False):
         """ Return dict/wcl describing metadata to gather for given filetype """
@@ -623,8 +650,10 @@ class FileMgmtDB (coreutils.DesDbi):
         """
         REQUIRED = "r"
         allReqHeaders = set()
-        for category,catDict in filetypeDict[REQUIRED].iteritems():
-            allReqHeaders = allReqHeaders.union(catDict.keys())
+        for hdu,hduDict in filetypeDict.iteritems():
+            if type(hduDict) in (OrderedDict,dict):
+                for category,catDict in hduDict[REQUIRED].iteritems():
+                    allReqHeaders = allReqHeaders.union(catDict.keys())
         return allReqHeaders
 
 
@@ -633,16 +662,17 @@ class FileMgmtDB (coreutils.DesDbi):
         For use by ingest_file_metadata. Creates a lookup from column to header.
         """
         columnMap = OrderedDict()
-        for statusDict in filetypeDict.values():
-            if type(statusDict) in (OrderedDict,dict):
-                for catDict in statusDict.values():
-                    for header, columns in catDict.iteritems():
-                        collist = columns.split(',')
-                        for position, column in enumerate(collist):
-                            if len(collist) > 1:
-                                columnMap[column] = header + ":" + str(position)
-                            else:
-                                columnMap[column] = header
+        for hduDict in filetypeDict.values():
+            if type(hduDict) in (OrderedDict,dict):
+                for statusDict in filetypeDict.values():
+                    for catDict in statusDict.values():
+                        for header, columns in catDict.iteritems():
+                            collist = columns.split(',')
+                            for position, column in enumerate(collist):
+                                if len(collist) > 1:
+                                    columnMap[column] = header + ":" + str(position)
+                                else:
+                                    columnMap[column] = header
         return columnMap
 
 
@@ -889,3 +919,40 @@ class FileMgmtDB (coreutils.DesDbi):
 
         #print "archiveinfo = ", archiveinfo
         return archiveinfo
+
+
+
+    def ingest_datafile_contents(self,sourcefile,filetype,dataDict):
+        tablename = self.config['datafile_metadata'][filetype]['table_name']
+        columnlist = []
+        data = []
+        indata = []
+        if hasattr(dataDict,"keys"):
+            indata.append(dataDict)
+        else:
+            indata=dataDict
+
+        for attribute,cols in self.config['datafile_metadata'][filetype]['data'].iteritems():
+            for indx, colname in enumerate(cols):
+                columnlist.append(colname)
+        columnlist.append('filename')
+
+        for inrow in indata:
+            row = {}
+            for attribute,cols in self.config['datafile_metadata'][filetype]['data'].iteritems():
+                for indx, colname in enumerate(cols):
+                    if attribute in inrow.keys() and indx < len(inrow[attribute]):
+                        row[colname] = inrow[attribute][indx]
+                    else:
+                        row[colname] = None
+            if(len(row) > 0):
+                row["filename"] = sourcefile
+                data.append(row)
+        for r in data:
+            print str(r) + "\n"
+        if(len(data) > 0):
+            self.insert_many_indiv(tablename,columnlist,data)
+
+    # end ingest_datafile_contents
+
+
