@@ -623,8 +623,10 @@ class FileMgmtDB (coreutils.DesDbi):
         """
         REQUIRED = "r"
         allReqHeaders = set()
-        for category,catDict in filetypeDict[REQUIRED].iteritems():
-            allReqHeaders = allReqHeaders.union(catDict.keys())
+        for hdu,hduDict in filetypeDict.iteritems():
+            if type(hduDict) in (OrderedDict,dict):
+                for category,catDict in hduDict[REQUIRED].iteritems():
+                    allReqHeaders = allReqHeaders.union(catDict.keys())
         return allReqHeaders
 
 
@@ -633,16 +635,17 @@ class FileMgmtDB (coreutils.DesDbi):
         For use by ingest_file_metadata. Creates a lookup from column to header.
         """
         columnMap = OrderedDict()
-        for statusDict in filetypeDict.values():
-            if type(statusDict) in (OrderedDict,dict):
-                for catDict in statusDict.values():
-                    for header, columns in catDict.iteritems():
-                        collist = columns.split(',')
-                        for position, column in enumerate(collist):
-                            if len(collist) > 1:
-                                columnMap[column] = header + ":" + str(position)
-                            else:
-                                columnMap[column] = header
+        for hduDict in filetypeDict.values():
+            if type(hduDict) in (OrderedDict,dict):
+                for statusDict in hduDict.values():
+                    for catDict in statusDict.values():
+                        for header, columns in catDict.iteritems():
+                            collist = columns.split(',')
+                            for position, column in enumerate(collist):
+                                if len(collist) > 1:
+                                    columnMap[column] = header + ":" + str(position)
+                                else:
+                                    columnMap[column] = header
         return columnMap
 
 
