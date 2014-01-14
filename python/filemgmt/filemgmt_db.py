@@ -625,8 +625,9 @@ class FileMgmtDB (coreutils.DesDbi):
         allReqHeaders = set()
         for hdu,hduDict in filetypeDict.iteritems():
             if type(hduDict) in (OrderedDict,dict):
-                for category,catDict in hduDict[REQUIRED].iteritems():
-                    allReqHeaders = allReqHeaders.union(catDict.keys())
+                if REQUIRED in hduDict:
+                    for category,catDict in hduDict[REQUIRED].iteritems():
+                        allReqHeaders = allReqHeaders.union(catDict.keys())
         return allReqHeaders
 
 
