@@ -240,7 +240,7 @@ def process_files(filelist, filemgmt, args):
             metaspecs['fullname'] = ','.join(sorted(afile['fullname'] for afile in insfilelist.values()))
             #print metaspecs['fullname']
 
-            print "\tMMG   Gathering file metadata on %0d files (compressed and uncompressed are same file)...." % len(insfilelist), 
+            print "\tGathering file metadata on %0d files (compressed and uncompressed are same file)...." % len(insfilelist), 
             if verbose >= 3:
                 print "\n\nmetaspecs = "
                 import intgutils.wclutils as wclutils
