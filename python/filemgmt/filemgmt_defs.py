@@ -11,14 +11,6 @@ META_COPY = 'p'
 META_REQUIRED = 'r'
 META_OPTIONAL = 'o'
 
-WCL_META_HEADERS = 'headers'
-WCL_META_COMPUTE = 'compute'
-WCL_META_WCL = 'wcl'
-WCL_UPDATE_HEAD_PREFIX = 'hdrupd_'
-WCL_UPDATE_WHICH_HEAD = 'headers'
-WCL_REQ_META = 'req_metadata'
-WCL_OPT_META = 'opt_metadata'
-
 FILETYPE_METADATA = 'filetype_metadata'
 FILE_HEADER_INFO = 'file_header'
 

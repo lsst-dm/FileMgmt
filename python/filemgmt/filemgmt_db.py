@@ -31,14 +31,12 @@ import filemgmt.utils as fmutils
 
 class FileMgmtDB (coreutils.DesDbi):
     """
-        Extend coreutils.DesDbi to add database access methods
-
-        Add methods to retrieve the metadata headers required for one or more
-        filetypes and to ingest metadata associated with those headers.
+        Extend coreutils.DesDbi with functionality for managing files (metadata ingestion, "location" registering)
     """
 
     @staticmethod
     def requested_config_vals():
+        """ return dictionary describing what values this class uses along with whether they are optional or required """
         return {'use_db':'opt', 'archive':'req', FILE_HEADER_INFO:'opt', 'filetype_metadata':'req'}
 
     def __init__ (self, config=None, argv=None):
@@ -87,118 +85,12 @@ class FileMgmtDB (coreutils.DesDbi):
                     self.config.update(fileconfig)
 
 
-#M     def _get_all_filetype_metadata(self):
-#M         """
-#M         Gets a dictionary of dictionaries or string=value pairs representing
-#M         data from the OPS_METADATA, OPS_FILETYPE, and OPS_FILETYPE_METADATA tables.
-#M         This is intended to provide a complete set of filetype metadata required
-#M         during a run.
-#M         Note that the returned dictionary is nested based on the order of the
-#M         columns in the select clause.  Values in columns contained in the
-#M         "collections" list will be turned into dictionaries keyed by the value,
-#M         while the remaining columns will become "column_name=value" elements
-#M         of the parent dictionary.  Thus the sql query and collections list can be
-#M         altered without changing the rest of the code.
-#M         """
-#M         sql = """select f.filetype,f.metadata_table,fm.status,fm.derived,
-#M                     fm.file_header_name,m.position,m.column_name
-#M                 from OPS_METADATA m, OPS_FILETYPE f, OPS_FILETYPE_METADATA fm
-#M                 where m.file_header_name=fm.file_header_name
-#M                     and f.filetype=fm.filetype
-#M                 order by 1,2,3,4,5,6 """
-#M         collections = ['filetype','status','derived']
-#M         curs = self.cursor()
-#M         curs.execute(sql)
-#M         desc = [d[0].lower() for d in curs.description]
-#M         result = OrderedDict()
-#M 
-#M         for row in curs:
-#M             ptr = result
-#M             for col, value in enumerate(row):
-#M                 normvalue = str(value).lower()
-#M                 if col >= (len(row)-3):
-#M                     if normvalue not in ptr:
-#M                         ptr[normvalue] = str(row[col+2]).lower()
-#M                     else:
-#M                         ptr[normvalue] += "," + str(row[col+2]).lower()
-#M                     break
-#M                 if normvalue not in ptr:
-#M                     if desc[col] in collections:
-#M                         ptr[normvalue] = OrderedDict()
-#M                     else:
-#M                         ptr[desc[col]] = normvalue
-#M                 if desc[col] in collections:
-#M                     ptr = ptr[normvalue]
-#M         curs.close()
-#M         self.config[FILETYPE_METADATA]=result
-
     def _get_config_from_db(self, args):
+        """ reads some configuration values from the database """
         self.config = OrderedDict()
         self.config['archive']  = self.get_archive_info()
         self.config['filetype_metadata'] = self.get_all_filetype_metadata()  
         self.config[FILE_HEADER_INFO] = self.query_results_dict('select * from OPS_FILE_HEADER', 'name')
-
-
-#M     def get_metadata_specs(self, ftype, sectlabel=None, updatefits=False):
-#M         """ Return dict/wcl describing metadata to gather for given filetype """
-#M 
-#M         #print "ftype =", ftype
-#M         metaspecs = OrderedDict()
-#M 
-#M         # note:  When manually ingesting files generated externally to the framework, we do not want to modify the files (i.e., no updating/inserting headers
-#M         
-#M         file_header_info = None
-#M         if updatefits:
-#M             file_header_info = self.config[FILE_HEADER_INFO]
-#M 
-#M         (reqmeta, optmeta, updatemeta) = metautils.create_file_metadata_dict(ftype, self.config[FILETYPE_METADATA], sectlabel, file_header_info)
-#M 
-#M         #print "reqmeta =", reqmeta
-#M         #print "======================================================================"
-#M         #print "optmeta =", optmeta
-#M         #print "======================================================================"
-#M         #print "updatemeta =", updatemeta
-#M         #print "======================================================================"
-#M         #sys.exit(1)
-#M 
-#M         if reqmeta:
-#M             metaspecs[WCL_REQ_META] = OrderedDict()
-#M 
-#M             # convert names from specs to wcl
-#M             valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
-#M             wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
-#M             for i in range(len(valspecs)):
-#M                 if valspecs[i] in reqmeta:
-#M                     metaspecs[WCL_REQ_META][wclspecs[i]] = reqmeta[valspecs[i]]
-#M 
-#M         if optmeta:
-#M             metaspecs[WCL_OPT_META] = OrderedDict()
-#M 
-#M             # convert names from specs to wcl
-#M             valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
-#M             wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
-#M             for i in range(len(valspecs)):
-#M                 if valspecs[i] in optmeta:
-#M                     metaspecs[WCL_OPT_META][wclspecs[i]] = optmeta[valspecs[i]]
-#M 
-#M         #print 'keys = ', metaspecs.keys()
-#M         if updatefits:
-#M             if updatemeta:
-#M                 updatemeta[WCL_UPDATE_WHICH_HEAD] = '0'  # framework always updates primary header
-#M                 metaspecs[WCL_UPDATE_HEAD_PREFIX+'0'] = updatemeta               
-#M         elif updatemeta is not None:
-#M             print "WARNING:  create_file_metadata_dict incorrectly returned values to update."
-#M             print "\tContinuing but not updating these values."
-#M             print "\tReport this to code developer."
-#M             print "\t\t", updatemeta
-#M             updatemeta = None
-#M 
-#M         # return None if no metaspecs
-#M         if len(metaspecs) == 0:
-#M             metaspecs = None
-#M 
-#M         return metaspecs
-#M 
 
 
 
@@ -237,6 +129,7 @@ class FileMgmtDB (coreutils.DesDbi):
             
 
     def register_file_in_archive(self, filelist, args):
+        """ Saves filesystem information about file like relative path in archive, compression extension, size, etc """
         # assumes files have already been declared to database (i.e., metadata)
         # caller of program must have already verified given filelist matches given archive
         # if giving fullnames, must include archive root
@@ -299,6 +192,7 @@ class FileMgmtDB (coreutils.DesDbi):
             
 
     def file_has_metadata(self, filenames):
+        """ Check whether metadata has been ingested for given files """
         dbq = "select filename from genfile where filename in ('%s')" % "','".join(filenames)
         curs = self.cursor()
         curs.execute(dbq)
@@ -308,6 +202,7 @@ class FileMgmtDB (coreutils.DesDbi):
         return havelist 
 
     def is_file_in_archive(self, fnames, filelist, args):
+        """ Checks whether given files are in the specified archive according to the DB """
         # TODO change to return count(*) = 0 or 1 which would preserve array
         #      another choice is to return path, but how to make it return null for path that doesn't exist
         #      to make faster don't do concat in query do bind query with filename= and compression=
@@ -324,298 +219,6 @@ class FileMgmtDB (coreutils.DesDbi):
             existslist.append(row[0])
         return existslist
 
-
-    def _get_required_metadata_headers (self, filetypes = None):
-        """
-        Return the metadata headers for the indicated filetype(s).
-
-        The filetypes argument may be None (or omitted) to retrieve headers for
-        all types, a string containing a single filetype, or a sequence of
-        filetypes.  Filetypes are case insensitive.
-
-        In all (successful) cases, the return value is a dictionary with the
-        following structure:
-            {<str:filetype>: {'filename_pattern'    : <str:filename pattern>,
-                              'ops_dir_pattern'     : <str:dir pattern>,
-                              'derived_header_names': [<str:name>...],
-                              'other_header_names'  : [<str:name>...]
-                             }
-            }
-        Note that either of the derived_header_names or other_header_names
-        lists may be empty, but filetypes that have neither will not be
-        retrieved from the database.
-
-        """
-
-        bindstr = self.get_positional_bind_string ()
-
-        if filetypes is None:
-            args  = []
-            where = ''
-        elif type (filetypes) in (str, unicode):
-            args  = [ filetypes.lower () ]
-            where = 'WHERE LOWER (r.filetype) = ' + bindstr
-        else: # Allow any sort of sequence
-            args  = [ f.lower () for f in filetypes ]
-            s     = ','.join ([bindstr for b in args])
-            where = 'WHERE LOWER (r.filetype) IN (' + s + ')'
-
-        # Note that ORDER BY isn't really necessary here, but it stablizes
-        # the header name lists so that callers will operate consistently.
-        stmt = ("SELECT t.filetype, t.filename_pattern, t.ops_dir_pattern,"
-                "       file_header_name, m.derived "
-                "FROM   filetype t"
-                "       JOIN required_metadata r ON r.filetype = t.filetype"
-                "       JOIN metadata m USING (file_header_name) "
-                ) + where + " ORDER BY t.filetype, file_header_name"
-
-        cursor = self.cursor ()
-
-        cursor.execute (stmt, args)
-
-        retval = OrderedDict()
-        for row in cursor.fetchall ():
-            ftype = row [0]
-            if ftype not in retval:
-                retval [ftype] = {'filename_pattern'    : row [1],
-                                  'ops_dir_pattern'     : row [2],
-                                  'derived_header_names': [],
-                                  'other_header_names'  : []
-                                 }
-
-            if row [4] == 1:
-                retval [ftype] ['derived_header_names'].append (row [3])
-            else:
-                retval [ftype] ['other_header_names'].append (row [3])
-
-        cursor.close ()
-
-        # The file_header_name column is case sensitive in the database, but
-        # header names are meant to be case insensitive; this can lead to
-        # duplicate header names in the database.  In addition, various mis-
-        # configuration of the metadata mapping tables could lead to duplicate
-        # rows returned from the query above.  Check for this problem.
-
-        for ftype in retval:
-            hdrs = {hdr for hdr in retval [ftype]['derived_header_names'] +
-                                   retval [ftype]['other_header_names']}
-            if len ({hdr.lower () for hdr in hdrs}) != len (hdrs):
-                raise DuplicateDBHeaderError ()
-
-        # The filetype column in the filetype table is case sensitive in the
-        # database, but this method forces case insensitive matching.  This
-        # could lead to multiple filetypes being returned for a single
-        # requested filetype.  Check for this.
-
-        if len ({ftype.lower () for ftype in retval}) != len (retval):
-            raise DuplicateDBFiletypeError ()
-
-        return retval
-
-    def _get_metadata_id_from_filename (self, filename):
-        """
-        Create a unique identifier for the metadata row for the specified file.
-
-        The current implementation extracts the next value from the
-        location_seq sequence in the database; however, a standalone algorithm
-        taking the filename as input is expected and will ultimately replace
-        this implementation.
-        """
-
-        return self.get_seq_next_value ('location_seq')
-
-    def _get_filetype_metadata_map (self, filetype):
-        """
-        Retrieve the metadata to table and column mapping for a filetype.
-
-        The returned dictionary contains two keys:
-            table       value is name of the database table for the filetype
-            id_column   value is name of id column for the table
-            hdr_to_col  value is a dictionary mapping metadata header name to
-                        database column name
-        """
-
-        tab, idcol = self._get_filetype_metadata_table (filetype)
-
-        fmap = {'table': tab, 'id_column': idcol, 'hdr_to_col': {}}
-
-        cursor = self.cursor ()
-        bindstr = self.get_positional_bind_string ()
-
-        stmt = ("SELECT file_header_name, m.column_name "
-                "FROM   metadata m "
-                "       JOIN required_metadata r USING (file_header_name) "
-                "WHERE  LOWER (r.filetype) = " + bindstr)
-
-        cursor.execute (stmt, (filetype.lower (), ))
-
-        for row in cursor:
-            fmap ['hdr_to_col'][row [0]] = row [1]
-
-        return fmap
-
-    def _get_filetype_metadata_table (self, filetype):
-        """
-        Retrieve the metadata table name and id column name for the specified
-        filetype.
- 
-        Filetypes are considered case insensitive, but may appear multiple
-        times with different case in the database.  This condition is detected
-        and reported.  Other mis-configurations of the metadata mapping tables
-        may lead to this report as well, however.
-        """
-
-        cursor  = self.cursor ()
-        bindstr = self.get_positional_bind_string ()
-
-        stmt = ("SELECT f.metadata_table, LOWER (m.id_column) "
-                "FROM   filetype f "
-                "       JOIN metadata_table m "
-                "           ON m.table_name = f.metadata_table "
-                "WHERE  LOWER (f.filetype) = " + bindstr)
-
-        try:
-            cursor.execute (stmt, (filetype.lower (), ))
-            res = cursor.fetchall ()
-        finally:
-            cursor.close ()
-
-        if len (res) == 1:
-            return res [0][0], res [0][1]
-        elif len (res) == 0:
-            return None, None
-        else:
-            raise DuplicateDBFiletypeError ()
-
-    def _metadata_ingest (self, filetype, metadata_by_filename):
-        """
-        Insert metadata from files of a particular type.
-
-        The filetype argument is case insensitive.
-
-        The metadata_by_filename argument is a dictionary of metadata indexed
-        by source filename.  The filename will be used to generate a primary
-        key for the file's metadata row.  The metadata for each file is
-        specified as a dictionary indexed by metadata header.  The header names
-        are case insensitive.
-
-        The return value is a dictionary identifying certain types of problems
-        with the following keys:
-            bad_filetypes   list of bad filetypes (at most one).
-            bad_file_ids    list of filenames for which ids could not be made
-            missing_hdrs    dict of lists of missing headers per filename
-            extra_hdrs      dict of lists of extra headers per filename
-            duplicate_hdrs  dict of lists of duplicate headers per filename
-        The keys are always present, but the values are non-empty only for the
-        indicated conditions.
-
-        Headers are considered duplicate if they are different only by case, so
-        such duplication can exist in the metadata_by_filename parameter and is
-        reported when detected.
-
-        Metadata is not ingested for any files listed in bad_file_ids or
-        duplicate_hdrs.  No metadata was ingested if bad_filetypes is not
-        empty.
-        """
-
-        retval = {'bad_filetypes' : [],
-                  'bad_file_ids'  : [],
-                  'missing_hdrs'  : {},
-                  'extra_hdrs'    : {},
-                  'duplicate_hdrs': {}
-                 }
-
-        if not hasattr (self, 'md_map_cache'):
-            # Create a cache so that information for a file type need by
-            # collected from the database only once.
-            self.md_map_cache = {}
-
-        if filetype not in self.md_map_cache:
-            # Haven't seen the filetype yet; get its map.
-            fmap = self._get_filetype_metadata_map (filetype)
-            self.md_map_cache [filetype] = fmap
-
-        fmap = self.md_map_cache [filetype]
-
-        if not fmap ['table']:
-            # Specified filetype doesn't exist or doesn't have a table; punt
-            retval ['bad_filetypes'].append (filetype)
-            return retval
-
-        # Using positional bind strings means that the columns and values need
-        # to be in the same order, so construct a list of columns and and a
-        # list of headers that are in the same order.  Start with "id" since
-        # that must be added, but shouldn't be in the database.
-        columns  = [fmap ['id_column']]
-        hdr_list = ['id']
-        for hdr, col in fmap ['hdr_to_col'].items ():
-            columns.append (col)
-            h = hdr.lower()
-            if h == 'id':
-                raise IdMetadataHeaderError ()
-            hdr_list.append (h)
-
-        # Make a set of expected headers for easy comparison to provided
-        # headers.
-        expected_hdrs = {h for h in hdr_list}
-
-        if len (expected_hdrs) != len (hdr_list):
-            raise DuplicateDBHeaderError ()
-
-        expected_hdrs.discard ('id')
-
-        # Loop through the provided files, adding a row for each.
-
-        rows = []
-
-        for filename, metadata in metadata_by_filename.items ():
-            # Construct a copy of the metadata for this filename that uses
-            # lowercase keys to implement case insenstive matching.
-
-            mdLow         = {k.lower (): v for k, v in metadata.items ()}
-            provided_hdrs = {hdr for hdr in mdLow}
-
-            if len (provided_hdrs) != len (metadata):
-                # Construct a list of tuples which identify the duplicated
-                # headers.
-                lowToGiven = {hdr: [] for hdr in provided_hdrs}
-                for hdr in metadata:
-                    lowToGiven [hdr.lower ()].append (hdr)
-
-                duphdrs = []
-                for val in lowToGiven.values ():
-                    if len(val) > 1:
-                        duphdrs.append (tuple (sorted (val)))
-
-                retval ['duplicate_hdrs'][filename] = duphdrs
-                continue
-
-            # Record any issues with this file.
-
-            extra_hdrs    = provided_hdrs - expected_hdrs
-            missing_hdrs  = expected_hdrs - provided_hdrs
-
-            if extra_hdrs:
-                retval ['extra_hdrs'][filename] = sorted (list (extra_hdrs))
-            if missing_hdrs:
-                retval ['missing_hdrs'][filename] = sorted (list (missing_hdrs))
-
-            fid = self._get_metadata_id_from_filename (filename)
-
-            if fid is None:
-                retval ['bad_file_ids'].append (filename)
-            else:
-                # Construct a row for this file and add to the list of rows.
-
-                row = [fid if h == 'id' else mdLow.get (h) for h in hdr_list]
-
-                rows.append (row)
-
-        # If there're any rows, insert them.
-        if rows:
-            self.insert_many (fmap ['table'], columns, rows)
-
-        return retval
 
     def _get_required_headers(self, filetypeDict):
         """
@@ -748,12 +351,14 @@ class FileMgmtDB (coreutils.DesDbi):
 
 
     def is_valid_filetype(self, ftype):
+        """ Checks filetype definitions to determine if given filetype exists """
         if ftype.lower() in self.config[FILETYPE_METADATA]:
             return True
         else:
             return False
 
     def is_valid_archive(self, arname):
+        """ Checks archive definitions to determine if given archive exists """
         if arname.lower() in self.config['archive']:
             return True
         else:
