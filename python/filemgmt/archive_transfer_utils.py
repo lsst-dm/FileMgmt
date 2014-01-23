@@ -85,7 +85,7 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         elif dst_archive in archive_transfer_info and src_archive in archive_transfer_info[dst_archive]:
             transinfo = archive_transfer_info[dst_archive][src_archive]
         else:
-            fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive))
+            fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive), 1)
 
         # import archive 2 archive class
         transobj = None
