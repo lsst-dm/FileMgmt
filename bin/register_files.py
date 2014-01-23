@@ -380,7 +380,7 @@ def main(args):
     elif args['config']:
         if args['config'] is not None:
             import intgutils.wclutils as wclutils
-            with open(args['config'], 'w') as fh:
+            with open(args['config'], 'r') as fh:
                 config = wclutils.read_wcl(fh)
         if archive in config['archive']:
             filemgmt_class = config['archive'][archive]['filemgmt'] 
