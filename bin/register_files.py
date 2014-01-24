@@ -20,7 +20,7 @@ import wrappers.WrapperUtils as wraputils
 from filemgmt.filemgmt_defs import *
 from filemgmt.errors import *
 from coreutils.miscutils import *
-import intgutils.metadata_utils as metautils
+import intgutils.metautils as metautils
 #import processingfw.errors
 
 VERSION = '$Rev$'
