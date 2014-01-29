@@ -12,17 +12,18 @@ import processingfw.pfwdb as pfwdb
 
 # assumes partitions to drop start with F  (firstcut, finalcut)
 def empty_se_objects_table(dbh):
-    sql = "select partition_name from all_tab_partitions where table_name='OBJECTS_CURRENT' and table_owner=(select user from dual) and partition_name!='PINIT'"
+    sql = "select partition_name from all_tab_partitions where table_name='SE_OBJECT' and table_owner=(select user from dual) and partition_name!='PINIT'"
     print sql
     curs = dbh.cursor()
     curs.execute(sql)
     linecnt = 0
     for line in curs:
-        sql = "alter table objects_current drop partition (%s)" % line
+        sql = "alter table SE_OBJECT drop partition (%s)" % line
         print "\t",sql
-        curs.execute(sql)
+        curs2 = dbh.cursor()
+        curs2.execute(sql)
         linecnt += 1
-    print "Dropping %s partitions from OBJECTS_CURRENT" % linecnt
+    print "Dropping %s partitions from SE_OBJECT" % linecnt
 
     print "You'll need to manually delete any temp tables if they exist"
     
@@ -118,7 +119,9 @@ def main(args):
         'pfw_attempt', 'pfw_unit', 'pfw_request']:
         delete_from_table(dbh, tname)
     
-    for tname in ['catalog', 'image']:
+    empty_se_objects_table(dbh)
+
+    for tname in ['catalog', 'image', 'scamp_qa', 'psf_qa']:
         delete_from_table(dbh, tname)
 
     
@@ -126,7 +129,7 @@ def main(args):
         delete_from_table_by_ftype(dbh, 'CALIBRATION', ftype)
     
     # delete output files 
-    for ftype in ['cat_psfex','cat_satstars','cat_scamp','cat_scamp_full','cat_trailbox','head_scamp','head_scamp_full','psfex_model','qa_scamp','red_bkg','red_check','xml_psfex','xml_scamp','wcl','log','list','junk_tar']:
+    for ftype in ['cat_psfex','cat_satstars','cat_scamp','cat_scamp_full','cat_trailbox','head_scamp','head_scamp_full','psfex_model','qa_scamp','red_bkg','red_check','xml_psfex','xml_scamp','wcl','log','list','junk_tar','cal_lintable']:
         delete_from_genfile_table(dbh, ftype)
 
     if args['inputs']:
@@ -140,7 +143,6 @@ def main(args):
     #delete_from_cache_table(dbh) 
     delete_from_file_archive_table(dbh) 
 
-    empty_se_objects_table(dbh)
     
     print "Are you sure you want to delete all these rows (Y/N)? ",
     ans = sys.stdin.read(1) 

@@ -109,12 +109,15 @@ def delete_db_run(dbh, unitname, reqnum, attnum, verbose=0):
     delete_using_run_vals(dbh, 'pfw_job', reqnum, unitname, attnum, verbose)
     delete_using_run_vals(dbh, 'pfw_block_task', reqnum, unitname, attnum, verbose)
     delete_using_run_vals(dbh, 'pfw_block', reqnum, unitname, attnum, verbose)
+    delete_using_run_vals(dbh, 'pfw_attempt_label', reqnum, unitname, attnum, verbose)
     delete_using_run_vals(dbh, 'pfw_attempt_task', reqnum, unitname, attnum, verbose)
     delete_using_run_vals(dbh, 'pfw_attempt', reqnum, unitname, attnum, verbose)
     
     ## Do we want it to remove pfw_unit and pfw_request if that was the only run for those?
     
-    delete_using_in(dbh, 'objects_current', 'filename', files2del, verbose)
+    delete_using_in(dbh, 'scamp_qa', 'filename', files2del, verbose)
+    delete_using_in(dbh, 'psf_qa', 'filename', files2del, verbose)
+    delete_using_in(dbh, 'se_object', 'filename', files2del, verbose)
     delete_using_in(dbh, 'file_archive_info', 'filename', files2del+del_by_table['genfile'], verbose)
 
     for table,filelist in del_by_table.items():

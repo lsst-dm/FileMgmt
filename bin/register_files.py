@@ -20,7 +20,7 @@ import wrappers.WrapperUtils as wraputils
 from filemgmt.filemgmt_defs import *
 from filemgmt.errors import *
 from coreutils.miscutils import *
-#import processingfw.pfwutils as pfwutils
+import intgutils.metautils as metautils
 #import processingfw.errors
 
 VERSION = '$Rev$'
@@ -152,30 +152,35 @@ def list_not_in_archive(filenames, archive, dbh):
 
 
 ###########################################################################
-#def get_metadata_specs(ftype, config):
-#    """ Return dict/wcl describing metadata to gather for given filetype """
-#
-#    metaspecs = OrderedDict()
-#
-#    # note:  When manually ingesting files generated externally to the framework, we do not want to modify the files (i.e., no updating/inserting headers
-#    (reqmeta, optmeta, updatemeta) = pfwutils.create_file_metadata_dict(ftype, config['filetype_metadata'], None, None)
-#
-#    if reqmeta:
-#        metaspecs[IW_REQ_META] = reqmeta
-#
-#    if optmeta:
-#        metaspecs[IW_OPT_META] = optmeta
-#
-#    #print 'keys = ', metaspecs.keys()
-#    if updatemeta is not None:
-#        print "WARNING:  create_file_metadata_dict incorrectly returned values to update."
-#        print "\tContinuing but not updating these values."
-#        print "\tReport this to code developer."
-#        print "\t\t", updatemeta
-#        updatemeta = None
-#
-#    return metaspecs
-#
+def get_register_metadata_specs(ftype, filemgmt):
+    """ Return dict/wcl describing metadata to gather for given filetype """
+
+    metaspecs = OrderedDict()
+
+    filetype_metadata = None
+    file_header = None
+    if (filemgmt.config is not None and
+        'filetype_metadata' in filemgmt.config):
+        filetype_metadata = filemgmt.config['filetype_metadata']
+    else:
+        print "Warning: no filetype_metadata"
+
+    
+    if (filetype_metadata is not None):
+         # note:  When manually ingesting files generated externally to the framework, we do not want to modify the files (i.e., no updating/inserting headers
+        #(reqmeta, optmeta, updatemeta) = metautils.create_file_metadata_dict(ftype, filetype_metadata, None, None)
+        metaspecs = metautils.get_metadata_specs(ftype, filetype_metadata, None, None, False)
+
+        #print 'keys = ', metaspecs.keys()
+        #if updatemeta is not None:
+        #    print "WARNING:  create_file_metadata_dict incorrectly returned values to update."
+        #    print "\tContinuing but not updating these values."
+        #    print "\tReport this to code developer."
+        #    print "\t\t", updatemeta
+        #    updatemeta = None
+
+    return metaspecs
+
 
 
 ###########################################################################
@@ -221,13 +226,13 @@ def process_files(filelist, filemgmt, args):
             for f in filenames:
                 insfilelist[f] = filelist[f]
 
-            metaspecs = filemgmt.get_metadata_specs(ftype)
+            metaspecs = get_register_metadata_specs(ftype, filemgmt)
             for key in metaspecs:
                 #print "metaspecs key = ", key
                 if type(metaspecs[key]) == dict or type(metaspecs[key]) == OrderedDict:
-                    if WCL_META_WCL in metaspecs[key]:
+                    if metautils.WCL_META_WCL in metaspecs[key]:
                         #print "deleting wcl from", key
-                        del metaspecs[key][WCL_META_WCL]   # remove wcl requirements for manual file ingestion
+                        del metaspecs[key][metautils.WCL_META_WCL]   # remove wcl requirements for manual file ingestion
                     elif len(metaspecs[key]) == 0:
                         #print "deleting", key
                         del metaspecs[key]
@@ -247,8 +252,11 @@ def process_files(filelist, filemgmt, args):
             filemeta = wraputils.get_file_metadata(metaspecs)   # get the metadata from the fits files
             if verbose >= 3:
                 print "\n\noutput wcl"
-                import intgutils.wclutils as wclutils
-                wclutils.write_wcl(filemeta)
+                if filemeta is not None:
+                    import intgutils.wclutils as wclutils
+                    wclutils.write_wcl(filemeta)
+                else:
+                    print "None"
     
             if filemeta is not None:
                 # add filenames and filetypes to metadata
@@ -260,7 +268,7 @@ def process_files(filelist, filemgmt, args):
                 filemeta = {}
                 fcnt = 0
                 for f in insfilelist:
-                    filemeta['file_%s' % fcnt] = {'filename': parse_fullname(fd, CU_PARSE_FILENAME),
+                    filemeta['file_%s' % fcnt] = {'filename': parse_fullname(f, CU_PARSE_FILENAME),
                                                   'filetype': ftype}
                     fcnt += 1
 
@@ -372,7 +380,7 @@ def main(args):
     elif args['config']:
         if args['config'] is not None:
             import intgutils.wclutils as wclutils
-            with open(args['config'], 'w') as fh:
+            with open(args['config'], 'r') as fh:
                 config = wclutils.read_wcl(fh)
         if archive in config['archive']:
             filemgmt_class = config['archive'][archive]['filemgmt'] 
@@ -408,6 +416,11 @@ def main(args):
     if not filemgmt.is_valid_archive(archive):
         fwdie("Invalid archive name (%s)" % archive, 1)
 
+
+    if args['outcfg'] is not None:
+        import intgutils.wclutils as wclutils
+        with open(args['outcfg'], 'w') as fh:
+           wclutils.write_wcl(filemgmt.config, fh)
 
     if args['filetype'] is not None:
         if not filemgmt.is_valid_filetype(args['filetype']):

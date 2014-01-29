@@ -110,6 +110,7 @@ def copyfiles(filelist):
                 path = os.path.dirname(dst)
                 if len(path) > 0 and not os.path.exists(path):
                     coremakedirs(path)
+                    coremakedirs(path) 
                 shutil.copy(src, dst)
         except Exception as err:
             filelist[filename]['err'] = str(err)

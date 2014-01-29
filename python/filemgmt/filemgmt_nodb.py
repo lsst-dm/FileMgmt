@@ -41,67 +41,6 @@ class FileMgmtNoDB ():
         self.config = config
         self.argv = argv
 
-    def get_metadata_specs(self, ftype, sectlabel=None, updatefits=False):
-        """ Return dict/wcl describing metadata to gather for given filetype """
-
-        print "ftype =", ftype
-        metaspecs = OrderedDict()
-
-        # note:  When manually ingesting files generated externally to the framework, we do not want to modify the files (i.e., no updating/inserting headers
-        
-        file_header_info = None
-        if updatefits:
-            file_header_info = self.config[FILE_HEADER_INFO]
-
-        (reqmeta, optmeta, updatemeta) = fmutils.create_file_metadata_dict(ftype, self.config[FILETYPE_METADATA], sectlabel, file_header_info)
-
-        #print "reqmeta =", reqmeta
-        #print "======================================================================"
-        #print "optmeta =", optmeta
-        #print "======================================================================"
-        #print "updatemeta =", updatemeta
-        #print "======================================================================"
-        #sys.exit(1)
-
-        if reqmeta:
-            metaspecs[WCL_REQ_META] = OrderedDict()
-
-            # convert names from specs to wcl
-            valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
-            wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
-            for i in range(len(valspecs)):
-                if valspecs[i] in reqmeta:
-                    metaspecs[WCL_REQ_META][wclspecs[i]] = reqmeta[valspecs[i]]
-
-        if optmeta:
-            metaspecs[WCL_OPT_META] = OrderedDict()
-
-            # convert names from specs to wcl
-            valspecs = [META_HEADERS, META_COMPUTE, META_WCL]
-            wclspecs = [WCL_META_HEADERS, WCL_META_COMPUTE, WCL_META_WCL]
-            for i in range(len(valspecs)):
-                if valspecs[i] in optmeta:
-                    metaspecs[WCL_OPT_META][wclspecs[i]] = optmeta[valspecs[i]]
-
-        #print 'keys = ', metaspecs.keys()
-        if updatefits:
-            if updatemeta:
-                updatemeta[WCL_UPDATE_WHICH_HEAD] = '0'  # framework always updates primary header
-                metaspecs[WCL_UPDATE_HEAD_PREFIX+'0'] = updatemeta               
-        elif updatemeta is not None:
-            print "WARNING:  create_file_metadata_dict incorrectly returned values to update."
-            print "\tContinuing but not updating these values."
-            print "\tReport this to code developer."
-            print "\t\t", updatemeta
-            updatemeta = None
-
-        # return None if no metaspecs
-        if len(metaspecs) == 0:
-            metaspecs = None
-
-        return metaspecs
-
-
     def get_list_filenames(self, args):
         # args is an array of "command-line" args possibly with keys for query
         # returns python list of filenames
