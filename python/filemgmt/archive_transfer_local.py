@@ -30,32 +30,19 @@ class ArchiveTransferLocal():
 
 
     def blocking_transfer(self, filelist):
-        print "blocking_transfer"
-        print "\tfilelist: ", filelist
+        fwdebug(0, "ARCHIVETRANSFER_DEBUG", "\tNumber files to transfer: %d" % len(filelist))
+        fwdebug(1, "ARCHIVETRANSFER_DEBUG", "\tfilelist: %s" % filelist)
 
         srcroot = self.src_archive_info['root']
         dstroot = self.dst_archive_info['root']
         
-        files2copy = {}
+        files2copy = copy.deepcopy(filelist)
         problems = {}
         srctranslation = {}
-        for srcfile, dstfile in filelist.items():
-            #if not re.match('^/', dstfile):   # if path is relative
-            #    dstfile = "%s/%s" % (dstroot, dstfile)
-            #elif not re.match('^%s/' % dstroot, dstfile): # check for archive root
-            #    problems[srcfile] = {'dst': dstfile, 'err': "dstfile doesn't contain archive root"}
-            #    continue
+        for fname, finfo in files2copy.items():
+            finfo['src'] = '%s/%s' % (srcroot, finfo['src'])
+            finfo['dst'] = '%s/%s' % (dstroot, finfo['dst'])
 
-            #if not re.match('^/', srcfile):   # if path is relative
-            #    origsrcfile = srcfile
-            #    srcfile = "%s/%s" % (srcroot, srcfile)
-            #    srctranslation[srcfile] = origsrcfile
-            #elif not re.match('^%s/' % srcroot, srcfile): # check for archive root
-            #    problems[srcfile] = {'dst': dstfile, 'err': "srcfile doesn't contain archive root"}
-            #    continue
-                
-            files2copy[srcfile] = dstfile
+        transresults = disk_utils_local.copyfiles(files2copy)
 
-        problems = disk_utils_local.copyfiles(files2copy)
-
-        return problems 
+        return transresults 

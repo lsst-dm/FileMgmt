@@ -37,31 +37,18 @@ class ArchiveTransferGlobusOnline():
 
 
     def blocking_transfer(self, filelist):
-        print "blocking_transfer"
-        print "\tfilelist: ", filelist
+        #print "blocking_transfer"
+        #print "\tfilelist: ", filelist
 
         srcroot = self.src_archive_info['root']
         dstroot = self.dst_archive_info['root']
         
-        files2copy = {}
+        files2copy = copy.deepcopy(filelist)
         problems = {}
         srctranslation = {}
-        for srcfile, fileinfo in filelist.items():
-            #if not re.match('^/', dstfile):   # if path is relative
-            #    dstfile = "%s/%s" % (dstroot, dstfile)
-            #elif not re.match('^%s/' % dstroot, dstfile): # check for archive root
-            #    problems[srcfile] = {'dst': dstfile, 'err': "dstfile doesn't contain archive root"}
-            #    continue
-
-            #if not re.match('^/', srcfile):   # if path is relative
-            #    origsrcfile = srcfile
-            #    srcfile = "%s/%s" % (srcroot, srcfile)
-            #    srctranslation[srcfile] = origsrcfile
-            #elif not re.match('^%s/' % srcroot, srcfile): # check for archive root
-            #    problems[srcfile] = {'dst': dstfile, 'err': "srcfile doesn't contain archive root"}
-            #    continue
-                
-            files2copy[fileinfo['src']] = fileinfo['dst']
+        for fname, fileinfo in filelist.items():
+            files2copy[fname]['src'] = "%s/%s" % (srcroot, files2copy[fname]['src'])
+            files2copy[fname]['dst'] = "%s/%s" % (dstroot, files2copy[fname]['dst'])
 
 
         credfile = None
@@ -86,13 +73,11 @@ class ArchiveTransferGlobusOnline():
                                               self.config[GO_USER], proxy_valid_hrs)
         trans_results = goclient.blocking_transfer(files2copy)
 
-        
-        results = copy.deepcopy(filelist)
-        for src, trans_info in trans_results.items():
-            print "src = %s, trans_info = %s" % (src, trans_info)
-            filename = parse_fullname(src, 2)
-            if trans_info is not None:
-                print "results[%s] = %s:" % (filename, results[filename])
-                results[filename].update(trans_info)
+        #retresults = copy.deepcopy(filelist)
+        #for src, trans_info in trans_results.items():
+        #    print "\n\n\nsrc = %s, trans_info = %s" % (src, trans_info)
+        #    filename = parse_fullname(src, CU_PARSE_FILENAME)
+        #    if trans_info is not None:
+        #        retresults[filename].update(trans_info)
             
-        return results 
+        return trans_results 

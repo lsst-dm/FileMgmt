@@ -10,6 +10,7 @@ __version__ = "$Rev$"
 
 import os
 import shutil
+import copy
 
 from coreutils.miscutils import *
 from filemgmt.filemgmt_defs import *
@@ -35,19 +36,30 @@ class JobArchiveLocal():
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
-        return disk_utils_local.copyfiles(filelist)
+        
+        absfilelist = copy.deepcopy(filelist)
+        for finfo in absfilelist.values():
+            finfo['src'] = self.home['root'] + '/' + finfo['src']
+
+        return disk_utils_local.copyfiles(absfilelist)
 
 
     def target2job(self, filelist):
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
-        return disk_utils_local.copyfiles(filelist)
+        absfilelist = copy.deepcopy(filelist)
+        for finfo in absfilelist.values():
+            finfo['src'] = self.target['root'] + '/' + finfo['src']
+        return disk_utils_local.copyfiles(absfilelist)
 
 
     def job2target(self, filelist):
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
-        results = disk_utils_local.copyfiles(filelist)
+        absfilelist = copy.deepcopy(filelist)
+        for finfo in absfilelist.values():
+            finfo['dst'] = self.target['root'] + '/' + finfo['dst']
+        results = disk_utils_local.copyfiles(absfilelist)
         return results
 
 
@@ -55,5 +67,8 @@ class JobArchiveLocal():
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
-        results = disk_utils_local.copyfiles(filelist)
+        absfilelist = copy.deepcopy(filelist)
+        for finfo in absfilelist.values():
+            finfo['dst'] = self.home['root'] + '/' + finfo['dst']
+        results = disk_utils_local.copyfiles(absfilelist)
         return results

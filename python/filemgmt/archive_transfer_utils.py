@@ -68,14 +68,16 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
 
         # dst rel path will be same as src rel path
         # create full paths for home archive and target archive
-        src_root = src_archive_info['root']
-        dst_root = dst_archive_info['root']
+        #src_root = src_archive_info['root']
+        #dst_root = dst_archive_info['root']
         files2copy = {}
         for filename, fileinfo in src_file_archive_info.items():
             fwdebug(6, "ARCHIVE_COPY_DEBUG", "%s: fileinfo = %s" % (filename, fileinfo))
             files2copy[filename] = copy.deepcopy(fileinfo)
-            files2copy[filename]['src'] = "%s/%s" % (src_root, fileinfo['rel_filename'])
-            files2copy[filename]['dst'] = "%s/%s" % (dst_root, fileinfo['rel_filename'])
+            #files2copy[filename]['src'] = "%s/%s" % (src_root, fileinfo['rel_filename'])
+            #iles2copy[filename]['dst'] = "%s/%s" % (dst_root, fileinfo['rel_filename'])
+            files2copy[filename]['src'] = fileinfo['rel_filename']
+            files2copy[filename]['dst'] = fileinfo['rel_filename']
 
 
         ## call blocking transfer function
@@ -88,6 +90,7 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
             fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive), 1)
 
         # import archive 2 archive class
+        print "loading archive transfer class: %s" % transinfo['transfer']
         transobj = None
         try:
             transfer_class = dynamically_load_class(transinfo['transfer'])
@@ -112,8 +115,9 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
 
         if problemfiles is not None and len(problemfiles) > 0:
             print "Error: Problems copying files from home archive to target archive"
-            for f in problems:
-                print "\t%s %s: %s", f, problemfiles['dst'], problemfiles['err']
+            print problemfiles
+            for f,pinfo in problemfiles.items():
+                print "\t%s %s -> %s: %s" % (f, pinfo['src'], pinfo['dst'], pinfo['err'])
         elif len(files2register) > 0:
             regprobs = dstfilemgmt.register_file_in_archive(files2register, {'archive': dst_archive})
             if regprobs is not None and len(regprobs) > 0:
@@ -172,15 +176,17 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
             fwdie("Error: Missing files", 1)
 
         # dst rel path will be same as src rel path
-        # create full paths for home archive and target archive
-        src_root = src_archive_info['root']
-        dst_root = dst_archive_info['root']
+        # create paths for home archive and target archive
+        #src_root = src_archive_info['root']
+        #dst_root = dst_archive_info['root']
         files2copy = {}
         for filename, fileinfo in src_file_archive_info.items():
             fwdebug(0, "ARCHIVE_COPY_DEBUG", "%s: fileinfo = %s" % (filename, fileinfo))
             files2copy[filename] = copy.deepcopy(fileinfo)
-            files2copy[filename]['src'] = "%s/%s" % (src_root, fileinfo['rel_filename'])
-            files2copy[filename]['dst'] = "%s/%s" % (dst_root, fileinfo['rel_filename'])
+            #files2copy[filename]['src'] = "%s/%s" % (src_root, fileinfo['rel_filename'])
+            #files2copy[filename]['dst'] = "%s/%s" % (dst_root, fileinfo['rel_filename'])
+            files2copy[filename]['src'] = fileinfo['rel_filename']
+            files2copy[filename]['dst'] = fileinfo['rel_filename']
 
 
         ## call blocking transfer function
@@ -217,7 +223,7 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
 
         if problemfiles is not None and len(problemfiles) > 0:
             print "Error: Problems copying files from home archive to target archive"
-            for f in problems:
+            for f in problemfiles:
                 print "\t%s %s: %s", f, problemfiles['dst'], problemfiles['err']
         elif len(files2register) > 0:
             regprobs = dstfilemgmt.register_file_in_archive(files2register, {'archive': dst_archive})
