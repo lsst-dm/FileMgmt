@@ -129,13 +129,13 @@ def main(args):
         delete_from_table_by_ftype(dbh, 'CALIBRATION', ftype)
     
     # delete output files 
-    for ftype in ['cat_psfex','cat_satstars','cat_scamp','cat_scamp_full','cat_trailbox','head_scamp','head_scamp_full','psfex_model','qa_scamp','red_bkg','red_check','xml_psfex','xml_scamp','wcl','log','list','junk_tar','cal_lintable']:
+    for ftype in ['cat_psfex','cat_satstars','cat_scamp','cat_scamp_full','cat_trailbox','head_scamp','head_scamp_full','psfex_model','qa_scamp','red_bkg','red_check','xml_psfex','xml_scamp','wcl','log','list','junk_tar']:
         delete_from_genfile_table(dbh, ftype)
 
     if args['inputs']:
         for tname in ['CALIBRATION', 'EXPOSURE']:
             delete_from_table(dbh, tname)
-        for ftype in ['config']:
+        for ftype in ['config', 'cal_lintable', 'cal_xtalk']:
             delete_from_genfile_table(dbh, ftype)
 
 
