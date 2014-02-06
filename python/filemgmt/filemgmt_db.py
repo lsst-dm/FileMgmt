@@ -152,7 +152,7 @@ class FileMgmtDB (coreutils.DesDbi):
                     path = filelist[f]['path']
                 elif 'fullname' in filelist[f]:
                     #print "getting file parts from fullname"
-                    (path, filedict['filename'], filedict['compression']) = parse_filename(filelist[f]['fullname'], 7)  
+                    (path, filedict['filename'], filedict['compression']) = parse_fullname(filelist[f]['fullname'], 7)  
                 else:
                     fwdie("Error:   Incomplete info for a file to register.   Given %s" % filelist[f], 1)
 

@@ -19,6 +19,8 @@ import copy
 
 class DESGlobusOnline():
     def __init__(self, srcinfo, dstinfo, credfile, gouser, proxy_valid_hrs=6):
+        self.lsdesc = ['name', 'type', 'permissions', 'size', 'user', 'group', 'last_modified']
+
         self.srcinfo = srcinfo
         self.dstinfo = dstinfo
         clientargs = ['-c', credfile, gouser]
@@ -69,7 +71,6 @@ class DESGlobusOnline():
         # activate dst endpoint
         dst_endpoint = self.dstinfo['endpoint']
         result = self.endpoint_activate(dst_endpoint)
-
 
         # create dst directories
         self.makedirs([finfo['dst'] for finfo in filelist.values()], dst_endpoint)
@@ -183,6 +184,76 @@ class DESGlobusOnline():
             for fname,finfo in transresults.items():
                 transresults[fname]['err'] = 'problems transferring file'
         return transresults
+
+
+    def transfer_directory(self, srcpath, dstpath):
+        # activate src endpoint
+        src_endpoint = self.srcinfo['endpoint']
+        result = self.endpoint_activate(src_endpoint)
+
+        # activate dst endpoint
+        dst_endpoint = self.dstinfo['endpoint']
+        result = self.endpoint_activate(dst_endpoint)
+
+        if srcpath[-1] != '/':
+            srcpath += '/'
+
+        # start transfer
+        transresults = self.blocking_transfer({srcpath: {'src': srcpath, 'dst':dstpath }})
+        return transresults
+
+
+    def get_directory_listing(self, path, endpoint, recursive=False):
+        # endpoint_ls currently only does ls for directories not single files
+
+        # get directory listing from endpoint
+        diskinfo = {}
+        actresult = self.endpoint_activate(endpoint)
+        code, reason, data = self.goclient.endpoint_ls(endpoint, path)
+        for f in data["DATA"]:
+            lsdict = dict(zip(self.lsdesc, [unicode(f[k]) for k in self.lsdesc]))
+            #print self.lsdesc
+            lsdict['path'] = path
+            print lsdict
+            diskinfo["%s/%s" % (path, lsdict['name'])] = lsdict 
+            if recursive == True and lsdict['type']  == 'dir':
+                diskinfo.update(self.get_directory_listing("%s/%s" % (path, lsdict['name']), endpoint, recursive))
+
+        #print diskinfo
+        return diskinfo
+                
+
+    def get_file_disk_info(self, filelist, endpoint):
+        # endpoint_ls currently only does ls for directories not single files
+
+        # determine directories for which to get listing 
+        pathlist = {}
+        filebypath = {} 
+        for fname in filelist:
+            (path, filename) = parse_fullname(fname, CU_PARSE_PATH | CU_PARSE_FILENAME)
+            pathlist[path] = True
+            if path not in filebypath:
+                filebypath[path] = {}
+            filebypath[path][fname] = True
+
+        #print filebypath
+
+        # get directory listing from endpoint
+        diskinfo = {}
+        actresult = self.endpoint_activate(endpoint)
+        for path in pathlist.keys():
+            dirlist = self.get_directory_listing(path, endpoint, False)
+            for fullname, finfo in dirlist.items():
+                if fullname in filebypath[path]:
+                    diskinfo[fullname] = finfo 
+
+        #print diskinfo
+        return diskinfo
+                
+        
+        
+    
+        
 
 if __name__ == "__main__":
     pass
