@@ -33,6 +33,9 @@ class JobArchiveLocal():
 
 
     def home2job(self, filelist):
+        fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
+        fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
+
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
@@ -45,6 +48,8 @@ class JobArchiveLocal():
 
 
     def target2job(self, filelist):
+        fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
+        fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
         absfilelist = copy.deepcopy(filelist)
@@ -54,6 +59,8 @@ class JobArchiveLocal():
 
 
     def job2target(self, filelist):
+        fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
+        fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
         absfilelist = copy.deepcopy(filelist)
@@ -64,6 +71,8 @@ class JobArchiveLocal():
 
 
     def job2home(self, filelist):
+        fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
+        fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
