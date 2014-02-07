@@ -30,6 +30,7 @@ class JobArchiveHttp():
         self.target = targetinfo 
         self.mvmt = mvmtinfo
         self.config = config
+        self.HU = http_utils.HttpUtils()
 
 
     def home2job(self, filelist):
@@ -41,7 +42,7 @@ class JobArchiveHttp():
         for finfo in absfilelist.values():
             finfo['src'] = self.home['root_http'] + '/' + finfo['src']
 
-        return http_utils.copyfiles(absfilelist)
+        return self.HU.copyfiles(absfilelist)
 
 
     def target2job(self, filelist):
@@ -50,7 +51,7 @@ class JobArchiveHttp():
         absfilelist = copy.deepcopy(filelist)
         for finfo in absfilelist.values():
             finfo['src'] = self.target['root_http'] + '/' + finfo['src']
-        return http_utils.copyfiles(absfilelist)
+        return self.HU.copyfiles(absfilelist)
 
 
     def job2target(self, filelist):
@@ -59,7 +60,7 @@ class JobArchiveHttp():
         absfilelist = copy.deepcopy(filelist)
         for finfo in absfilelist.values():
             finfo['dst'] = self.target['root_http'] + '/' + finfo['dst']
-        results = http_utils.copyfiles(absfilelist)
+        results = self.HU.copyfiles(absfilelist)
         return results
 
 
@@ -70,5 +71,5 @@ class JobArchiveHttp():
         absfilelist = copy.deepcopy(filelist)
         for finfo in absfilelist.values():
             finfo['dst'] = self.home['root_http'] + '/' + finfo['dst']
-        results = http_utils.copyfiles(absfilelist)
+        results = self.HU.copyfiles(absfilelist)
         return results

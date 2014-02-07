@@ -164,9 +164,9 @@ class HttpUtils():
             print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
         else:
             fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", PF_EXIT_FAILURE)
-#        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
-#        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
-#        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
+        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
+        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
+        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
         shutil.rmtree('test_dh', True)
         os.system("rm -f ./testfile_dh.txt")
