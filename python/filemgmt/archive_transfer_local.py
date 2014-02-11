@@ -9,6 +9,7 @@
 __version__ = "$Rev$"
 
 
+import copy
 from coreutils.miscutils import *
 from filemgmt.filemgmt_defs import *
 import filemgmt.disk_utils_local as disk_utils_local
