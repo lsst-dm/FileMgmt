@@ -37,7 +37,7 @@ class FileMgmtDB (coreutils.DesDbi):
     @staticmethod
     def requested_config_vals():
         """ return dictionary describing what values this class uses along with whether they are optional or required """
-        return {'use_db':'opt', 'archive':'req', FILE_HEADER_INFO:'opt', 'filetype_metadata':'req'}
+        return {'use_db':'opt', 'archive':'req', FILE_HEADER_INFO:'opt', 'filetype_metadata':'req', 'des_services':'opt', 'des_db_section':'req'}
 
     def __init__ (self, config=None, argv=None):
         parser = argparse.ArgumentParser(description='FileMgmtDB')
@@ -57,11 +57,11 @@ class FileMgmtDB (coreutils.DesDbi):
             fwdie("Error:  FileMgmtDB class requires DB but was told not to use DB", 1)
 
         self.desservices = args['desservices']
-        if self.desservices is not None and config is not None and 'des_services' in config:
+        if self.desservices is None and config is not None and 'des_services' in config:
             self.desservices = config['des_services']
 
         self.section = args['section']
-        if self.section is not None and config is not None and 'des_db_section' in config:
+        if self.section is None and config is not None and 'des_db_section' in config:
             self.section = config['des_db_section']
             
         try:
