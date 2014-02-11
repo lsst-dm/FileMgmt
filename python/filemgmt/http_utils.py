@@ -12,7 +12,6 @@ __version__ = "$Rev: 18486 $"
 import os
 import shutil
 
-from processingfw.pfwdefs import *
 import coreutils.serviceaccess as serviceaccess
 import subprocess
 
@@ -37,7 +36,7 @@ class HttpUtils():
             # Create the user/password switch:
             self.curl_password = "-u %s:%s\n"%(auth_params['user'],auth_params['passwd'])
         except Exception as err:
-            fwdie("Unable to get curl password (%s)" % err, PF_EXIT_FAILURE)
+            fwdie("Unable to get curl password (%s)" % err, FM_EXIT_FAILURE)
         
         self.existing_directories = set()
 
@@ -79,7 +78,7 @@ class HttpUtils():
                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         print process.communicate(self.curl_password)[0],
         if process.returncode != 0:
-            fwdie("File operation failed with return code %d." % process.returncode, PF_EXIT_FAILURE)
+            fwdie("File operation failed with return code %d." % process.returncode, FM_EXIT_FAILURE)
 
     def create_http_intermediate_dirs(self,f):
         """Create all directories that are valid prefixes of the URL *f*.
@@ -106,12 +105,11 @@ class HttpUtils():
                 (dst,isurl_dst) = self.check_url(fdict['dst'])
                 if (isurl_src and isurl_dst) or (not isurl_src and not isurl_dst):
                     fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
-                          % (isurl_src, src, isurl_dst, dst), PF_EXIT_FAILURE)
-                common_switches = '-f -S -s -K -'
+                          % (isurl_src, src, isurl_dst, dst), FM_EXIT_FAILURE)
+                common_switches = "-f -S -s -K - -w 'http_code:%{http_code}\\n'"
                 if not isurl_dst and not os.path.exists(dst):
                     path = os.path.dirname(dst)
                     if len(path) > 0 and not os.path.exists(path):
-                        coremakedirs(path)
                         coremakedirs(path)
                     self.run_curl_command("curl %s %s -o %s" % (common_switches,src,dst))
                 elif isurl_dst:
@@ -159,11 +157,11 @@ class HttpUtils():
         if os.path.isfile('test_dh/testfile_dh2.txt') and os.path.getsize('test_dh/testfile_dh2.txt') == 12:
             print "Transfer of test_dh2.txt seems ok"
         else:
-            fwdie("Transfer of test_dh2.txt failed", PF_EXIT_FAILURE)
+            fwdie("Transfer of test_dh2.txt failed", FM_EXIT_FAILURE)
         if os.path.isfile('test_dh/testfile_dh3.txt') and os.path.getsize('test_dh/testfile_dh3.txt') == 12:
             print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
         else:
-            fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", PF_EXIT_FAILURE)
+            fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", FM_EXIT_FAILURE)
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
@@ -173,7 +171,9 @@ class HttpUtils():
         os.system("rm -f ./testfile_dh3.txt")
 
 if __name__ == "__main__":
+    # Can use 'python ./http_utils.py -v' to run the tests from filemgmt/.
     import doctest
     doctest.testmod()
     C = HttpUtils()
     C.test_copyfiles()
+    # fwdie("Test fwdie", FM_EXIT_FAILURE)
