@@ -21,7 +21,7 @@ from filemgmt.filemgmt_defs import *
 import re
 
 class HttpUtils():
-    def __init__(self, submit_des_services, submit_des_http_section):
+    def __init__(self, des_services, des_http_section):
         """Get password for curl and initialize existing_directories variable.
 
         >>> C = HttpUtils('test_http_utils/.desservices.ini','file-http')
@@ -29,7 +29,7 @@ class HttpUtils():
         25"""
         try:
             # Parse the .desservices.ini file:
-            auth_params = serviceaccess.parse(submit_des_services, submit_des_http_section)
+            auth_params = serviceaccess.parse(des_services, des_http_section)
 
             # Create the user/password switch:
             self.curl_password = "-u %s:%s\n"%(auth_params['user'],auth_params['passwd'])

@@ -16,8 +16,8 @@ from coreutils.miscutils import *
 from filemgmt.filemgmt_defs import *
 import filemgmt.http_utils as http_utils
 
-SUBMIT_DES_SERVICES = 'submit_des_services'
-SUBMIT_DES_HTTP_SECTION = 'submit_des_http_section'
+DES_SERVICES = 'des_services'
+DES_HTTP_SECTION = 'des_http_section'
 
 class JobArchiveHttp():
     """
@@ -26,7 +26,7 @@ class JobArchiveHttp():
 
     @staticmethod
     def requested_config_vals():
-        return {SUBMIT_DES_SERVICES:'REQ', SUBMIT_DES_HTTP_SECTION:'REQ'}
+        return {DES_SERVICES:'REQ', DES_HTTP_SECTION:'REQ'}
 
     def __init__ (self, homeinfo, targetinfo, mvmtinfo, config=None):
         self.home = homeinfo 
@@ -34,11 +34,11 @@ class JobArchiveHttp():
         self.mvmt = mvmtinfo
         self.config = config
         
-        for x in (SUBMIT_DES_SERVICES, SUBMIT_DES_HTTP_SECTION):
+        for x in (DES_SERVICES, DES_HTTP_SECTION):
             if x not in self.config:
                 fwdie('Error:  Missing %s in config' % x, 1)
-        self.HU = http_utils.HttpUtils(self.config[SUBMIT_DES_SERVICES],
-                                       self.config[SUBMIT_DES_HTTP_SECTION])
+        self.HU = http_utils.HttpUtils(self.config[DES_SERVICES],
+                                       self.config[DES_HTTP_SECTION])
 
 
     def home2job(self, filelist):
