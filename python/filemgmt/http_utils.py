@@ -21,17 +21,15 @@ from filemgmt.filemgmt_defs import *
 import re
 
 class HttpUtils():
-    def __init__(self):
+    def __init__(self, submit_des_services, submit_des_http_section):
         """Get password for curl and initialize existing_directories variable.
 
-        >>> os.environ['DES_SERVICES'] = 'test_http_utils/.desservices.ini'
-        >>> C = HttpUtils()
+        >>> C = HttpUtils('test_http_utils/.desservices.ini','file-http')
         >>> len(C.curl_password)
         25"""
-        self.curl_password = None
         try:
             # Parse the .desservices.ini file:
-            auth_params = serviceaccess.parse(False,'file-http')
+            auth_params = serviceaccess.parse(submit_des_services, submit_des_http_section)
 
             # Create the user/password switch:
             self.curl_password = "-u %s:%s\n"%(auth_params['user'],auth_params['passwd'])
@@ -44,7 +42,7 @@ class HttpUtils():
     def check_url(self,P):
         """See if P is a url.
 
-        >>> C = HttpUtils()
+        >>> C = HttpUtils('test_http_utils/.desservices.ini','file-http')
         >>> C.check_url("http://desar2.cosmology.illinois.edu")
         ('http://desar2.cosmology.illinois.edu', True)
         >>> C.check_url("hello")
@@ -58,7 +56,7 @@ class HttpUtils():
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
-        >>> C = HttpUtils()
+        >>> C = HttpUtils('test_http_utils/.desservices.ini','file-http')
         >>> C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -o /dev/null -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True,useShell=True)
         http_code: 201
         >>> C.run_curl_command("curl -f -S -s -K - -O http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True)
@@ -83,7 +81,7 @@ class HttpUtils():
     def create_http_intermediate_dirs(self,f):
         """Create all directories that are valid prefixes of the URL *f*.
 
-        >>> C = HttpUtils()
+        >>> C = HttpUtils('test_http_utils/.desservices.ini','file-http')
         >>> C.create_http_intermediate_dirs("http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh.txt")
         curl -f -S -s -K - -w 'http_code: %{http_code}\\n' -o /dev/null -X MKCOL http://desar2.cosmology.illinois.edu/DESTesting
         http_code: 301
@@ -171,9 +169,11 @@ class HttpUtils():
         os.system("rm -f ./testfile_dh3.txt")
 
 if __name__ == "__main__":
-    # Can use 'python ./http_utils.py -v' to run the tests from filemgmt/.
+    # To run these unit tests first copy .desservices.ini_example to .desservices.ini
+    # and set user and passwd. Then use this command:
+    #    python ./http_utils.py -v
     import doctest
     doctest.testmod()
-    C = HttpUtils()
+    C = HttpUtils('test_http_utils/.desservices.ini','file-http')
     C.test_copyfiles()
     # fwdie("Test fwdie", FM_EXIT_FAILURE)
