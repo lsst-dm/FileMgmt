@@ -15,6 +15,7 @@ ifndef INSTALL_ROOT
 endif
 	@echo "FileMgmt: Installing to ${INSTALL_ROOT}"
 	-mkdir -p ${INSTALL_ROOT}
+	-rsync -Caq bin ${INSTALL_ROOT}
 	-mkdir -p ${INSTALL_ROOT}/python
 	-rsync -Caq python/filemgmt ${INSTALL_ROOT}/python
 	@echo "Make sure ${INSTALL_ROOT}/python is in PYTHONPATH"

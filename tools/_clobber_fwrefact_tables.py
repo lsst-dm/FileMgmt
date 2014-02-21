@@ -7,7 +7,8 @@
 import sys
 import os
 import argparse
-import processingfw.pfwdb as pfwdb
+import coreutils.desdbi
+
 
 
 # assumes partitions to drop start with F  (firstcut, finalcut)
@@ -93,7 +94,7 @@ def main(args):
 
     args = vars(parser.parse_args())
 
-    dbh = pfwdb.PFWDB()
+    dbh = coreutils.DesDbi()
     
     if dbh.configdict['name'].lower() != 'destest':
         print "This command can only be run against the destest database."
