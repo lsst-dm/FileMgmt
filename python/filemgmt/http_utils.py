@@ -55,7 +55,7 @@ class HttpUtils():
         return (P,False)
 
 
-    def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt', secondsBetweenRetries=15, numRetries=2):
+    def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt', secondsBetweenRetries=15, numTries=3):
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
@@ -67,14 +67,14 @@ class HttpUtils():
         >>> os.remove('./hello.txt')
         >>> C.run_curl_command("curl -f -S -s -K - -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True)
         >>> try:
-        ...   C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt",isTest=True,useShell=True, secondsBetweenRetries=1,numRetries=1)
+        ...   C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt",isTest=True,useShell=True, secondsBetweenRetries=1,numTries=2)
         ... except Exception as err:
         ...   print err
         failed curl command: curl -o curl_stdout.txt -f -S -s -K - -X PUT -w 'http_code: %{http_code}
         ' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt
         File operation failed with return code 22, http status 403.
         >>> try:
-        ...   C.run_curl_command("curl -f -S -s -K - -w 'http_code: %{http_code}\\n' http://desar2.cosmology.illinois.edu/DESTesting/hello12312317089.txt",isTest=True,curlConsoleOutputFile='hello.txt',useShell=True,secondsBetweenRetries=1,numRetries=1)
+        ...   C.run_curl_command("curl -f -S -s -K - -w 'http_code: %{http_code}\\n' http://desar2.cosmology.illinois.edu/DESTesting/hello12312317089.txt",isTest=True,curlConsoleOutputFile='hello.txt',useShell=True,secondsBetweenRetries=1,numTries=2)
         ... except Exception as err:
         ...   print err
         failed curl command: curl -o hello.txt -f -S -s -K - -w 'http_code: %{http_code}
@@ -86,7 +86,7 @@ class HttpUtils():
         cmd = re.sub("^curl ","curl -o %s " % curlConsoleOutputFile, cmd)
         process = 0
         starttime = time.time()
-        for x in range(0,numRetries):
+        for x in range(0,numTries):
           if not isTest:  fwdebug(3, "HTTP_UTILS_DEBUG", "trying1: " + cmd)
           if not useShell:
               process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
@@ -98,7 +98,8 @@ class HttpUtils():
           if not isTest:  fwdebug(3, "HTTP_UTILS_DEBUG", curl_output)
           if process.returncode == 0:
               break
-          time.sleep(secondsBetweenRetries)
+          if x < numTries-1:    # not the last time in the loop
+              time.sleep(secondsBetweenRetries)
         if process.returncode != 0:
             print "failed curl command: " + cmd
             if os.path.isfile(curlConsoleOutputFile) and os.stat(curlConsoleOutputFile).st_size < 2000:
@@ -128,7 +129,7 @@ class HttpUtils():
                 self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
                 self.existing_directories.add(x)
 
-    def copyfiles(self,filelist, secondsBetweenRetriesC=15, numRetriesC=2):
+    def copyfiles(self,filelist, secondsBetweenRetriesC=15, numTriesC=3):
         """ Copies files in given src,dst in filelist """
         num_copies_from_archive = 0
         num_copies_to_archive = 0
@@ -149,11 +150,11 @@ class HttpUtils():
                     if len(path) > 0 and not os.path.exists(path):
                         coremakedirs(path)
                     copy_time = self.run_curl_command("curl %s %s" % (common_switches,src), curlConsoleOutputFile=dst,
-                                                      useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
+                                                      useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
                 elif isurl_dst:
                     self.create_http_intermediate_dirs(dst)
                     copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches,src,dst), useShell=True,
-                                                      secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
+                                                      secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
 
                 # Print some debugging info:
                 fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
@@ -236,7 +237,7 @@ class HttpUtils():
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
-        filelist5_out = self.copyfiles(test_filelist5,secondsBetweenRetriesC=1,numRetriesC=2)
+        filelist5_out = self.copyfiles(test_filelist5,secondsBetweenRetriesC=1,numTriesC=2)
         if filelist5_out['testfile_dh5.txt'].has_key('err') and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':
             print "Test of failed GET seems ok."
         else:
