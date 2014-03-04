@@ -70,15 +70,11 @@ class HttpUtils():
         ...   C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt",isTest=True,useShell=True, secondsBetweenRetries=1,numTries=2)
         ... except Exception as err:
         ...   print err
-        failed curl command: curl -o curl_stdout.txt -f -S -s -K - -X PUT -w 'http_code: %{http_code}
-        ' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt
         File operation failed with return code 22, http status 403.
         >>> try:
         ...   C.run_curl_command("curl -f -S -s -K - -w 'http_code: %{http_code}\\n' http://desar2.cosmology.illinois.edu/DESTesting/hello12312317089.txt",isTest=True,curlConsoleOutputFile='hello.txt',useShell=True,secondsBetweenRetries=1,numTries=2)
         ... except Exception as err:
         ...   print err
-        failed curl command: curl -o hello.txt -f -S -s -K - -w 'http_code: %{http_code}
-        ' http://desar2.cosmology.illinois.edu/DESTesting/hello12312317089.txt
         File operation failed with return code 22, http status 404.
         """
         assert '-K - ' in cmd
@@ -87,7 +83,9 @@ class HttpUtils():
         process = 0
         starttime = time.time()
         for x in range(0,numTries):
-          if not isTest:  fwdebug(3, "HTTP_UTILS_DEBUG", "trying1: " + cmd)
+          if not isTest and x == 0: fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
+          if not isTest and x > 0:
+              print "repeating curl command after failure (%d): %s" % (x,cmd)
           if not useShell:
               process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -95,13 +93,13 @@ class HttpUtils():
               process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
           curl_output = process.communicate(self.curl_password)[0] # Don't know why the -o switch doesn't cause this to go to stdout.
-          if not isTest:  fwdebug(3, "HTTP_UTILS_DEBUG", curl_output)
+          if not isTest and x > 0:
+              print curl_output
           if process.returncode == 0:
               break
           if x < numTries-1:    # not the last time in the loop
               time.sleep(secondsBetweenRetries)
         if process.returncode != 0:
-            print "failed curl command: " + cmd
             if os.path.isfile(curlConsoleOutputFile) and os.stat(curlConsoleOutputFile).st_size < 2000:
                 with open(curlConsoleOutputFile,'r') as f:
                     for line in f:
