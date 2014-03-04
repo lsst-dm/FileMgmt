@@ -11,16 +11,19 @@ __version__ = "$Rev: 18486 $"
 
 import os
 import shutil
-
 import coreutils.serviceaccess as serviceaccess
 import subprocess
-
 from coreutils.miscutils import *
 from filemgmt.filemgmt_defs import *
-
 import re
 
+import traceback
+import time
+
+
 class HttpUtils():
+    copyfiles_called = 0
+
     def __init__(self, des_services, des_http_section):
         """Get password for curl and initialize existing_directories variable.
 
@@ -52,50 +55,77 @@ class HttpUtils():
         return (P,False)
 
 
-    def run_curl_command(self, cmd, isTest=False, useShell=False):
+    def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile=None, secondsBetweenRetries=15, numRetries=2):
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
         >>> C = HttpUtils('test_http_utils/.desservices.ini','file-http')
-        >>> C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -o /dev/null -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True,useShell=True)
-        http_code: 201
-        >>> C.run_curl_command("curl -f -S -s -K - -O http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True)
+        >>> C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True,useShell=True)
+        >>> C.run_curl_command("curl -f -S -s -K - http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True,curlConsoleOutputFile='hello.txt')
         >>> os.path.isfile('./hello.txt')
         True
         >>> os.remove('./hello.txt')
         >>> C.run_curl_command("curl -f -S -s -K - -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/hello.txt",isTest=True)
+        >>> try:
+        ...   C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt",isTest=True,useShell=True, secondsBetweenRetries=1,numRetries=1)
+        ... except Exception as err:
+        ...   print err
+        File operation failed with return code 22, http status 403.
+        >>> try:
+        ...   C.run_curl_command("curl -f -S -s -K - -w 'http_code: %{http_code}\\n' http://desar2.cosmology.illinois.edu/DESTesting/hello12312317089.txt",isTest=True,curlConsoleOutputFile='hello.txt',useShell=True,secondsBetweenRetries=1,numRetries=1)
+        ... except Exception as err:
+        ...   print err
+        File operation failed with return code 22, http status 404.
         """
-        if not isTest: print cmd
         assert '-K - ' in cmd
+        assert '-o ' not in cmd
+        if not curlConsoleOutputFile:
+            curlConsoleOutputFile = 'curl_stdout.txt'
+        cmd = re.sub("^curl ","curl -o %s " % curlConsoleOutputFile, cmd)
         process = 0
-        if not useShell:
-            process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        else:
-            process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        print process.communicate(self.curl_password)[0],
+        starttime = time.time()
+        for x in range(0,numRetries):
+          if not isTest:  fwdebug(3, "HTTP_UTILS_DEBUG", "trying1: " + cmd)
+          if not useShell:
+              process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+          else:
+              process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
+                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+          curl_output = process.communicate(self.curl_password)[0] # Don't know why the -o switch doesn't cause this to go to stdout.
+          if not isTest:  fwdebug(3, "HTTP_UTILS_DEBUG", curl_output)
+          if process.returncode == 0:
+              break
+          time.sleep(secondsBetweenRetries)
         if process.returncode != 0:
-            fwdie("File operation failed with return code %d." % process.returncode, FM_EXIT_FAILURE)
+            if os.path.isfile(curlConsoleOutputFile) and os.stat(curlConsoleOutputFile).st_size < 2000:
+                with open(curlConsoleOutputFile,'r') as f:
+                    for line in f:
+                        print "%s: %s" % (curlConsoleOutputFile,line),
+            http_match = re.search('http_code: ?(\d+)', curl_output)
+            assert http_match
+            raise Exception("File operation failed with return code %d, http status %s."
+                            % (process.returncode,http_match.group(1)))
+        if os.path.isfile('curl_stdout.txt'):
+            os.remove('curl_stdout.txt')
+        if not isTest:
+            return time.time()-starttime
 
     def create_http_intermediate_dirs(self,f):
         """Create all directories that are valid prefixes of the URL *f*.
 
         >>> C = HttpUtils('test_http_utils/.desservices.ini','file-http')
         >>> C.create_http_intermediate_dirs("http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh.txt")
-        curl -f -S -s -K - -w 'http_code: %{http_code}\\n' -o /dev/null -X MKCOL http://desar2.cosmology.illinois.edu/DESTesting
-        http_code: 301
-        curl -f -S -s -K - -w 'http_code: %{http_code}\\n' -o /dev/null -X MKCOL http://desar2.cosmology.illinois.edu/DESTesting/bar
-        http_code: 201
         >>> C.run_curl_command("curl -K - -f -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/", isTest=True)
         """
+        # Making bar/ sometimes returns a 301 status even if there doesn't seem to be a bar/ in the directory.
         m = re.match("(http://[^/]+)(/.*)", f)
         for x in get_list_directories([ m.group(2) ]):
             if x not in self.existing_directories:
-                self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -o /dev/null -X MKCOL %s" % m.group(1)+x, useShell=True)
+                self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
                 self.existing_directories.add(x)
 
-    def copyfiles(self,filelist):
+    def copyfiles(self,filelist, secondsBetweenRetriesC=15, numRetriesC=2):
         """ Copies files in given src,dst in filelist """
         for filename, fdict in filelist.items():
             try:
@@ -104,19 +134,35 @@ class HttpUtils():
                 if (isurl_src and isurl_dst) or (not isurl_src and not isurl_dst):
                     fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
                           % (isurl_src, src, isurl_dst, dst), FM_EXIT_FAILURE)
-                common_switches = "-f -S -s -K - -w 'http_code:%{http_code}\\n'"
+                common_switches = "-f -S -s -K - -w \'http_code:%{http_code}\\n\'"
+                copy_time = None
                 if not isurl_dst and not os.path.exists(dst):
                     path = os.path.dirname(dst)
                     if len(path) > 0 and not os.path.exists(path):
                         coremakedirs(path)
-                    self.run_curl_command("curl %s %s -o %s" % (common_switches,src,dst))
+                    copy_time = self.run_curl_command("curl %s %s" % (common_switches,src), curlConsoleOutputFile=dst, useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
                 elif isurl_dst:
                     self.create_http_intermediate_dirs(dst)
-                    self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches,src,dst))
+                    copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches,src,dst), useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
+
+                # Print some debugging info:
+                fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
+                for lines in traceback.format_stack():
+                    for L in lines.split('\n'):
+                        if L.strip() != '':
+                            fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
+                fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
+                                                                                 fdict['filename'],
+                                                                                 fdict['filesize'],
+                                                                                 copy_time,
+                                                                                 time.time(),
+                                                                                 'toarchive' if isurl_dst else 'fromarchive'))
             except Exception as err:
                 filelist[filename]['err'] = str(err)
+                print str(err)
+        HttpUtils.copyfiles_called += 1
         return filelist
-    
+
     def test_copyfiles(self):
         # Keeping these copies in separate lists since otherwise can't ensure the order they
         # would be copied in.
@@ -144,33 +190,46 @@ class HttpUtils():
                                                'filesize': 12,
                                                'path': './',
                                                'src': 'http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt'}}
+        test_filelist5 = {'testfile_dh5.txt': {'compression': None,
+                                               'dst': 'test_dh/testfile_dh5.txt',
+                                               'filename': 'testfile_dh.txt',
+                                               'filesize': 12,
+                                               'path': './',
+                                               'src': 'http://desar2.cosmology.illinois.edu/DESTesting/bar/arggdfsbqwr.txt'}}
 
         shutil.rmtree('test_dh', True)
         with open("testfile_dh.txt","w") as f: f.write("hello, world")
-    
+
         self.copyfiles(test_filelist1)
         self.copyfiles(test_filelist2)
-        self.copyfiles(test_filelist3)
-        self.copyfiles(test_filelist4)
         if os.path.isfile('test_dh/testfile_dh2.txt') and os.path.getsize('test_dh/testfile_dh2.txt') == 12:
             print "Transfer of test_dh2.txt seems ok"
         else:
             fwdie("Transfer of test_dh2.txt failed", FM_EXIT_FAILURE)
+        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
+
+        self.copyfiles(test_filelist3)
+        self.copyfiles(test_filelist4)
         if os.path.isfile('test_dh/testfile_dh3.txt') and os.path.getsize('test_dh/testfile_dh3.txt') == 12:
             print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
         else:
             fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", FM_EXIT_FAILURE)
-        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
-        shutil.rmtree('test_dh', True)
+        filelist5_out = self.copyfiles(test_filelist5,secondsBetweenRetriesC=1,numRetriesC=2)
+        if filelist5_out['testfile_dh5.txt'].has_key('err') and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':
+            print "Test of failed GET seems ok."
+        else:
+            fwdie("Test of failed GET failed", FM_EXIT_FAILURE)
+
         os.system("rm -f ./testfile_dh.txt")
-        os.system("rm -f ./testfile_dh3.txt")
+        shutil.rmtree('test_dh', True)
+
 
 if __name__ == "__main__":
     # To run these unit tests first copy .desservices.ini_example to .desservices.ini
-    # and set user and passwd. Then use this command:
+    # in test_http_utils/, and set user and passwd. Then use this command:
     #    python ./http_utils.py -v
     import doctest
     doctest.testmod()
