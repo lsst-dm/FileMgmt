@@ -55,7 +55,7 @@ class HttpUtils():
         return (P,False)
 
 
-    def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile=None, secondsBetweenRetries=15, numRetries=2):
+    def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt', secondsBetweenRetries=15, numRetries=2):
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
@@ -70,17 +70,19 @@ class HttpUtils():
         ...   C.run_curl_command("curl -f -S -s -K - -X PUT -w 'http_code: %{http_code}\\n' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt",isTest=True,useShell=True, secondsBetweenRetries=1,numRetries=1)
         ... except Exception as err:
         ...   print err
+        failed curl command: curl -o curl_stdout.txt -f -S -s -K - -X PUT -w 'http_code: %{http_code}
+        ' -T test_http_utils/hello.txt http://desar2.cosmology.illinois.edu//DESTesting/baz2/hello.txt
         File operation failed with return code 22, http status 403.
         >>> try:
         ...   C.run_curl_command("curl -f -S -s -K - -w 'http_code: %{http_code}\\n' http://desar2.cosmology.illinois.edu/DESTesting/hello12312317089.txt",isTest=True,curlConsoleOutputFile='hello.txt',useShell=True,secondsBetweenRetries=1,numRetries=1)
         ... except Exception as err:
         ...   print err
+        failed curl command: curl -o hello.txt -f -S -s -K - -w 'http_code: %{http_code}
+        ' http://desar2.cosmology.illinois.edu/DESTesting/hello12312317089.txt
         File operation failed with return code 22, http status 404.
         """
         assert '-K - ' in cmd
         assert '-o ' not in cmd
-        if not curlConsoleOutputFile:
-            curlConsoleOutputFile = 'curl_stdout.txt'
         cmd = re.sub("^curl ","curl -o %s " % curlConsoleOutputFile, cmd)
         process = 0
         starttime = time.time()
@@ -98,6 +100,7 @@ class HttpUtils():
               break
           time.sleep(secondsBetweenRetries)
         if process.returncode != 0:
+            print "failed curl command: " + cmd
             if os.path.isfile(curlConsoleOutputFile) and os.stat(curlConsoleOutputFile).st_size < 2000:
                 with open(curlConsoleOutputFile,'r') as f:
                     for line in f:
@@ -127,6 +130,11 @@ class HttpUtils():
 
     def copyfiles(self,filelist, secondsBetweenRetriesC=15, numRetriesC=2):
         """ Copies files in given src,dst in filelist """
+        num_copies_from_archive = 0
+        num_copies_to_archive = 0
+        total_copy_time_from_archive = 0.0
+        total_copy_time_to_archive = 0.0
+
         for filename, fdict in filelist.items():
             try:
                 (src,isurl_src) = self.check_url(fdict['src'])
@@ -140,10 +148,12 @@ class HttpUtils():
                     path = os.path.dirname(dst)
                     if len(path) > 0 and not os.path.exists(path):
                         coremakedirs(path)
-                    copy_time = self.run_curl_command("curl %s %s" % (common_switches,src), curlConsoleOutputFile=dst, useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
+                    copy_time = self.run_curl_command("curl %s %s" % (common_switches,src), curlConsoleOutputFile=dst,
+                                                      useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
                 elif isurl_dst:
                     self.create_http_intermediate_dirs(dst)
-                    copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches,src,dst), useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
+                    copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches,src,dst), useShell=True,
+                                                      secondsBetweenRetries=secondsBetweenRetriesC, numRetries=numRetriesC)
 
                 # Print some debugging info:
                 fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
@@ -157,9 +167,18 @@ class HttpUtils():
                                                                                  copy_time,
                                                                                  time.time(),
                                                                                  'toarchive' if isurl_dst else 'fromarchive'))
+                if isurl_dst:
+                    num_copies_to_archive += 1
+                    total_copy_time_to_archive += copy_time
+                else:
+                    num_copies_from_archive += 1
+                    total_copy_time_from_archive += copy_time
+
             except Exception as err:
                 filelist[filename]['err'] = str(err)
                 print str(err)
+        print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
+              (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive, num_copies_from_archive, total_copy_time_from_archive, time.time())
         HttpUtils.copyfiles_called += 1
         return filelist
 
