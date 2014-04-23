@@ -99,18 +99,30 @@ def del_file_disk_list(filelist):
 
 
 ######################################################################
-def copyfiles(filelist):
+def copyfiles(filelist, tlogger, tstats):
     """ Copies files in given src,dst in filelist """
     results = {}
     for filename, fdict in filelist.items():
+        fsize = 0
+        if 'filesize' in fdict:
+            fsize = fdict['filesize']
+        elif os.path.exists(src):
+            fsize = os.path.getsize(filename)
+
         try:
             src = fdict['src']
             dst = fdict['dst']
             if not os.path.exists(dst):
+                tstats.stat_beg_file(self, filename)
                 path = os.path.dirname(dst)
                 if len(path) > 0 and not os.path.exists(path):
                     coremakedirs(path)
                 shutil.copy(src, dst)
-        except Exception as err:
-            filelist[filename]['err'] = str(err)
+                tstats.stat_end_file(0, fsize)
+        except Exception:
+            tstats.stat_end_file(1, fsize)
+            if tlogger is not None:
+                tlogger.exception("Exception caught while copying %s" % filename)
+            (etype, value, traceback) = sys.exc_info()
+            filelist[filename]['err'] = str(value)
     return filelist
