@@ -13,8 +13,8 @@ import os
 import shutil
 import coreutils.serviceaccess as serviceaccess
 import subprocess
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
+import coreutils.miscutils as coremisc
+import filemgmt.filemgmt_defs as fmdefs
 import re
 
 import traceback
@@ -37,7 +37,7 @@ class HttpUtils():
             # Create the user/password switch:
             self.curl_password = "-u %s:%s\n"%(auth_params['user'],auth_params['passwd'])
         except Exception as err:
-            fwdie("Unable to get curl password (%s)" % err, FM_EXIT_FAILURE)
+            coremisc.fwdie("Unable to get curl password (%s)" % err, fmdefs.FM_EXIT_FAILURE)
         
         self.existing_directories = set()
 
@@ -83,7 +83,7 @@ class HttpUtils():
         process = 0
         starttime = time.time()
         for x in range(0,numTries):
-          if not isTest and x == 0: fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
+          if not isTest and x == 0: coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
           if not isTest and x > 0:
               print "repeating curl command after failure (%d): %s" % (x,cmd)
           if not useShell:
@@ -122,45 +122,57 @@ class HttpUtils():
         """
         # Making bar/ sometimes returns a 301 status even if there doesn't seem to be a bar/ in the directory.
         m = re.match("(http://[^/]+)(/.*)", f)
-        for x in get_list_directories([ m.group(2) ]):
+        for x in coremisc.get_list_directories([ m.group(2) ]):
             if x not in self.existing_directories:
                 self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
                 self.existing_directories.add(x)
 
-    def copyfiles(self,filelist, secondsBetweenRetriesC=15, numTriesC=3):
+    def copyfiles(self,filelist, tstats, secondsBetweenRetriesC=15, numTriesC=3):
         """ Copies files in given src,dst in filelist """
         num_copies_from_archive = 0
         num_copies_to_archive = 0
         total_copy_time_from_archive = 0.0
         total_copy_time_to_archive = 0.0
+        status = 0
 
         for filename, fdict in filelist.items():
+            fsize = 0
+            if 'filesize' in fdict:
+                fsize = fdict['filesize']
             try:
                 (src,isurl_src) = self.check_url(fdict['src'])
                 (dst,isurl_dst) = self.check_url(fdict['dst'])
                 if (isurl_src and isurl_dst) or (not isurl_src and not isurl_dst):
-                    fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
-                          % (isurl_src, src, isurl_dst, dst), FM_EXIT_FAILURE)
+                    coremisc.fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
+                          % (isurl_src, src, isurl_dst, dst), fmdefs.FM_EXIT_FAILURE)
                 common_switches = "-f -S -s -K - -w \'http_code:%{http_code}\\n\'"
                 copy_time = None
                 if not isurl_dst and not os.path.exists(dst):
+                    if tstats is not None:
+                        tstats.stat_beg_file(filename)
                     path = os.path.dirname(dst)
                     if len(path) > 0 and not os.path.exists(path):
-                        coremakedirs(path)
+                        coremisc.coremakedirs(path)
                     copy_time = self.run_curl_command("curl %s %s" % (common_switches,src), curlConsoleOutputFile=dst,
                                                       useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
+                    if tstats is not None:
+                        tstats.stat_end_file(0, fsize)
                 elif isurl_dst:
+                    if tstats is not None:
+                        tstats.stat_beg_file(filename)
                     self.create_http_intermediate_dirs(dst)
                     copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches,src,dst), useShell=True,
                                                       secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
+                    if tstats is not None:
+                        tstats.stat_end_file(0, fsize)
 
                 # Print some debugging info:
-                fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
+                coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
                 for lines in traceback.format_stack():
                     for L in lines.split('\n'):
                         if L.strip() != '':
-                            fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
-                fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
+                            coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
+                coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
                                                                                  fdict['filename'],
                                                                                  fdict['filesize'],
                                                                                  copy_time,
@@ -174,12 +186,15 @@ class HttpUtils():
                     total_copy_time_from_archive += copy_time
 
             except Exception as err:
+                status = 1
+                if tstats is not None:
+                    tstats.stat_end_file(1, fsize)
                 filelist[filename]['err'] = str(err)
                 print str(err)
         print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
               (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive, num_copies_from_archive, total_copy_time_from_archive, time.time())
         HttpUtils.copyfiles_called += 1
-        return filelist
+        return (status, filelist)
 
     def test_copyfiles(self):
         # Keeping these copies in separate lists since otherwise can't ensure the order they
@@ -223,7 +238,7 @@ class HttpUtils():
         if os.path.isfile('test_dh/testfile_dh2.txt') and os.path.getsize('test_dh/testfile_dh2.txt') == 12:
             print "Transfer of test_dh2.txt seems ok"
         else:
-            fwdie("Transfer of test_dh2.txt failed", FM_EXIT_FAILURE)
+            coremisc.fwdie("Transfer of test_dh2.txt failed", fmdefs.FM_EXIT_FAILURE)
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
 
         self.copyfiles(test_filelist3)
@@ -231,15 +246,15 @@ class HttpUtils():
         if os.path.isfile('test_dh/testfile_dh3.txt') and os.path.getsize('test_dh/testfile_dh3.txt') == 12:
             print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
         else:
-            fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", FM_EXIT_FAILURE)
+            coremisc.fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", fmdefs.FM_EXIT_FAILURE)
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
-        filelist5_out = self.copyfiles(test_filelist5,secondsBetweenRetriesC=1,numTriesC=2)
+        (status, filelist5_out) = self.copyfiles(test_filelist5,secondsBetweenRetriesC=1,numTriesC=2)
         if filelist5_out['testfile_dh5.txt'].has_key('err') and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':
             print "Test of failed GET seems ok."
         else:
-            fwdie("Test of failed GET failed", FM_EXIT_FAILURE)
+            coremisc.fwdie("Test of failed GET failed", fmdefs.FM_EXIT_FAILURE)
 
         os.system("rm -f ./testfile_dh.txt")
         shutil.rmtree('test_dh', True)
@@ -253,4 +268,4 @@ if __name__ == "__main__":
     doctest.testmod()
     C = HttpUtils('test_http_utils/.desservices.ini','file-http')
     C.test_copyfiles()
-    # fwdie("Test fwdie", FM_EXIT_FAILURE)
+    # coremisc.fwdie("Test coremisc.fwdie", fmdefs.FM_EXIT_FAILURE)
