@@ -13,13 +13,14 @@ import os
 import re
 import sys
 from collections import OrderedDict
+
 import wrappers.WrapperUtils as wraputils
 #import intgutils.wclutils as wclutils
 #import processingfw.pfwdb as pfwdb
 
-from filemgmt.filemgmt_defs import *
-from filemgmt.errors import *
-from coreutils.miscutils import *
+import filemgmt.filemgmt_defs as fmdefs
+#from filemgmt.errors import *
+import coreutils.miscutils as coremisc
 import intgutils.metautils as metautils
 #import processingfw.errors
 
@@ -36,22 +37,22 @@ def parse_provided_list(listname):
     try:
         with open(listname, "r") as fh:
             for line in fh:
-                (fullname, filetype) = fwsplit(line, ',')
+                (fullname, filetype) = coremisc.fwsplit(line, ',')
                 if fullname[0] != '/':
                     fullname = cwd + '/' + fullname
 
                 if not os.path.exists(fullname):
-                    fwdie("Error:   could not find file to register:  %s" % fullname, 1)
+                    coremisc.fwdie("Error:   could not find file to register:  %s" % fullname, 1)
                     
                 (path, fname) = os.path.split(fullname)
                 if fname in filelist:
                     print "Error:   Found duplicate filenames in list:  %s"
                     print "\t%s" % fullname
                     print "\t%s" % filelist[fname]['fullname']
-                    fwdie("Error:   Found duplicate filenames in list:  %s" % fname, 1)
+                    coremisc.fwdie("Error:   Found duplicate filenames in list:  %s" % fname, 1)
                 filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname, 'fname':fname}
     except Exception as err:
-        fwdie("Error: Problems reading file '%s': %s" % (listname, err), 1)
+        coremisc.fwdie("Error: Problems reading file '%s': %s" % (listname, err), 1)
         
     return filelist
 
@@ -66,7 +67,7 @@ def get_list_filenames(ingestpath, filetype):
         ingestpath = cwd + '/' + ingestpath
 
     if not os.path.exists(ingestpath):
-        fwdie("Error:   could not find ingestpath:  %s" % ingestpath, 1)
+        coremisc.fwdie("Error:   could not find ingestpath:  %s" % ingestpath, 1)
 
     filelist = {}
     for (dirpath, dirnames, filenames) in os.walk(ingestpath):
@@ -82,7 +83,7 @@ def add_basenames_list(filelist):
     #filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname}
    
     for fname in filelist:
-        (filename, compress_ext) = parse_fullname(fname, CU_PARSE_FILENAME|CU_PARSE_EXTENSION)
+        (filename, compress_ext) = coremisc.parse_fullname(fname, coremisc.CU_PARSE_FILENAME|coremisc.CU_PARSE_EXTENSION)
         filelist[fname]['filename'] = filename
         filelist[fname]['compression'] = compress_ext
 
@@ -227,6 +228,12 @@ def process_files(filelist, filemgmt, args):
                 insfilelist[f] = filelist[f]
 
             metaspecs = get_register_metadata_specs(ftype, filemgmt)
+            if metaspecs is None:
+                msg = "Error: Could not find metadata specs for filetype '%s'" % filetype
+                print msg
+                print "Minimum metadata specs for a filetype are defs for filetype and filename"
+                coremisc.fwdie("Aborting", fmdefs.FM_EXIT_FAILURE)
+    
             for key in metaspecs:
                 #print "metaspecs key = ", key
                 if type(metaspecs[key]) == dict or type(metaspecs[key]) == OrderedDict:
@@ -261,14 +268,14 @@ def process_files(filelist, filemgmt, args):
             if filemeta is not None:
                 # add filenames and filetypes to metadata
                 for fdict in filemeta.values():
-                    fdict['filename'] = parse_fullname(fdict['fullname'], CU_PARSE_FILENAME)
+                    fdict['filename'] = coremisc.parse_fullname(fdict['fullname'], coremisc.CU_PARSE_FILENAME)
                     fdict['filetype'] = ftype
             else:
                 print "Creating filename/filetype metadata info"
                 filemeta = {}
                 fcnt = 0
                 for f in insfilelist:
-                    filemeta['file_%s' % fcnt] = {'filename': parse_fullname(f, CU_PARSE_FILENAME),
+                    filemeta['file_%s' % fcnt] = {'filename': coremisc.parse_fullname(f, coremisc.CU_PARSE_FILENAME),
                                                   'filetype': ftype}
                     fcnt += 1
 
@@ -385,7 +392,7 @@ def main(args):
         if archive in config['archive']:
             filemgmt_class = config['archive'][archive]['filemgmt'] 
         else:
-            fwdie("Invalid archive name (%s)" % archive, 1)
+            coremisc.fwdie("Invalid archive name (%s)" % archive, 1)
     else:
         import coreutils.desdbi
         with coreutils.desdbi.DesDbi() as dbh:
@@ -396,17 +403,17 @@ def main(args):
             if len(rows) > 0:
                 filemgmt_class = rows[0][0]
             else:
-                fwdie("Invalid archive name (%s)" % archive, 1)
+                coremisc.fwdie("Invalid archive name (%s)" % archive, 1)
 
     if filemgmt_class is None or '.' not in filemgmt_class:
         print "Error: Invalid filemgmt class name (%s)" % filemgmt_class
         print "\tMake sure it contains at least 1 period."
-        fwdie("Invalid filemgmt class name", 1)
+        coremisc.fwdie("Invalid filemgmt class name", 1)
 
 
     # dynamically load class for filemgmt
     filemgmt = None
-    filemgmt_class = dynamically_load_class(filemgmt_class)
+    filemgmt_class = coremisc.dynamically_load_class(filemgmt_class)
     try:
         filemgmt = filemgmt_class(argv=args)
     except Exception as err:
@@ -414,7 +421,7 @@ def main(args):
         raise
 
     if not filemgmt.is_valid_archive(archive):
-        fwdie("Invalid archive name (%s)" % archive, 1)
+        coremisc.fwdie("Invalid archive name (%s)" % archive, 1)
 
 
     if args['outcfg'] is not None:
@@ -424,7 +431,7 @@ def main(args):
 
     if args['filetype'] is not None:
         if not filemgmt.is_valid_filetype(args['filetype']):
-            fwdie("Error:  Invalid filetype (%s)" % args['filetype'], 1)
+            coremisc.fwdie("Error:  Invalid filetype (%s)" % args['filetype'], 1)
         filelist = get_list_filenames(args['path'], args['filetype'])
     elif args['list'] is not None:
         filelist = parse_provided_list(args['list'])
