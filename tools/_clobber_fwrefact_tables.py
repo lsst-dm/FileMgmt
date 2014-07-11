@@ -114,10 +114,11 @@ def main(args):
     
     # non-file tables
     for tname in [ 'qc_processed_value', 'qc_processed_message', 'pfw_message', 
-        'pfw_data_query', 'pfw_job_exec_task', 'pfw_job_wrapper_task', 
-        'pfw_job_task', 'pfw_block_task', 'pfw_attempt_task', 'pfw_attempt_label',
+        'pfw_data_query', 'pfw_attempt_label', 'pfw_attempt_val',
         'pfw_exec', 'pfw_wrapper', 'pfw_job', 'pfw_block', 
-        'pfw_attempt', 'pfw_unit', 'pfw_request']:
+        'pfw_attempt', 'pfw_unit', 'pfw_request', 
+        'seminfo', 'transfer_file', 'transfer_batch', 
+        'task']:
         delete_from_table(dbh, tname)
     
     empty_se_objects_table(dbh)

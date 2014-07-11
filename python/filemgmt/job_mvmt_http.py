@@ -12,8 +12,7 @@ import os
 import shutil
 import copy
 
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
+import coreutils.miscutils as coremisc
 import filemgmt.http_utils as http_utils
 
 DES_SERVICES = 'des_services'
@@ -28,15 +27,16 @@ class JobArchiveHttp():
     def requested_config_vals():
         return {DES_SERVICES:'REQ', DES_HTTP_SECTION:'REQ'}
 
-    def __init__ (self, homeinfo, targetinfo, mvmtinfo, config=None):
+    def __init__ (self, homeinfo, targetinfo, mvmtinfo, tstats, config=None):
         self.home = homeinfo 
         self.target = targetinfo 
         self.mvmt = mvmtinfo
         self.config = config
+        self.tstats = tstats
         
         for x in (DES_SERVICES, DES_HTTP_SECTION):
             if x not in self.config:
-                fwdie('Error:  Missing %s in config' % x, 1)
+                coremisc.fwdie('Error:  Missing %s in config' % x, 1)
         self.HU = http_utils.HttpUtils(self.config[DES_SERVICES],
                                        self.config[DES_HTTP_SECTION])
 
@@ -50,7 +50,12 @@ class JobArchiveHttp():
         for finfo in absfilelist.values():
             finfo['src'] = self.home['root_http'] + '/' + finfo['src']
 
-        return self.HU.copyfiles(absfilelist)
+        if self.tstats is not None:
+            self.tstats.stat_beg_batch('home2job', self.home['name'], 'job_scratch', self.__module__ + '.' + self.__class__.__name__)
+        (status, results) = self.HU.copyfiles(absfilelist, self.tstats)
+        if self.tstats is not None:
+            self.tstats.stat_end_batch(status)
+        return results
 
 
     def target2job(self, filelist):
@@ -59,7 +64,12 @@ class JobArchiveHttp():
         absfilelist = copy.deepcopy(filelist)
         for finfo in absfilelist.values():
             finfo['src'] = self.target['root_http'] + '/' + finfo['src']
-        return self.HU.copyfiles(absfilelist)
+        if self.tstats is not None:
+            self.tstats.stat_beg_batch('target2job', self.target['name'], 'job_scratch', self.__module__ + '.' + self.__class__.__name__)
+        (status, results) = self.HU.copyfiles(absfilelist, self.tstats)
+        if self.tstats is not None:
+            self.tstats.stat_end_batch(status)
+        return results
 
 
     def job2target(self, filelist):
@@ -68,7 +78,11 @@ class JobArchiveHttp():
         absfilelist = copy.deepcopy(filelist)
         for finfo in absfilelist.values():
             finfo['dst'] = self.target['root_http'] + '/' + finfo['dst']
-        results = self.HU.copyfiles(absfilelist)
+        if self.tstats is not None:
+            self.tstats.stat_beg_batch('job2target', 'job_scratch', self.home['name'], self.__module__ + '.' + self.__class__.__name__)
+        (status, results) = self.HU.copyfiles(absfilelist, self.tstats)
+        if self.tstats is not None:
+            self.tstats.stat_end_batch(status)
         return results
 
 
@@ -79,5 +93,9 @@ class JobArchiveHttp():
         absfilelist = copy.deepcopy(filelist)
         for finfo in absfilelist.values():
             finfo['dst'] = self.home['root_http'] + '/' + finfo['dst']
-        results = self.HU.copyfiles(absfilelist)
+        if self.tstats is not None:
+            self.tstats.stat_beg_batch('job2home', 'job_scratch', self.home['name'], self.__module__ + '.' + self.__class__.__name__)
+        (status, results) = self.HU.copyfiles(absfilelist, self.tstats)
+        if self.tstats is not None:
+            self.tstats.stat_end_batch(status)
         return results
