@@ -36,7 +36,7 @@ class TransferStatsDB (coreutils.DesDbi):
         return {'use_db':'opt', 'des_services':'opt', 'des_db_section':'req'}
 
 
-    def __init__ (self, parent_task_id, config):
+    def __init__ (self, parent_task_id, root_task_id, config):
         if not coremisc.use_db(config):
             coremisc.fwdie("Error:  TransferStatsDB class requires DB but was told not to use DB", 1)
 
@@ -54,6 +54,7 @@ class TransferStatsDB (coreutils.DesDbi):
             coremisc.fwdie("Error: problem connecting to database: %s\n\tCheck desservices file and environment variables" % err, 1)
 
         self.parent_task_id = parent_task_id
+        self.root_task_id = root_task_id
         self.__initialize_values__()
 
 
@@ -85,8 +86,13 @@ class TransferStatsDB (coreutils.DesDbi):
         self.transfer_name = transfer_name
         self.src = src
         self.dst = dst
-        self.batch_task_id = self.create_task(transfer_name, 'transfer_batch')
-        self.begin_task(self.batch_task_id)
+        self.batch_task_id = self.create_task(name=transfer_name, 
+                                              info_table='transfer_batch',
+                                              parent_task_id = self.parent_task_id,
+                                              root_task_id = self.root_task_id,
+                                              label = None,
+                                              do_begin = True,
+                                              do_commit = False)
 
         row = {'src': src, 'dst': dst, 'transfer_class': transclass,
                'parent_task_id': self.parent_task_id, 'task_id': self.batch_task_id}
@@ -123,14 +129,20 @@ class TransferStatsDB (coreutils.DesDbi):
         """ Insert a row into a file transfer stats table (and task table) and commit """
         
         coremisc.fwdebug(3, 'TRANSFERSTATS_DEBUG', "beg - %s" % filename)
-        row = {'task_id':self.create_task('transfer_file', 'transfer_file'), 'filename': filename}
         if self.batch_task_id is None:
             raise Exception('Cannot call this function without prior calling stat_beg_batch')
 
-        row['batch_task_id'] = self.batch_task_id
+        row = {'filename': filename}
+        row['task_id'] = self.create_task(name = 'transfer_file', 
+                                          info_table = 'transfer_file',
+                                          parent_task_id = self.batch_task_id,
+                                          root_task_id = self.root_task_id,
+                                          label = None,
+                                          do_begin = True,
+                                          do_commit = False)
 
+        row['batch_task_id'] = self.batch_task_id
         self.basic_insert_row('transfer_file', row)
-        self.begin_task(row['task_id'])
         self.commit()
 
         self.file_task_id = row['task_id']
