@@ -501,6 +501,24 @@ class FileMgmtDB (coreutils.DesDbi):
 
 
     ##########
+
+    def createArtifacts(self, filelist):
+        """ Verifies that artifacts exist for all the files in filelist """
+        sqlstr = """
+            insert into OPM_ARTIFACT (name, compression) 
+            select filename, compression
+            from OPM_FILENAME_GTT gt
+            where not exists(
+                select * from opm_artifact a2 where a2.name=gt.filename and 
+                    NVL(a2.compression,'1') = NVL(gt.compression,'1')
+                )"""
+        gtt_name = self.load_filename_gtt(filelist)
+        cur = self.cursor()
+        cur.execute(sqlstr)
+        cur.close()
+        self.empty_gtt(gtt_name)
+    # end createArtifacts()
+
     def getFilenameIdMap(self, prov):
         DELIM = ","
         USED  = "used"
@@ -525,7 +543,10 @@ class FileMgmtDB (coreutils.DesDbi):
         result = []
         if len(allfiles) > 0:
             gtt_name = self.load_filename_gtt(allfiles)
-            sqlstr = "SELECT f.filename, a.ID FROM OPM_ARTIFACT a, %s f WHERE a.name=f.filename" % (gtt_name)
+            sqlstr = """SELECT f.filename || f.compression, a.ID 
+                FROM OPM_ARTIFACT a, %s f 
+                WHERE a.name=f.filename and (a.compression=f.compression or (
+                    a.compression is null and f.compression is null))""" % (gtt_name)
             cursor = self.cursor()
             cursor.execute(sqlstr)
             result = cursor.fetchall()
@@ -535,7 +556,7 @@ class FileMgmtDB (coreutils.DesDbi):
             return dict(result)
         else:
             return result
-        # end getFilenameIdMap
+    # end getFilenameIdMap
 
 
     def ingest_provenance(self, prov, execids):
