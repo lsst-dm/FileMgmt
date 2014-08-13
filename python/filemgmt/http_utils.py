@@ -10,6 +10,7 @@ Routines for performing tasks on files available through http.
 __version__ = "$Rev: 18486 $"
 
 import os
+import sys
 import shutil
 import coreutils.serviceaccess as serviceaccess
 import subprocess
@@ -79,6 +80,11 @@ class HttpUtils():
         """
         assert '-K - ' in cmd
         assert '-o ' not in cmd
+
+        # allow environment variable to override numTries
+        if 'HTTP_NUM_TRIES' in os.environ:
+          numTries = int(os.environ['HTTP_NUM_TRIES'])
+
         cmd = re.sub("^curl ","curl -o %s " % curlConsoleOutputFile, cmd)
         process = 0
         starttime = time.time()
@@ -95,8 +101,29 @@ class HttpUtils():
           curl_output = process.communicate(self.curl_password)[0] # Don't know why the -o switch doesn't cause this to go to stdout.
           if not isTest and x > 0:
               print curl_output
+
+          sys.stdout.flush()
           if process.returncode == 0:
               break
+
+          # run some diagnostics
+          print "Non-zero return code"
+          print "curl output: %s" % curl_output
+          try:
+            print "Running commands to desar2 for diagnostics"
+            print "Pinging desar2"
+            os.system("ping -c 4 desar2.cosmology.illinois.edu")
+            print "Running nc to desar2"
+            os.system("nc -z -v desar2.cosmology.illinois.edu 80")
+            print "Running traceroute to desar2"
+            os.system("traceroute desar2.cosmology.illinois.edu")
+          except:   # print exception but continue
+            (type, value, trback) = sys.exc_info()
+            traceback.print_exception(type, value, trback, file=sys.stdout)
+            print "\n\nIgnoring diagnostics exception.   Continuing.\n"
+
+          sys.stdout.flush()
+
           if x < numTries-1:    # not the last time in the loop
               time.sleep(secondsBetweenRetries)
         if process.returncode != 0:
