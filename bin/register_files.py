@@ -28,6 +28,12 @@ VERSION = '$Rev$'
 
 
 ###########################################################################
+def save_register_info(filemgmt, task_id, provmsg):
+    row = {'task_id': task_id, 'prov_msg': provmsg}
+    filemgmt.basic_insert_row('FILE_REGISTRATION', row)
+    filemgmt.commit()
+
+###########################################################################
 def parse_provided_list(listname):
     """ create dictionary of files from list in file """
 
@@ -185,7 +191,7 @@ def get_register_metadata_specs(ftype, filemgmt):
 
 
 ###########################################################################
-def process_files(filelist, filemgmt, args):
+def process_files(filelist, filemgmt, task_id, args):
     """ Ingests file metadata for all files in filelist """ 
 
     verbose = 1
@@ -209,7 +215,6 @@ def process_files(filelist, filemgmt, args):
             print "filenames for files for filetype %s:" % ftype
             for f in byfiletype[ftype]:
                 print "\t%s" % f
-            
 
         # check which files already have metadata in database
         #     don't bother with updating existing data, as files should be immutable
@@ -285,6 +290,9 @@ def process_files(filelist, filemgmt, args):
                 print "\tCalling ingest_file_metadata on %s files..." % len(filemeta), 
                 try:
                     filemgmt.ingest_file_metadata(filemeta)
+                    file_prov = {'was_generated_by': {'exec_1': ','.join(filelist)}}
+                    prov_task_ids = {'exec_1': task_id}
+                    filemgmt.ingest_provenance(file_prov, prov_task_ids)
                 except Exception as err: 
                     print "\n\n\nError: %s" % err
                     print "Rerun using --outcfg <outfile> to see config from DB, esp filetype_metadata"
@@ -325,6 +333,7 @@ def process_files(filelist, filemgmt, args):
 ###########################################################################
 def main(args):
     parser = argparse.ArgumentParser(description='Ingest metadata for files generated outside DESDM framework')
+    parser.add_argument('--provmsg', action='store', required=True)
     parser.add_argument('--config', action='store')
     parser.add_argument('--outcfg', action='store')
     parser.add_argument('--classmgmt', action='store')
@@ -424,6 +433,7 @@ def main(args):
         coremisc.fwdie("Invalid archive name (%s)" % archive, 1)
 
 
+
     if args['outcfg'] is not None:
         import intgutils.wclutils as wclutils
         with open(args['outcfg'], 'w') as fh:
@@ -438,10 +448,22 @@ def main(args):
     add_basenames_list(filelist)
 
 
+    task_id = filemgmt.create_task(name='register_files', info_table='file_registration',
+                    parent_task_id = None, root_task_id = None, i_am_root = True,
+                    label = None, do_begin = True, do_commit = True)
+
+    save_register_info(filemgmt, task_id, args['provmsg'])
+
     print "Reminder:"
     print "\tFor purposes of file metadata, uncompressed and compressed files are treated as same file (no checking is done)."
     print "\tBut when tracking file locations within archive, they are tracked as 2 independent files.\n"
-    process_files(filelist, filemgmt, args)
+    try:
+        process_files(filelist, filemgmt, task_id, args)
+        filemgmt.end_task(task_id, fmdefs.FM_EXIT_SUCCESS, True)
+    except:
+        filemgmt.end_task(task_id, fmdefs.FM_EXIT_FAILURE, True)
+        raise
+
     
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
