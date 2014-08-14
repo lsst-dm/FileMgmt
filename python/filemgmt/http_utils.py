@@ -56,7 +56,8 @@ class HttpUtils():
         return (P,False)
 
 
-    def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt', secondsBetweenRetries=15, numTries=3):
+    def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt', 
+                         secondsBetweenRetries=15, numTries=3):
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
@@ -80,63 +81,85 @@ class HttpUtils():
         """
         assert '-K - ' in cmd
         assert '-o ' not in cmd
-
+        
         # allow environment variable to override numTries
         if 'HTTP_NUM_TRIES' in os.environ:
-          numTries = int(os.environ['HTTP_NUM_TRIES'])
+            numTries = int(os.environ['HTTP_NUM_TRIES'])
 
         cmd = re.sub("^curl ","curl -o %s " % curlConsoleOutputFile, cmd)
         process = 0
+        exitcode = 0
         starttime = time.time()
         for x in range(0,numTries):
-          if not isTest and x == 0: coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
-          if not isTest and x > 0:
-              print "repeating curl command after failure (%d): %s" % (x,cmd)
-          if not useShell:
-              process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
-                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-          else:
-              process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
-                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-          curl_output = process.communicate(self.curl_password)[0] # Don't know why the -o switch doesn't cause this to go to stdout.
-          if not isTest and x > 0:
-              print curl_output
+            if not isTest:
+                if x == 0: 
+                    coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
+                else:
+                    coremisc.fwdebug(0, "HTTP_UTILS_DEBUG", "Repeating curl command after failure (%d): %s" % (x,cmd))
 
-          sys.stdout.flush()
-          if process.returncode == 0:
-              break
+            if not useShell:
+                process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
+                                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            else:
+                process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
+                                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-          # run some diagnostics
-          print "Non-zero return code"
-          print "curl output: %s" % curl_output
-          try:
-            print "Running commands to desar2 for diagnostics"
-            print "Pinging desar2"
-            os.system("ping -c 4 desar2.cosmology.illinois.edu")
-            print "Running nc to desar2"
-            os.system("nc -z -v desar2.cosmology.illinois.edu 80")
-            print "Running traceroute to desar2"
-            os.system("traceroute desar2.cosmology.illinois.edu")
-          except:   # print exception but continue
-            (type, value, trback) = sys.exc_info()
-            traceback.print_exception(type, value, trback, file=sys.stdout)
-            print "\n\nIgnoring diagnostics exception.   Continuing.\n"
+            curl_output = process.communicate(self.curl_password)[0] # Don't know why the -o switch doesn't cause this to go to stdout.
 
-          sys.stdout.flush()
+            exitcode = process.returncode
 
-          if x < numTries-1:    # not the last time in the loop
-              time.sleep(secondsBetweenRetries)
-        if process.returncode != 0:
-            if os.path.isfile(curlConsoleOutputFile) and os.stat(curlConsoleOutputFile).st_size < 2000:
+            if not isTest and x > 0:
+                print curl_output
+
+            sys.stdout.flush()
+            if exitcode == 0:
+                break
+
+            # run some diagnostics
+            print "Non-zero return code: %s" % exitcode
+            print "curl output: %s" % curl_output
+            try:
+                print "Running commands to desar2 for diagnostics"
+                print "Directory listing"
+                os.system("ls -l")
+                print "Pinging desar2"
+                os.system("ping -c 4 desar2.cosmology.illinois.edu")
+                print "Running nc to desar2"
+                os.system("nc -z -v desar2.cosmology.illinois.edu 80")
+                print "Running traceroute to desar2"
+                os.system("traceroute desar2.cosmology.illinois.edu")
+            except:   # print exception but continue
+                (type, value, trback) = sys.exc_info()
+                traceback.print_exception(type, value, trback, file=sys.stdout)
+                print "\n\nIgnoring diagnostics exception.   Continuing.\n"
+
+            sys.stdout.flush()
+
+            if x < numTries-1:    # not the last time in the loop
+                time.sleep(secondsBetweenRetries)
+
+
+        if exitcode != 0:
+            if os.path.isfile(curlConsoleOutputFile):
+                print "Last 50 lines of curlConsoleOutputFile:"
                 with open(curlConsoleOutputFile,'r') as f:
-                    for line in f:
-                        print "%s: %s" % (curlConsoleOutputFile,line),
+                    lines = f.readlines()
+                    if len(lines) > 50:
+                        print '\n'.join(lines[len(lines)-50:])
+                    else:
+                        print '\n'.join(lines)
+                    
+            msg = "File copy failed with return code %d, " % exitcode
             http_match = re.search('http_code: ?(\d+)', curl_output)
-            assert http_match
-            raise Exception("File operation failed with return code %d, http status %s."
-                            % (process.returncode,http_match.group(1)))
-        if os.path.isfile('curl_stdout.txt'):
-            os.remove('curl_stdout.txt')
+            if http_match:
+                msg += " http status %s" % http_match.group(1)
+            else:
+                msg += " http status unknown (%s)" % curl_output
+        
+            raise Exception(msg)
+
+        if os.path.isfile(curlConsoleOutputFile):
+            os.remove(curlConsoleOutputFile)
         if not isTest:
             return time.time()-starttime
 
@@ -180,6 +203,11 @@ class HttpUtils():
                     path = os.path.dirname(dst)
                     if len(path) > 0 and not os.path.exists(path):
                         coremisc.coremakedirs(path)
+
+                    # getting some non-zero curl exit codes, double check path exists
+                    if len(path) > 0 and not os.path.exists(path):
+                        raise Exception("Error: path still missing after coremakedirs (%s)" % path)
+                        
                     copy_time = self.run_curl_command("curl %s %s" % (common_switches,src), curlConsoleOutputFile=dst,
                                                       useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
                     if tstats is not None:
