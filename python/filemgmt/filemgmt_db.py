@@ -623,7 +623,7 @@ class FileMgmtDB (coreutils.DesDbi):
                 WDF_TABLE, PARENT_OPM_ARTIFACT_ID, bindStr, CHILD_OPM_ARTIFACT_ID,
                 bindStr)
             cursor.executemany(execSQL, data)
-            self.commit()
+    #        self.commit()
     #end_ingest_provenance
 
 

@@ -10,6 +10,7 @@ Generic routines for performing tasks on files that can be seen locally
 __version__ = "$Rev$"
 
 import os
+import sys
 import shutil
 
 import coreutils.miscutils as coremisc
@@ -104,14 +105,15 @@ def copyfiles(filelist, tstats):
     status = 0
     for filename, fdict in filelist.items():
         fsize = 0
-        if 'filesize' in fdict:
-            fsize = fdict['filesize']
-        elif os.path.exists(src):
-            fsize = os.path.getsize(filename)
-
         try:
             src = fdict['src']
             dst = fdict['dst']
+
+            if 'filesize' in fdict:
+                fsize = fdict['filesize']
+            elif os.path.exists(src):
+                fsize = os.path.getsize(filename)
+
             if not os.path.exists(dst):
                 if tstats is not None:
                     tstats.stat_beg_file(filename)
