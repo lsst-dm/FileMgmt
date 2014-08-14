@@ -120,8 +120,8 @@ class HttpUtils():
             print "curl output: %s" % curl_output
             try:
                 print "Running commands to desar2 for diagnostics"
-                print "Directory listing"
-                os.system("ls -l")
+                print "Directory info"
+                os.system("pwd; find . -type f -print")
                 print "Pinging desar2"
                 os.system("ping -c 4 desar2.cosmology.illinois.edu")
                 print "Running nc to desar2"
@@ -158,8 +158,8 @@ class HttpUtils():
         
             raise Exception(msg)
 
-        if os.path.isfile(curlConsoleOutputFile):
-            os.remove(curlConsoleOutputFile)
+        if os.path.isfile('curl_stdout.txt'):   # don't use curlConsoleOutputFile variable here.   That deletes file just copied
+            os.remove('curl_stdout.txt')
         if not isTest:
             return time.time()-starttime
 
