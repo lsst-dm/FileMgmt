@@ -37,7 +37,9 @@ def save_register_info(filemgmt, task_id, provmsg):
 def parse_provided_list(listname):
     """ create dictionary of files from list in file """
 
-    cwd = os.getcwd()
+    #cwd = os.getcwd()
+    cwd = os.getenv('PWD')  # don't use getcwd as it canonicallizes path
+                            # which is not what we want for links internal to archive
 
     filelist = {}
     try:
