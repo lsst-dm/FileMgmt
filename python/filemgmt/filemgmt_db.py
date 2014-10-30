@@ -179,6 +179,11 @@ class FileMgmtDB (coreutils.DesDbi):
                     #filedict['filesize'] = os.path.getsize(filelist[f]['fullname'])
                     fwdie('Error: filename (%s) does not have a filesize (%s)' % (f, filedict), 1)
 
+                if 'md5sum' in filelist[f]:
+                    filedict['md5sum'] = filelist[f]['md5sum']
+                else:
+                    filedict['md5sum'] = None
+
                 insfilelist.append(filedict)
 
             try:
