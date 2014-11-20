@@ -18,7 +18,7 @@ from collections import OrderedDict
 from coreutils import desdbi, miscutils
 from filemgmt.filecompressor import FileCompressor
 
-VERSION="1.0." + __version__
+VERSION="1.0.0"
 DATE_FORMAT='%Y-%m-%d %H:%M:%S'
 failure_threshold=0
 
