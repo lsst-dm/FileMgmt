@@ -11,6 +11,7 @@ import os
 import sys
 import time
 import argparse
+import traceback
 import coreutils.miscutils as miscutils
 from filemgmt.compworker import CompWorker
 
@@ -37,7 +38,7 @@ class FpackCompWorker(CompWorker):
         try:
             miscutils.remove_file_if_exists(newfilename)
         except:
-            self._errmsg = "File system error trying to remove compressed version of file IF it exists"
+            self._errmsg = traceback.format_exc()
             return 1
         return super(FpackCompWorker,self).execute(file)
 
