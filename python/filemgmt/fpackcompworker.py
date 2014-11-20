@@ -34,6 +34,9 @@ class FpackCompWorker(CompWorker):
 
     def execute(self, file):
         newfilename = file + self.get_extention()
-        miscutils.remove_file_if_exists(newfilename)
+        try:
+            miscutils.remove_file_if_exists(newfilename)
+        except:
+            return 1
         return super(FpackCompWorker,self).execute(file)
 
