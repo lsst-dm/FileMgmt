@@ -179,15 +179,10 @@ class FileMgmtDB (coreutils.DesDbi):
                     #filedict['filesize'] = os.path.getsize(filelist[f]['fullname'])
                     fwdie('Error: filename (%s) does not have a filesize (%s)' % (f, filedict), 1)
 
-                if 'md5sum' in filelist[f]:
-                    filedict['md5sum'] = filelist[f]['md5sum']
-                else:
-                    filedict['md5sum'] = None
-
                 insfilelist.append(filedict)
 
+            colnames = ['filename', 'filesize', 'compression', 'path', 'archive_name']
             try:
-                colnames = self.get_column_names('FILE_ARCHIVE_INFO');
                 self.insert_many_indiv('FILE_ARCHIVE_INFO', colnames, insfilelist)
             except:
                 print "Error from insert_many_indiv in register_file_archive"
