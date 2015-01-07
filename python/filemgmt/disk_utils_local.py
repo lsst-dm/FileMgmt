@@ -17,6 +17,16 @@ import coreutils.miscutils as coremisc
 
 
 ######################################################################
+def get_md5sum_file(fullname, blksize = 2**15):
+    """ Returns md5 checksum for given file """
+
+    md5 = hashlib.md5()
+    with open(fullname, 'rb') as f:
+        for chunk in iter(lambda: f.read(blksize), ''):
+            md5.update(chunk)
+    return md5.hexdigest()
+
+######################################################################
 def get_file_disk_info(arg):
     """ Returns information about files on disk from given list or path"""
 
