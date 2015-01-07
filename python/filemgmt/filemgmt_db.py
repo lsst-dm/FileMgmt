@@ -181,8 +181,8 @@ class FileMgmtDB (coreutils.DesDbi):
 
                 insfilelist.append(filedict)
 
+            colnames = ['filename', 'filesize', 'compression', 'path', 'archive_name']
             try:
-                colnames = self.get_column_names('FILE_ARCHIVE_INFO');
                 self.insert_many_indiv('FILE_ARCHIVE_INFO', colnames, insfilelist)
             except:
                 print "Error from insert_many_indiv in register_file_archive"
