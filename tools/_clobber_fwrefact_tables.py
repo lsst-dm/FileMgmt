@@ -7,7 +7,7 @@
 import sys
 import os
 import argparse
-import coreutils.desdbi
+import despydmdb.desdmdbi as desdmdbi
 
 
 
@@ -94,7 +94,7 @@ def main(args):
 
     args = vars(parser.parse_args())
 
-    dbh = coreutils.DesDbi()
+    dbh = desdmdbi.DesDmDbi()
     
     if dbh.configdict['name'].lower() != 'destest':
         print "This command can only be run against the destest database."

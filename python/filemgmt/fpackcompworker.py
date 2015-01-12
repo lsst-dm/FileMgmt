@@ -12,7 +12,8 @@ import sys
 import time
 import argparse
 import traceback
-import coreutils.miscutils as miscutils
+import despymisc.miscutils as miscutils
+import filemgmt.disk_utils_local as diskutils
 from filemgmt.compworker import CompWorker
 
 
@@ -36,7 +37,7 @@ class FpackCompWorker(CompWorker):
     def execute(self, file):
         newfilename = file + self.get_extention()
         try:
-            miscutils.remove_file_if_exists(newfilename)
+            diskutils.remove_file_if_exists(newfilename)
         except:
             self._errmsg = traceback.format_exc()
             return 1

@@ -6,9 +6,10 @@
 # $LastChangedDate::                      $:  # Date of last commit.
 
 import copy
+import sys
 import time
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
+import despymisc.miscutils as miscutils
+import filemgmt.filemgmt_defs as fmdefs
 
 
 def get_config_vals(archive_info, config, keylist):
@@ -20,11 +21,11 @@ def get_config_vals(archive_info, config, keylist):
         elif config is not None and k in config:
             info[k] = config[k]
         elif stat.lower() == 'req':
-            fwdebug(0, ARCHIVE_TRANSFER_UTILS_DEBUG, '******************************')
-            fwdebug(0, ARCHIVE_TRANSFER_UTILS_DEBUG, 'keylist = %s' % keylist)
-            fwdebug(0, ARCHIVE_TRANSFER_UTILS_DEBUG, 'archive_info = %s' % archive_info)
-            fwdebug(0, ARCHIVE_TRANSFER_UTILS_DEBUG, 'config = %s' % config)
-            fwdie('Error: Could not find required key (%s)' % k, 1, 2)
+            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', '******************************')
+            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', 'keylist = %s' % keylist)
+            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', 'archive_info = %s' % archive_info)
+            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', 'config = %s' % config)
+            miscutils.fwdie('Error: Could not find required key (%s)' % k, 1, 2)
     return info
               
 
@@ -35,36 +36,36 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
 
     ## check which files are already on dst
     # dynamically load filemgmt class for dst
-    dstfilemgmt_class = dynamically_load_class(dst_archive_info['filemgmt'])
+    dstfilemgmt_class = miscutils.dynamically_load_class(dst_archive_info['filemgmt'])
 
     valDict = get_config_vals(dst_archive_info, config, dstfilemgmt_class.requested_config_vals())
     dstfilemgmt = dstfilemgmt_class(config=valDict)
 
-    fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_archive = %s" % dst_archive)
-    dst_file_archive_info = dstfilemgmt.get_file_archive_info(filelist, dst_archive, FM_PREFER_UNCOMPRESSED)
-    fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "number of files already at dst %s" % len(dst_file_archive_info))
-    fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_file_archive_info %s" % dst_file_archive_info)
+    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_archive = %s" % dst_archive)
+    dst_file_archive_info = dstfilemgmt.get_file_archive_info(filelist, dst_archive, fmdefs.FM_PREFER_UNCOMPRESSED)
+    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "number of files already at dst %s" % len(dst_file_archive_info))
+    miscutils.fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_file_archive_info %s" % dst_file_archive_info)
     files2stage = set(filelist) - set(dst_file_archive_info.keys())
 
-    fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "number of files to stage %s" % len(files2stage))
-    fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "files to stage %s" % files2stage)
+    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "number of files to stage %s" % len(files2stage))
+    miscutils.fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "files to stage %s" % files2stage)
 
     if files2stage is not None and len(files2stage) > 0:
         ## Stage files not already on dst
         # dynamically load filemgmt class for src
-        srcfilemgmt_class = dynamically_load_class(src_archive_info['filemgmt'])
+        srcfilemgmt_class = miscutils.dynamically_load_class(src_archive_info['filemgmt'])
         valDict = get_config_vals(src_archive_info, config, srcfilemgmt_class.requested_config_vals())
         srcfilemgmt = srcfilemgmt_class(config=valDict)
 
         # get archive paths for files in home archive
-        src_file_archive_info = srcfilemgmt.get_file_archive_info(files2stage, src_archive, FM_PREFER_COMPRESSED)
+        src_file_archive_info = srcfilemgmt.get_file_archive_info(files2stage, src_archive, fmdefs.FM_PREFER_COMPRESSED)
         missing_files = set(files2stage) - set(src_file_archive_info.keys())
 
         if missing_files is not None and len(missing_files) > 0:
             print "Error:  Could not find the following files on the src archive"
             for f in missing_files:
                 print "\t%s" % f
-            fwdie("Error: Missing files", 1)
+            miscutils.fwdie("Error: Missing files", 1)
 
         # dst rel path will be same as src rel path
         # create full paths for home archive and target archive
@@ -72,7 +73,7 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         #dst_root = dst_archive_info['root']
         files2copy = {}
         for filename, fileinfo in src_file_archive_info.items():
-            fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "%s: fileinfo = %s" % (filename, fileinfo))
+            miscutils.fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "%s: fileinfo = %s" % (filename, fileinfo))
             files2copy[filename] = copy.deepcopy(fileinfo)
             #files2copy[filename]['src'] = "%s/%s" % (src_root, fileinfo['rel_filename'])
             #iles2copy[filename]['dst'] = "%s/%s" % (dst_root, fileinfo['rel_filename'])
@@ -87,13 +88,13 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         elif dst_archive in archive_transfer_info and src_archive in archive_transfer_info[dst_archive]:
             transinfo = archive_transfer_info[dst_archive][src_archive]
         else:
-            fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive), 1)
+            miscutils.fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive), 1)
 
         # import archive 2 archive class
         print "loading archive transfer class: %s" % transinfo['transfer']
         transobj = None
         try:
-            transfer_class = dynamically_load_class(transinfo['transfer'])
+            transfer_class = miscutils.dynamically_load_class(transinfo['transfer'])
             valDict = get_config_vals(transinfo, config, transfer_class.requested_config_vals())
             transobj = transfer_class(src_archive_info, dst_archive_info, transinfo, valDict)
         except Exception as err:
@@ -135,7 +136,7 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         # if db, save staging info to DB
         # todo
 
-    fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "END\n\n")
+    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "END\n\n")
 
 
 def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, relpath, config=None):
@@ -147,21 +148,21 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
 
     ## check which files are already on dst
     # dynamically load filemgmt class for dst
-    dstfilemgmt_class = dynamically_load_class(dst_archive_info['filemgmt'])
+    dstfilemgmt_class = miscutils.dynamically_load_class(dst_archive_info['filemgmt'])
 
     valDict = get_config_vals(dst_archive_info, config, dstfilemgmt_class.requested_config_vals())
     dstfilemgmt = dstfilemgmt_class(config=valDict)
 
-    fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_archive = %s" % dst_archive)
+    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_archive = %s" % dst_archive)
 
     
     ## dynamically load filemgmt class for src
-    #srcfilemgmt_class = dynamically_load_class(src_archive_info['filemgmt'])
+    #srcfilemgmt_class = miscutils.dynamically_load_class(src_archive_info['filemgmt'])
     #valDict = get_config_vals(src_archive_info, config, srcfilemgmt_class.requested_config_vals())
     #srcfilemgmt = srcfilemgmt_class(config=valDict)
     #
     ## get archive paths for files in home archive
-    #src_file_archive_info = srcfilemgmt.get_file_archive_info(files2stage, src_archive, FM_PREFER_COMPRESSED)
+    #src_file_archive_info = srcfilemgmt.get_file_archive_info(files2stage, src_archive, fwdefs.FM_PREFER_COMPRESSED)
     #missing_files = set(files2stage) - set(src_file_archive_info.keys())
     #fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "files not on src archive %s" % missing_files)
 
@@ -169,7 +170,7 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
     #        print "Error:  Could not find the following files on the src archive"
     #        for f in missing_files:
     #            print "\t%s" % f
-    #        fwdie("Error: Missing files", 1)
+    #        miscutils.fwdie("Error: Missing files", 1)
 
     # dst rel path will be same as src rel path
     transinfo = None
@@ -178,12 +179,12 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
     elif dst_archive in archive_transfer_info and src_archive in archive_transfer_info[dst_archive]:
         transinfo = archive_transfer_info[dst_archive][src_archive]
     else:
-        fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive))
+        miscutils.fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive), 1)
 
     # import archive 2 archive class
     transobj = None
     try:
-        transfer_class = dynamically_load_class(transinfo['transfer'])
+        transfer_class = miscutils.dynamically_load_class(transinfo['transfer'])
         valDict = get_config_vals(transinfo, config, transfer_class.requested_config_vals())
         transobj = transfer_class(src_archive_info, dst_archive_info, transinfo, valDict)
     except Exception as err:
@@ -225,4 +226,4 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
         # if db, save staging info to DB
         # todo
 
-    fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "END\n\n")
+    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "END\n\n")

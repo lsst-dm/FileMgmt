@@ -6,13 +6,7 @@
 # $LastChangedDate::                      $:  # Date of last commit.
 
 """
-    Define a database utility class extending coreutils.DesDbi
-
-    Developed at:
-    The National Center for Supercomputing Applications (NCSA).
-
-    Copyright (C) 2012 Board of Trustees of the University of Illinois.
-    All rights reserved.
+    Define a class to do file management tasks without DB
 """
 
 __version__ = "$Rev$"
@@ -23,9 +17,9 @@ import socket
 import argparse
 from collections import OrderedDict
 
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
-from filemgmt.errors import *
+import despymisc.miscutils as miscutils
+import filemgmt.filemgmt_defs as fmdefs
+import filemgmt.errors as fmerrs
 import filemgmt.utils as fmutils
 
 
@@ -35,7 +29,7 @@ class FileMgmtNoDB ():
 
     @staticmethod
     def requested_config_vals():
-        return {'archive':'req', FILE_HEADER_INFO:'req', 'filetype_metadata':'req'}
+        return {'archive':'req', fmdefs.FILE_HEADER_INFO:'req', 'filetype_metadata':'req'}
 
     def __init__ (self, config=None, argv=None):
         self.config = config
@@ -50,7 +44,7 @@ class FileMgmtNoDB ():
 
     def register_file_in_archive(self, filelist, args):
         # with no db, don't need to register
-        fwdebug(0, "FILEMGMT_NODB_DEBUG", "Nothing to do")
+        miscutils.fwdebug(0, "FILEMGMT_NODB_DEBUG", "Nothing to do")
         return {}
 
 
@@ -73,7 +67,7 @@ class FileMgmtNoDB ():
         pass
 
     def is_valid_filetype(self, ftype):
-        if ftype.lower() in self.config[FILETYPE_METADATA]:
+        if ftype.lower() in self.config[fmdefs.FILETYPE_METADATA]:
             return True
         else:
             return False
@@ -85,7 +79,7 @@ class FileMgmtNoDB ():
             return False
 
 
-    def get_file_location(self, filelist, arname, compress_order=FM_PREFER_COMPRESSED):
+    def get_file_location(self, filelist, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
         fileinfo = self.get_file_archive_info(filelist, arname, compress_order)
         rel_filenames = {}
         for f, finfo in fileinfo.items():
@@ -94,20 +88,20 @@ class FileMgmtNoDB ():
 
 
     # compression = compressed_only, uncompressed_only, prefer uncompressed, prefer compressed, either (treated as prefer compressed)
-    def get_file_archive_info(self, filelist, arname, compress_order=FM_PREFER_COMPRESSED):
+    def get_file_archive_info(self, filelist, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
 
         # sanity checks
         if 'archive' not in self.config:
-            fwdie('Error: Missing archive section in config', 1)
+            miscutils.fwdie('Error: Missing archive section in config', 1)
 
         if arname not in self.config['archive']:
-            fwdie('Error: Invalid archive name (%s)' % arname, 1)
+            miscutils.fwdie('Error: Invalid archive name (%s)' % arname, 1)
 
         if 'root' not in self.config['archive'][arname]:
-            fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
+            miscutils.fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
 
         if not isinstance(compress_order, list):
-            fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)')
+            miscutils.fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)', 1)
 
         # walk archive to get all files
         fullnames = {}
@@ -120,7 +114,7 @@ class FileMgmtNoDB ():
         for (dirpath, dirnames, filenames) in os.walk(root, followlinks=True):
             for fname in filenames:
                 d = {}
-                (d['filename'], d['compression']) = parse_fullname(fname, 3)
+                (d['filename'], d['compression']) = miscutils.parse_fullname(fname, 3)
                 d['filesize'] = os.path.getsize("%s/%s" % (dirpath, fname))
                 d['path'] = dirpath[len(root)+1:]
                 if d['compression'] is None:
@@ -149,20 +143,20 @@ class FileMgmtNoDB ():
 
 
     # compression = compressed_only, uncompressed_only, prefer uncompressed, prefer compressed, either (treated as prefer compressed)
-    def get_file_archive_info_path(self, path, arname, compress_order=FM_PREFER_COMPRESSED):
+    def get_file_archive_info_path(self, path, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
 
         # sanity checks
         if 'archive' not in self.config:
-            fwdie('Error: Missing archive section in config', 1)
+            miscutils.fwdie('Error: Missing archive section in config', 1)
 
         if arname not in self.config['archive']:
-            fwdie('Error: Invalid archive name (%s)' % arname, 1)
+            miscutils.fwdie('Error: Invalid archive name (%s)' % arname, 1)
 
         if 'root' not in self.config['archive'][arname]:
-            fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
+            miscutils.fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
 
         if not isinstance(compress_order, list):
-            fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)')
+            miscutils.fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)', 1)
 
         # walk archive to get all files
         fullnames = {}
@@ -176,7 +170,7 @@ class FileMgmtNoDB ():
         for (dirpath, dirnames, filenames) in os.walk(root + '/' + path):
             for fname in filenames:
                 d = {}
-                (d['filename'], d['compression']) = parse_fullname(fname, 3)
+                (d['filename'], d['compression']) = miscutils.parse_fullname(fname, 3)
                 d['filesize'] = os.path.getsize("%s/%s" % (dirpath, fname))
                 d['path'] = dirpath[len(root)+1:]
                 if d['compression'] is None:
@@ -204,5 +198,5 @@ class FileMgmtNoDB ():
         return archiveinfo
 
     def commit(self):
-        fwdebug(0, "FILEMGMT_NODB_DEBUG", "Nothing to do")
+        miscutils.fwdebug(0, "FILEMGMT_NODB_DEBUG", "Nothing to do")
         

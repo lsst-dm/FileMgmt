@@ -3,9 +3,7 @@
 # $LastChangedBy::                        $:  # Author of last commit.
 # $LastChangedDate::                      $:  # Date of last commit.
 
-from collections import OrderedDict
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
+import despymisc.miscutils as miscutils
 
 
 ##################################################################################################
@@ -18,9 +16,9 @@ def get_config_vals(archive_info, config, keylist):
         elif config is not None and k in config:
             info[k] = config[k]
         elif stat.lower() == 'req':
-            fwdebug(0, 'FMUTILS_DEBUG', '******************************')
-            fwdebug(0, 'FMUTILS_DEBUG', 'keylist = %s' % keylist)
-            fwdebug(0, 'FMUTILS_DEBUG', 'archive_info = %s' % archive_info)
-            fwdebug(0, 'FMUTILS_DEBUG', 'config = %s' % config)
-            fwdie('Error: Could not find required key (%s)' % k, 1, 2)
+            miscutils.fwdebug(0, 'FMUTILS_DEBUG', '******************************')
+            miscutils.fwdebug(0, 'FMUTILS_DEBUG', 'keylist = %s' % keylist)
+            miscutils.fwdebug(0, 'FMUTILS_DEBUG', 'archive_info = %s' % archive_info)
+            miscutils.fwdebug(0, 'FMUTILS_DEBUG', 'config = %s' % config)
+            miscutils.fwdie('Error: Could not find required key (%s)' % k, 1, 2)
     return info

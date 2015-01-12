@@ -12,14 +12,14 @@ __version__ = "$Rev: 18486 $"
 import os
 import sys
 import shutil
-import coreutils.serviceaccess as serviceaccess
 import subprocess
-import coreutils.miscutils as coremisc
-import filemgmt.filemgmt_defs as fmdefs
 import re
-
 import traceback
 import time
+
+import despyserviceaccess.serviceaccess as serviceaccess
+import despymisc.miscutils as miscutils
+import filemgmt.filemgmt_defs as fmdefs
 
 
 class HttpUtils():
@@ -38,7 +38,7 @@ class HttpUtils():
             # Create the user/password switch:
             self.curl_password = "-u %s:%s\n"%(auth_params['user'],auth_params['passwd'])
         except Exception as err:
-            coremisc.fwdie("Unable to get curl password (%s)" % err, fmdefs.FM_EXIT_FAILURE)
+            miscutils.fwdie("Unable to get curl password (%s)" % err, fmdefs.FM_EXIT_FAILURE)
         
         self.existing_directories = set()
 
@@ -93,9 +93,9 @@ class HttpUtils():
         for x in range(0,numTries):
             if not isTest:
                 if x == 0: 
-                    coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
+                    miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
                 else:
-                    coremisc.fwdebug(0, "HTTP_UTILS_DEBUG", "Repeating curl command after failure (%d): %s" % (x,cmd))
+                    miscutils.fwdebug(0, "HTTP_UTILS_DEBUG", "Repeating curl command after failure (%d): %s" % (x,cmd))
 
             if not useShell:
                 process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
@@ -172,7 +172,7 @@ class HttpUtils():
         """
         # Making bar/ sometimes returns a 301 status even if there doesn't seem to be a bar/ in the directory.
         m = re.match("(http://[^/]+)(/.*)", f)
-        for x in coremisc.get_list_directories([ m.group(2) ]):
+        for x in miscutils.get_list_directories([ m.group(2) ]):
             if x not in self.existing_directories:
                 self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
                 self.existing_directories.add(x)
@@ -193,7 +193,7 @@ class HttpUtils():
                 (src,isurl_src) = self.check_url(fdict['src'])
                 (dst,isurl_dst) = self.check_url(fdict['dst'])
                 if (isurl_src and isurl_dst) or (not isurl_src and not isurl_dst):
-                    coremisc.fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
+                    miscutils.fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
                           % (isurl_src, src, isurl_dst, dst), fmdefs.FM_EXIT_FAILURE)
                 common_switches = "-f -S -s -K - -w \'http_code:%{http_code}\\n\'"
                 copy_time = None
@@ -202,7 +202,7 @@ class HttpUtils():
                         tstats.stat_beg_file(filename)
                     path = os.path.dirname(dst)
                     if len(path) > 0 and not os.path.exists(path):
-                        coremisc.coremakedirs(path)
+                        miscutils.coremakedirs(path)
 
                     # getting some non-zero curl exit codes, double check path exists
                     if len(path) > 0 and not os.path.exists(path):
@@ -222,12 +222,12 @@ class HttpUtils():
                         tstats.stat_end_file(0, fsize)
 
                 # Print some debugging info:
-                coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
+                miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
                 for lines in traceback.format_stack():
                     for L in lines.split('\n'):
                         if L.strip() != '':
-                            coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
-                coremisc.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
+                            miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
+                miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
                                                                                  fdict['filename'],
                                                                                  fdict['filesize'],
                                                                                  copy_time,
@@ -295,7 +295,7 @@ class HttpUtils():
         if os.path.isfile('test_dh/testfile_dh2.txt') and os.path.getsize('test_dh/testfile_dh2.txt') == 12:
             print "Transfer of test_dh2.txt seems ok"
         else:
-            coremisc.fwdie("Transfer of test_dh2.txt failed", fmdefs.FM_EXIT_FAILURE)
+            miscutils.fwdie("Transfer of test_dh2.txt failed", fmdefs.FM_EXIT_FAILURE)
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
 
         self.copyfiles(test_filelist3)
@@ -303,7 +303,7 @@ class HttpUtils():
         if os.path.isfile('test_dh/testfile_dh3.txt') and os.path.getsize('test_dh/testfile_dh3.txt') == 12:
             print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
         else:
-            coremisc.fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", fmdefs.FM_EXIT_FAILURE)
+            miscutils.fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", fmdefs.FM_EXIT_FAILURE)
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
@@ -311,7 +311,7 @@ class HttpUtils():
         if filelist5_out['testfile_dh5.txt'].has_key('err') and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':
             print "Test of failed GET seems ok."
         else:
-            coremisc.fwdie("Test of failed GET failed", fmdefs.FM_EXIT_FAILURE)
+            miscutils.fwdie("Test of failed GET failed", fmdefs.FM_EXIT_FAILURE)
 
         os.system("rm -f ./testfile_dh.txt")
         shutil.rmtree('test_dh', True)
@@ -325,4 +325,4 @@ if __name__ == "__main__":
     doctest.testmod()
     C = HttpUtils('test_http_utils/.desservices.ini','file-http')
     C.test_copyfiles()
-    # coremisc.fwdie("Test coremisc.fwdie", fmdefs.FM_EXIT_FAILURE)
+    # miscutils.fwdie("Test miscutils.fwdie", fmdefs.FM_EXIT_FAILURE)

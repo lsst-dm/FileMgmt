@@ -12,10 +12,10 @@ import sys
 import time
 import argparse
 import traceback
-#import coreutils.miscutils as miscutils
 import __main__ as main
 from collections import OrderedDict
-from coreutils import desdbi, miscutils
+import despymisc.miscutils as miscutils
+import despydmdb.desdmdbi as desdmdbi
 from filemgmt.filecompressor import FileCompressor
 
 VERSION="1.0.0"
@@ -202,7 +202,7 @@ if __name__ == '__main__':
     dbh = None
     artifacts = None
     try:
-        dbh = desdbi.DesDbi(section=args['section'])
+        dbh = desdmdbi.DesDmDbi(section=args['section'])
     except:
         print formaterror("error connecting to database",backtrace=True)
         exit(1)

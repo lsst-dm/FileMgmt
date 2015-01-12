@@ -10,8 +10,8 @@ __version__ = "$Rev$"
 
 
 import copy
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
+import despymisc.miscutils as miscutils
+#import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.disk_utils_local as disk_utils_local
 
 class ArchiveTransferLocal():
@@ -31,8 +31,8 @@ class ArchiveTransferLocal():
 
 
     def blocking_transfer(self, filelist):
-        fwdebug(0, "ARCHIVETRANSFER_DEBUG", "\tNumber files to transfer: %d" % len(filelist))
-        fwdebug(1, "ARCHIVETRANSFER_DEBUG", "\tfilelist: %s" % filelist)
+        miscutils.fwdebug(0, "ARCHIVETRANSFER_DEBUG", "\tNumber files to transfer: %d" % len(filelist))
+        miscutils.fwdebug(1, "ARCHIVETRANSFER_DEBUG", "\tfilelist: %s" % filelist)
 
         srcroot = self.src_archive_info['root']
         dstroot = self.dst_archive_info['root']

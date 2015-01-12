@@ -15,14 +15,10 @@ import sys
 from collections import OrderedDict
 
 import wrappers.WrapperUtils as wraputils
-#import intgutils.wclutils as wclutils
-#import processingfw.pfwdb as pfwdb
-
 import filemgmt.filemgmt_defs as fmdefs
-#from filemgmt.errors import *
-import coreutils.miscutils as coremisc
+import despymisc.miscutils as miscutils
 import intgutils.metautils as metautils
-#import processingfw.errors
+import intgutils.metadefs as imetadefs
 
 VERSION = '$Rev$'
 
@@ -45,22 +41,22 @@ def parse_provided_list(listname):
     try:
         with open(listname, "r") as fh:
             for line in fh:
-                (fullname, filetype) = coremisc.fwsplit(line, ',')
+                (fullname, filetype) = miscutils.fwsplit(line, ',')
                 if fullname[0] != '/':
                     fullname = cwd + '/' + fullname
 
                 if not os.path.exists(fullname):
-                    coremisc.fwdie("Error:   could not find file to register:  %s" % fullname, 1)
+                    miscutils.fwdie("Error:   could not find file to register:  %s" % fullname, 1)
                     
                 (path, fname) = os.path.split(fullname)
                 if fname in filelist:
                     print "Error:   Found duplicate filenames in list:  %s"
                     print "\t%s" % fullname
                     print "\t%s" % filelist[fname]['fullname']
-                    coremisc.fwdie("Error:   Found duplicate filenames in list:  %s" % fname, 1)
+                    miscutils.fwdie("Error:   Found duplicate filenames in list:  %s" % fname, 1)
                 filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname, 'fname':fname}
     except Exception as err:
-        coremisc.fwdie("Error: Problems reading file '%s': %s" % (listname, err), 1)
+        miscutils.fwdie("Error: Problems reading file '%s': %s" % (listname, err), 1)
         
     return filelist
 
@@ -75,7 +71,7 @@ def get_list_filenames(ingestpath, filetype):
         ingestpath = cwd + '/' + ingestpath
 
     if not os.path.exists(ingestpath):
-        coremisc.fwdie("Error:   could not find ingestpath:  %s" % ingestpath, 1)
+        miscutils.fwdie("Error:   could not find ingestpath:  %s" % ingestpath, 1)
 
     filelist = {}
     for (dirpath, dirnames, filenames) in os.walk(ingestpath):
@@ -91,7 +87,7 @@ def add_basenames_list(filelist):
     #filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname}
    
     for fname in filelist:
-        (filename, compress_ext) = coremisc.parse_fullname(fname, coremisc.CU_PARSE_FILENAME|coremisc.CU_PARSE_EXTENSION)
+        (filename, compress_ext) = miscutils.parse_fullname(fname, miscutils.CU_PARSE_FILENAME|miscutils.CU_PARSE_EXTENSION)
         filelist[fname]['filename'] = filename
         filelist[fname]['compression'] = compress_ext
 
@@ -239,14 +235,14 @@ def process_files(filelist, filemgmt, task_id, args):
                 msg = "Error: Could not find metadata specs for filetype '%s'" % filetype
                 print msg
                 print "Minimum metadata specs for a filetype are defs for filetype and filename"
-                coremisc.fwdie("Aborting", fmdefs.FM_EXIT_FAILURE)
+                miscutils.fwdie("Aborting", fmdefs.FM_EXIT_FAILURE)
     
             for key in metaspecs:
                 #print "metaspecs key = ", key
                 if type(metaspecs[key]) == dict or type(metaspecs[key]) == OrderedDict:
-                    if metautils.WCL_META_WCL in metaspecs[key]:
+                    if imetadefs.WCL_META_WCL in metaspecs[key]:
                         #print "deleting wcl from", key
-                        del metaspecs[key][metautils.WCL_META_WCL]   # remove wcl requirements for manual file ingestion
+                        del metaspecs[key][imetadefs.WCL_META_WCL]   # remove wcl requirements for manual file ingestion
                     elif len(metaspecs[key]) == 0:
                         #print "deleting", key
                         del metaspecs[key]
@@ -275,14 +271,14 @@ def process_files(filelist, filemgmt, task_id, args):
             if filemeta is not None:
                 # add filenames and filetypes to metadata
                 for fdict in filemeta.values():
-                    fdict['filename'] = coremisc.parse_fullname(fdict['fullname'], coremisc.CU_PARSE_FILENAME)
+                    fdict['filename'] = miscutils.parse_fullname(fdict['fullname'], miscutils.CU_PARSE_FILENAME)
                     fdict['filetype'] = ftype
             else:
                 print "Creating filename/filetype metadata info"
                 filemeta = {}
                 fcnt = 0
                 for f in insfilelist:
-                    filemeta['file_%s' % fcnt] = {'filename': coremisc.parse_fullname(f, coremisc.CU_PARSE_FILENAME),
+                    filemeta['file_%s' % fcnt] = {'filename': miscutils.parse_fullname(f, miscutils.CU_PARSE_FILENAME),
                                                   'filetype': ftype}
                     fcnt += 1
 
@@ -403,10 +399,10 @@ def main(args):
         if archive in config['archive']:
             filemgmt_class = config['archive'][archive]['filemgmt'] 
         else:
-            coremisc.fwdie("Invalid archive name (%s)" % archive, 1)
+            miscutils.fwdie("Invalid archive name (%s)" % archive, 1)
     else:
-        import coreutils.desdbi
-        with coreutils.desdbi.DesDbi() as dbh:
+        import despydmdb.desdmdbi as desdmdbi
+        with desdmdbi.DesDmDbi() as dbh:
             curs = dbh.cursor()
             sql = "select filemgmt from ops_archive where name='%s'" % archive
             curs.execute(sql)
@@ -414,17 +410,17 @@ def main(args):
             if len(rows) > 0:
                 filemgmt_class = rows[0][0]
             else:
-                coremisc.fwdie("Invalid archive name (%s)" % archive, 1)
+                miscutils.fwdie("Invalid archive name (%s)" % archive, 1)
 
     if filemgmt_class is None or '.' not in filemgmt_class:
         print "Error: Invalid filemgmt class name (%s)" % filemgmt_class
         print "\tMake sure it contains at least 1 period."
-        coremisc.fwdie("Invalid filemgmt class name", 1)
+        miscutils.fwdie("Invalid filemgmt class name", 1)
 
 
     # dynamically load class for filemgmt
     filemgmt = None
-    filemgmt_class = coremisc.dynamically_load_class(filemgmt_class)
+    filemgmt_class = miscutils.dynamically_load_class(filemgmt_class)
     try:
         filemgmt = filemgmt_class(argv=args)
     except Exception as err:
@@ -432,7 +428,7 @@ def main(args):
         raise
 
     if not filemgmt.is_valid_archive(archive):
-        coremisc.fwdie("Invalid archive name (%s)" % archive, 1)
+        miscutils.fwdie("Invalid archive name (%s)" % archive, 1)
 
 
 
@@ -443,7 +439,7 @@ def main(args):
 
     if args['filetype'] is not None:
         if not filemgmt.is_valid_filetype(args['filetype']):
-            coremisc.fwdie("Error:  Invalid filetype (%s)" % args['filetype'], 1)
+            miscutils.fwdie("Error:  Invalid filetype (%s)" % args['filetype'], 1)
         filelist = get_list_filenames(args['path'], args['filetype'])
     elif args['list'] is not None:
         filelist = parse_provided_list(args['list'])

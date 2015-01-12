@@ -11,12 +11,8 @@ import os
 import sys
 import time
 import argparse
-#import subprocess
-#import coreutils.miscutils as miscutils
-#import computils
-#from collections import OrderedDict
-#from abc import ABCMeta, abstractmethod
-from coreutils import desdbi, miscutils
+import despymisc.miscutils as miscutils
+import despydmdb.desdmdbi as desdmdbi
 from filemgmt import filemgmt_defs as fdefs
 
 class FileCompressor:
@@ -131,7 +127,7 @@ class FileCompressor:
 
     def updatedb(self,task_id,do_commit=True):
         if self._dbh == None:
-            raise Exception(printprefix() + "Cannot update DB; no dbh given")
+            raise Exception(self.printprefix() + "Cannot update DB; no dbh given")
         if self._retcode == 0:
             self._createartifact()
             self._updatearchive()
@@ -189,7 +185,7 @@ if __name__ == '__main__':
     args, unknown_args = parser.parse_known_args()
     args = vars(args)
 
-    dbh = desdbi.DesDbi(section=args['section'])
+    dbh = desdmdbi.DesDmDbi(section=args['section'])
     #artifacts = getFilesToCompress(args,dbh)
     artifacts = []
     compressor = miscutils.dynamically_load_class(args["class"])(args["cleanup"],args["exeargs"])

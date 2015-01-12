@@ -6,14 +6,16 @@
 
 
 from  datetime import datetime, timedelta
+import sys
+import copy
+import time
+
 import globusonline.transfer.api_client
 #from globusonline.transfer.api_client import Transfer, Delete, APIError, x509_proxy
 from globusonline.transfer.api_client import Transfer, x509_proxy
-import time
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
-import sys
-import copy
+
+import despymisc.miscutils as miscutils
+import filemgmt.filemgmt_defs as fmdefs
 
 
 
@@ -31,7 +33,7 @@ class DESGlobusOnline():
             print "Error when trying to create globusonline client"
             print "\t%s: %s" % (type, value)
             print "\tTypically means problem with operator proxy.  Check that there is a valid proxy using grid-proxy-info"
-            sys.exit(FM_EXIT_FAILURE)
+            sys.exit(fmdefs.FM_EXIT_FAILURE)
             
         self.proxy_valid_hrs = proxy_valid_hrs
         self.credfile = credfile
@@ -48,17 +50,17 @@ class DESGlobusOnline():
     def makedirs(self, filelist, endpoint):
         # get list of dirs to make
         print "makedirs: filelist=",filelist
-        dirlist = get_list_directories(filelist)
+        dirlist = miscutils.get_list_directories(filelist)
         print "makedirs: dirlist=",dirlist
         for path in sorted(dirlist): # should already be sorted, but just in case
-            fwdebug(0, 'GLOBUS_ONLINE_DEBUG', 'endpoint=%s, path=%s' % (endpoint,path))
+            miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', 'endpoint=%s, path=%s' % (endpoint,path))
             try:
                 result = self.goclient.endpoint_mkdir(endpoint, path)
             except Exception as e:
                 if 'already exists' not in str(e):
                     raise
                 else:
-                    fwdebug(2, 'GLOBUS_ONLINE_DEBUG', 'already exists endpoint=%s, path=%s' % (endpoint,path))
+                    miscutils.fwdebug(2, 'GLOBUS_ONLINE_DEBUG', 'already exists endpoint=%s, path=%s' % (endpoint,path))
 
 
                 
@@ -78,7 +80,7 @@ class DESGlobusOnline():
         ##    Get a submission id:
         code, reason, result = self.goclient.transfer_submission_id()
         self.submission_id = result["value"]
-        fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubmission id = %s" % self.submission_id)
+        miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubmission id = %s" % self.submission_id)
 
         ##    Create a transfer object:
         #t = Transfer(submission_id, src_endpoint, dst_endpoint, notify_on_succeeded = False,
@@ -92,7 +94,7 @@ class DESGlobusOnline():
         for fname, finfo in filelist.items():
             sfile = finfo['src']
             dfile = finfo['dst']
-            fwdebug(2, 'GLOBUS_ONLINE_DEBUG', "\tadding to transfer %s = %s" % (sfile, dfile))
+            miscutils.fwdebug(2, 'GLOBUS_ONLINE_DEBUG', "\tadding to transfer %s = %s" % (sfile, dfile))
             if sfile.endswith('/'):
                 t.add_item(sfile, dfile, recursive=True)  # error if true for file
             else:
@@ -101,7 +103,7 @@ class DESGlobusOnline():
         # start transfer
         status, reason, result = self.goclient.transfer(t)
         task_id = result["task_id"]
-        fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\ttask id = %s" % task_id)
+        miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\ttask id = %s" % task_id)
 
         return task_id
 
@@ -109,7 +111,7 @@ class DESGlobusOnline():
     # blocking transfer
     def blocking_transfer(self, filelist):
         task_id = self.start_transfer(filelist)
-        fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\ttask_id = %s" % task_id)
+        miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\ttask_id = %s" % task_id)
 
         # wait for transfer to complete
         ##    Check the progress of the new transfer:
@@ -124,15 +126,15 @@ class DESGlobusOnline():
         retry_cnt = 0
         errstrs = {}
         while status == "ACTIVE" and chk_cnt < MAX_NUM_CHKS and retry_cnt < MAX_NUM_RETRY:
-            fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "Checking transfer task status")
+            miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "Checking transfer task status")
             status, reason, result = self.goclient.task(task_id)
             status = result["status"]
-            fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tstatus = %s" % result["status"])
-            fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tfiles = %s" % result["files"])
-            fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_total = %s" % result["subtasks_total"])
-            fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_failed = %s" % result["subtasks_failed"])
-            fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_retrying = %s" % result["subtasks_retrying"])
-            fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tnice_status_details = %s" % result["nice_status_details"])
+            miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tstatus = %s" % result["status"])
+            miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tfiles = %s" % result["files"])
+            miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_total = %s" % result["subtasks_total"])
+            miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_failed = %s" % result["subtasks_failed"])
+            miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_retrying = %s" % result["subtasks_retrying"])
+            miscutils.fwdebug(1, 'GLOBUS_ONLINE_DEBUG', "\tnice_status_details = %s" % result["nice_status_details"])
 
             if status == "ACTIVE":
                 chk_cnt += 1
@@ -147,13 +149,13 @@ class DESGlobusOnline():
                     if result['subtasks_retrying'] != 0:
                         retry_cnt += 1
                     else:
-                        fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tstatus = %s" % result["status"])
-                        fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tfiles = %s" % result["files"])
-                        fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_total = %s" % result["subtasks_total"])
-                        fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_failed = %s" % result["subtasks_failed"])
-                        fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_retrying = %s" % result["subtasks_retrying"])
-                        fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tnice_status_details = %s" % result["nice_status_details"])
-                        fwdie("Error while transfering files", FM_EXIT_FAILURE)
+                        miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tstatus = %s" % result["status"])
+                        miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tfiles = %s" % result["files"])
+                        miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_total = %s" % result["subtasks_total"])
+                        miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_failed = %s" % result["subtasks_failed"])
+                        miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tsubtasks_retrying = %s" % result["subtasks_retrying"])
+                        miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', "\tnice_status_details = %s" % result["nice_status_details"])
+                        miscutils.fwdie("Error while transfering files", fmdefs.FM_EXIT_FAILURE)
 
                 if chk_cnt < MAX_NUM_CHKS and retry_cnt < MAX_NUM_RETRY:
                     time.sleep(CHK_INTERVAL_SECS)
@@ -230,7 +232,7 @@ class DESGlobusOnline():
         pathlist = {}
         filebypath = {} 
         for fname in filelist:
-            (path, filename) = parse_fullname(fname, CU_PARSE_PATH | CU_PARSE_FILENAME)
+            (path, filename) = miscutils.parse_fullname(fname, miscutils.CU_PARSE_PATH | miscutils.CU_PARSE_FILENAME)
             pathlist[path] = True
             if path not in filebypath:
                 filebypath[path] = {}

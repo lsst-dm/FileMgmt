@@ -12,8 +12,10 @@ __version__ = "$Rev$"
 import os
 import sys
 import shutil
+import hashlib
+import errno
 
-import coreutils.miscutils as coremisc
+import despymisc.miscutils as miscutils
 
 
 ######################################################################
@@ -35,7 +37,7 @@ def get_file_disk_info(arg):
     elif type(arg) is str:
         return get_file_disk_info_path(arg)
     else:
-        coremisc.fwdie("Error:  argument to get_file_disk_info isn't a list or a path (%s)" % type(arg), 1)
+        miscutils.fwdie("Error:  argument to get_file_disk_info isn't a list or a path (%s)" % type(arg), 1)
     
 
 ######################################################################
@@ -45,7 +47,7 @@ def get_file_disk_info_list(filelist):
     fileinfo = {}
     for fname in filelist:
         if os.path.exists(fname):
-            (path, filename, compress) = coremisc.parse_fullname(fname, 7)
+            (path, filename, compress) = miscutils.parse_fullname(fname, 7)
             fileinfo[fname] = {
                 'filename' : filename,
                 'compression': compress,
@@ -64,13 +66,13 @@ def get_file_disk_info_path(path):
     # if relative path, is treated relative to current directory
 
     if not os.path.exists(path):
-        coremisc.fwdie("Error:  path does not exist (%s)" % (path), 1)
+        miscutils.fwdie("Error:  path does not exist (%s)" % (path), 1)
 
     fileinfo = {}
     for (dirpath, dirnames, filenames) in os.walk(path):
         for fname in filenames:
             d = {}
-            (d['filename'], d['compression']) = coremisc.parse_fullname(fname, 3)
+            (d['filename'], d['compression']) = miscutils.parse_fullname(fname, 3)
             d['filesize'] = os.path.getsize("%s/%s" % (dirpath, fname))
             d['path'] = dirpath[len(root)+1:]
             if d['compression'] is None:
@@ -96,7 +98,7 @@ def del_file_disk_list(filelist):
     #for fname in filelist:
     #    if os.path.exists(fname):
     #        paths[os.path.dirname(fname)] = True
-    #        coremisc.fwdebug(0, "DISK_UTILS_LOCAL_DEBUG", "Deleting %s" % fname)
+    #        miscutils.fwdebug(0, "DISK_UTILS_LOCAL_DEBUG", "Deleting %s" % fname)
     #        #os.unlink(fname)
     #    else:
     #        fileinfo[fname] = { 'err': "Could not find file" }
@@ -129,7 +131,7 @@ def copyfiles(filelist, tstats):
                     tstats.stat_beg_file(filename)
                 path = os.path.dirname(dst)
                 if len(path) > 0 and not os.path.exists(path):
-                    coremisc.coremakedirs(path)
+                    miscutils.coremakedirs(path)
                 shutil.copy(src, dst)
                 if tstats is not None:
                     tstats.stat_end_file(0, fsize)
@@ -140,3 +142,12 @@ def copyfiles(filelist, tstats):
             (etype, value, traceback) = sys.exc_info()
             filelist[filename]['err'] = str(value)
     return (status, filelist)
+
+######################################################################
+def remove_file_if_exists(filename):
+    try:
+        os.remove(filename)
+    except OSError as e:
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise
+# end remove_file_if_exists
