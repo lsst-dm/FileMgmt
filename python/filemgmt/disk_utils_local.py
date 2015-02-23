@@ -39,20 +39,45 @@ def get_file_disk_info(arg):
     else:
         miscutils.fwdie("Error:  argument to get_file_disk_info isn't a list or a path (%s)" % type(arg), 1)
     
+######################################################################
+def get_single_file_disk_info(fname, save_md5sum=False, archive_root=None):
+    miscutils.fwdebug(3, "DISK_UTILS_LOCAL_DEBUG", "fname=%s, save_md5sum=%s, archive_root=%s" % (fname,save_md5sum,archive_root))
+
+    parsemask = miscutils.CU_PARSE_PATH | miscutils.CU_PARSE_FILENAME | miscutils.CU_PARSE_COMPRESSION
+
+    (path, filename, compress) = miscutils.parse_fullname(fname, parsemask)
+    miscutils.fwdebug(3, "DISK_UTILS_LOCAL_DEBUG", "path=%s, filename=%s, compress=%s" % (path,filename,compress))
+    fdict = {
+        'filename' : filename,
+        'compression': compress,
+        'path': path,
+        'filesize': os.path.getsize(fname)
+        }
+
+    if save_md5sum:
+        fdict['md5sum'] = get_md5sum_file(fname)
+
+    if archive_root and path.startswith('/'):
+        fdict['relpath'] = path[len(archive_root)+1:]
+
+        if compress is None:  
+            compext = ""
+        else:
+            compext = compress
+
+        fdict['rel_filename'] = "%s/%s%s" % (fdict['relpath'], filename, compext)
+
+    return fdict
+
 
 ######################################################################
-def get_file_disk_info_list(filelist):
+def get_file_disk_info_list(filelist, save_md5sum=False):
     """ Returns information about files on disk from given list """
 
     fileinfo = {}
     for fname in filelist:
         if os.path.exists(fname):
-            (path, filename, compress) = miscutils.parse_fullname(fname, 7)
-            fileinfo[fname] = {
-                'filename' : filename,
-                'compression': compress,
-                'path': path,
-                'filesize': os.path.getsize(fname)}
+            fileinfo[fname] = get_single_file_disk_info(fname, save_md5sum)
         else:
             fileinfo[fname] = { 'err': "Could not find file" }
 
@@ -70,17 +95,9 @@ def get_file_disk_info_path(path):
 
     fileinfo = {}
     for (dirpath, dirnames, filenames) in os.walk(path):
-        for fname in filenames:
-            d = {}
-            (d['filename'], d['compression']) = miscutils.parse_fullname(fname, 3)
-            d['filesize'] = os.path.getsize("%s/%s" % (dirpath, fname))
-            d['path'] = dirpath[len(root)+1:]
-            if d['compression'] is None:
-                compext = ""
-            else:
-                compext = d['compression']
-            d['rel_filename'] = "%s/%s%s" % (d['path'], d['filename'], compext)
-            fileinfo[fname] = d
+        for name in filenames:
+            fname = os.path.join(dirpath, name)
+            fileinfo[fname] = get_single_file_disk_info(fname, save_md5sum)
 
     return fileinfo
 
@@ -121,10 +138,10 @@ def copyfiles(filelist, tstats):
             src = fdict['src']
             dst = fdict['dst']
 
-            if 'filesize' in fdict:
-                fsize = fdict['filesize']
-            elif os.path.exists(src):
-                fsize = os.path.getsize(filename)
+            #if 'filesize' in fdict:
+            #    fsize = fdict['filesize']
+            #elif os.path.exists(src):
+            #    fsize = os.path.getsize(filename)
 
             if not os.path.exists(dst):
                 if tstats is not None:

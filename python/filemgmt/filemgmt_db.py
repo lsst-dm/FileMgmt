@@ -168,15 +168,16 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                 else:
                     filedict['path'] = path # assume only contains the relative path within the archive
 
-                if 'filesize' in filelist[f]:
-                    filedict['filesize'] = filelist[f]['filesize']
-                else:
-                    #filedict['filesize'] = os.path.getsize(filelist[f]['fullname'])
-                    miscutils.fwdie('Error: filename (%s) does not have a filesize (%s)' % (f, filedict), 1)
+                #if 'filesize' in filelist[f]:
+                #    filedict['filesize'] = filelist[f]['filesize']
+                #else:
+                #    #filedict['filesize'] = os.path.getsize(filelist[f]['fullname'])
+                #    miscutils.fwdie('Error: filename (%s) does not have a filesize (%s)' % (f, filedict), 1)
 
                 insfilelist.append(filedict)
 
-            colnames = ['filename', 'filesize', 'compression', 'path', 'archive_name']
+            #colnames = ['filename', 'filesize', 'compression', 'path', 'archive_name']
+            colnames = ['filename', 'compression', 'path', 'archive_name']
             try:
                 self.insert_many_indiv('FILE_ARCHIVE_INFO', colnames, insfilelist)
             except:
@@ -496,7 +497,42 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
 
     ##########
+    def save_file_info(self, artifacts, metadata, prov, execids):
+        """ save non-location information about file """
 
+        miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "artifacts = %s" % artifacts)
+        miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "metadata = %s" % metadata)
+        miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "prov = %s" % prov)
+        miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "execids = %s" % execids)
+
+        if artifacts is not None and len(artifacts) > 0:
+            self.create_artifacts(artifacts)
+
+        if metadata is not None and len(metadata) > 0:
+            self.ingest_file_metadata(metadata)
+
+        if prov is not None and len(prov) > 0:
+            self.ingest_provenance(prov, execids)
+        
+        
+    def create_artifacts(self, filelist):
+        """ create artifact records for any files that require them """
+        # filelist is list of file dictionaries
+
+        gtt_name = self.load_artifact_gtt(filelist)
+        
+        sqlstr = """
+            insert into OPM_ARTIFACT (name, compression, filesize, md5sum) 
+            select filename, compression, filesize, md5sum
+            from %s gt
+            where not exists(
+                select * from opm_artifact a2 where a2.name=gt.filename and 
+                NVL(a2.compression,'1') = NVL(gt.compression,'1')
+            )""" % gtt_name
+        cursor = self.cursor()
+        cursor.execute(sqlstr)
+
+        
     def getFilenameIdMap(self, prov):
         DELIM = ","
         USED  = "used"
@@ -520,23 +556,13 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         result = []
         if len(allfiles) > 0:
+            # build a map between filenames (with compression extension) and artifact ID
             gtt_name = self.load_filename_gtt(allfiles)
-            # create artifact records for any files that require them
-            sqlstr = """
-                insert into OPM_ARTIFACT (name, compression) 
-                select filename, compression
-                from OPM_FILENAME_GTT gt
-                where not exists(
-                    select * from opm_artifact a2 where a2.name=gt.filename and 
-                    NVL(a2.compression,'1') = NVL(gt.compression,'1')
-                )"""
-            cursor = self.cursor()
-            cursor.execute(sqlstr)
-            # now build a map between filenames (with compression extension) and artifact ID
             sqlstr = """SELECT f.filename || f.compression, a.ID 
                 FROM OPM_ARTIFACT a, %s f 
                 WHERE a.name=f.filename and (a.compression=f.compression or (
                     a.compression is null and f.compression is null))""" % (gtt_name)
+            cursor = self.cursor()
             cursor.execute(sqlstr)
             result = cursor.fetchall()
             cursor.close()

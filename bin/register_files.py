@@ -15,6 +15,7 @@ import sys
 from collections import OrderedDict
 
 import wrappers.WrapperUtils as wraputils
+import filemgmt.disk_utils_local as diskutils
 import filemgmt.filemgmt_defs as fmdefs
 import despymisc.miscutils as miscutils
 import intgutils.metautils as metautils
@@ -86,8 +87,10 @@ def get_list_filenames(ingestpath, filetype):
 def add_basenames_list(filelist):
     #filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname}
    
+    parsemask = miscutils.CU_PARSE_FILENAME|miscutils.CU_PARSE_COMPRESSION
+
     for fname in filelist:
-        (filename, compress_ext) = miscutils.parse_fullname(fname, miscutils.CU_PARSE_FILENAME|miscutils.CU_PARSE_EXTENSION)
+        (filename, compress_ext) = miscutils.parse_fullname(fname, parsemask)
         filelist[fname]['filename'] = filename
         filelist[fname]['compression'] = compress_ext
 
@@ -268,6 +271,9 @@ def process_files(filelist, filemgmt, task_id, args):
                 else:
                     print "None"
     
+            save_md5sum = not args['skip_md5sum']
+            artifacts = []
+            
             if filemeta is not None:
                 # add filenames and filetypes to metadata
                 for fdict in filemeta.values():
@@ -278,19 +284,28 @@ def process_files(filelist, filemgmt, task_id, args):
                 filemeta = {}
                 fcnt = 0
                 for f in insfilelist:
+                    miscutils.fwdebug(0, "REGISTER_FILES_DEBUG", "file=%s" % (f))
                     filemeta['file_%s' % fcnt] = {'filename': miscutils.parse_fullname(f, miscutils.CU_PARSE_FILENAME),
                                                   'filetype': ftype}
                     fcnt += 1
 
             print "DONE"
+
+            # create artifacts
+            artifacts = []
+            for fdict in filemeta.values():
+                artifacts.append(diskutils.get_single_file_disk_info(fdict['fullname'], 
+                                                                     save_md5sum=save_md5sum, 
+                                                                     archive_root=None))
+
+            # create provenance
+            file_prov = {'was_generated_by': {'exec_1': ','.join(filelist)}}
+            prov_task_ids = {'exec_1': task_id}
          
             if 'noingest' not in args or not args['noingest']:
                 print "\tCalling ingest_file_metadata on %s files..." % len(filemeta), 
                 try:
-                    filemgmt.ingest_file_metadata(filemeta)
-                    file_prov = {'was_generated_by': {'exec_1': ','.join(filelist)}}
-                    prov_task_ids = {'exec_1': task_id}
-                    filemgmt.ingest_provenance(file_prov, prov_task_ids)
+                    filemgmt.save_file_info(artifacts, filemeta, file_prov, prov_task_ids)
                 except Exception as err: 
                     print "\n\n\nError: %s" % err
                     print "Rerun using --outcfg <outfile> to see config from DB, esp filetype_metadata"
@@ -311,7 +326,6 @@ def process_files(filelist, filemgmt, task_id, args):
             insfilelist = {}
             for f in new_fnames:
                 insfilelist[f] = filelist[f]
-                insfilelist[f]['filesize'] = os.path.getsize(filelist[f]['fullname'])
 
             print "\tRegistering %s file(s) in archive..." % len(new_fnames),
             problemfiles = filemgmt.register_file_in_archive(insfilelist, args)
@@ -341,6 +355,7 @@ def main(args):
     parser.add_argument('--archive', action='store', help='single value')
     parser.add_argument('--filetype', action='store', help='single value, must also specify search path')
     parser.add_argument('--path', action='store', help='single value, must also specify filetype')
+    parser.add_argument('--skip-md5sum', action='store_true', default=False)
     parser.add_argument('--verbose', action='store', default=1)
     parser.add_argument('--version', action='store_true', default=False)
 
