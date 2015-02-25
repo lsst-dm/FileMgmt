@@ -123,7 +123,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         return filelist
             
 
-    def register_file_in_archive(self, filelist, args):
+    def register_file_in_archive(self, filelist, archive_name):
         """ Saves filesystem information about file like relative path in archive, compression extension, size, etc """
         # assumes files have already been declared to database (i.e., metadata)
         # caller of program must have already verified given filelist matches given archive
@@ -131,50 +131,44 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         # keys to each file dict must be lowercase column names, missing data must be None 
 
 
-        miscutils.fwdebug(3, 'FILEMGMT_DEBUG', "filelist = %s" % filelist)
-        archivename = args['archive']
-        archivedict = self.config['archive'][archivename]
+        miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "filelist = %s" % filelist)
+        archivedict = self.config['archive'][archive_name]
         archiveroot = archivedict['root']
 
         if len(filelist) != 0:
             insfilelist = []
-            for f in filelist:
-                filedict = {}
-                filedict['archive_name'] = archivename
-                if 'filename' in filelist[f] and 'path' in filelist[f] and 'compression' in filelist[f]:
-                    filedict['filename'] = filelist[f]['filename']
-                    filedict['compression'] = filelist[f]['compression']
-                    path = filelist[f]['path']
-                elif 'fullname' in filelist[f]:
+            for fdict in filelist:
+                nfiledict = {}
+                nfiledict['archive_name'] = archive_name
+                if 'filename' in fdict and 'path' in fdict and 'compression' in fdict:
+                    nfiledict['filename'] = fdict['filename']
+                    nfiledict['compression'] = fdict['compression']
+                    path = fdict['path']
+                elif 'fullname' in fdict:
                     #print "getting file parts from fullname"
-                    (path, filedict['filename'], filedict['compression']) = miscutils.parse_fullname(filelist[f]['fullname'], 7)  
+                    parsemask = miscutils.CU_PARSE_PATH | miscutils.CU_PARSE_FILENAME | miscutils.CU_PARSE_COMPRESSION
+                    (path, nfiledict['filename'], nfiledict['compression']) = miscutils.parse_fullname(fdict['fullname'], parsemask)  
                 else:
-                    miscutils.fwdie("Error:   Incomplete info for a file to register.   Given %s" % filelist[f], 1)
+                    miscutils.fwdie("Error:   Incomplete info for a file to register.   Given %s" % fdict, 1)
 
-                #print "filedict = ", filedict
-                if filedict['compression'] is not None and not re.match('^\.', filedict['compression']):   # make sure compression starts with .
-                    filedict['compression'] = '.' + filedict['compression']
+                #print "nfiledict = ", nfiledict
+                if nfiledict['compression'] is not None and not re.match('^\.', nfiledict['compression']):   # make sure compression starts with .
+                    nfiledict['compression'] = '.' + nfiledict['compression']
 
                 if re.match('^/', path):   # if path is absolute
                     if re.match('^%s/' % archiveroot, path):  # get rid of the archive root from the path to store
-                        filedict['path'] = path[len(archiveroot)+1:]
+                        nfiledict['path'] = path[len(archiveroot)+1:]
                     else:
                         canon_archroot = os.path.realpath(archiveroot)
                         canon_path = os.path.realpath(path)
                         if re.match('^%s/' % canon_archroot, canon_path):  # get rid of the archive root from the path to store
-                            filedict['path'] = canon_path[len(canon_archroot)+1:]
+                            nfiledict['path'] = canon_path[len(canon_archroot)+1:]
                         else:
-                            miscutils.fwdie("Error: file's absolute path (%s) does not contain the archive root (%s) (filedict:%s)" % (path, archiveroot, filedict), 1 )
+                            miscutils.fwdie("Error: file's absolute path (%s) does not contain the archive root (%s) (filedict:%s)" % (path, archiveroot, nfiledict), 1 )
                 else:
-                    filedict['path'] = path # assume only contains the relative path within the archive
+                    nfiledict['path'] = path # assume only contains the relative path within the archive
 
-                #if 'filesize' in filelist[f]:
-                #    filedict['filesize'] = filelist[f]['filesize']
-                #else:
-                #    #filedict['filesize'] = os.path.getsize(filelist[f]['fullname'])
-                #    miscutils.fwdie('Error: filename (%s) does not have a filesize (%s)' % (f, filedict), 1)
-
-                insfilelist.append(filedict)
+                insfilelist.append(nfiledict)
 
             #colnames = ['filename', 'filesize', 'compression', 'path', 'archive_name']
             colnames = ['filename', 'compression', 'path', 'archive_name']
@@ -183,7 +177,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             except:
                 print "Error from insert_many_indiv in register_file_archive"
                 print "colnames =", colnames
-                print "filelist =", filelist
+                print "filelist =", insfilelist
                 raise
             
 
@@ -197,22 +191,25 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             havelist.append(row[0])
         return havelist 
 
-    def is_file_in_archive(self, fnames, filelist, args):
+    def is_file_in_archive(self, filelist, archive_name):
         """ Checks whether given files are in the specified archive according to the DB """
         # TODO change to return count(*) = 0 or 1 which would preserve array
         #      another choice is to return path, but how to make it return null for path that doesn't exist
-        #      to make faster don't do concat in query do bind query with filename= and compression=
 
-        archivename = args['archive']
-        archivedict = self.config['archive'][archivename]
-        
-        sql = "select filename||compression from file_archive_info where archive_name = '%s' and filename||compression in ('%s')" % (archivename, "','".join(fnames))
+        gtt_name = self.load_filename_gtt(filelist)
+
+        # join to GTT_FILENAME for query
+        result = []
+        cursor = self.cursor()
+        sql = "select filename,compression from %(gtt)s g where exists (select filename from file_archive_info fai where fai.archive_name=%(ar)s and fai.filename=g.filename)" % ({'ar':self.get_named_bind_string('archive_name'), 'gtt':gtt_name})
         miscutils.fwdebug(1, "FILEMGMTDB_DEBUG", "sql = %s" % sql)
+
         curs = self.cursor()
-        curs.execute(sql)
+        curs.execute(sql, {'archive_name': archive_name})
+        desc = [d[0].lower() for d in curs.description]
         existslist = []
         for row in curs:
-            existslist.append(row[0])
+            existslist.append(row)
         return existslist
 
 
@@ -539,6 +536,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         WGB   = "was_generated_by"
         WDF   = "was_derived_from"
 
+        miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "prov = %s" % prov)
+
         allfiles = set()
         if USED in prov:
             for filenames in prov[USED].values():
@@ -598,6 +597,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         bindStr = self.get_positional_bind_string()
         cursor = self.cursor()
         filemap = self.getFilenameIdMap(prov)
+        miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "filemap = %s" % filemap)
 
         if USED in prov:
             for execname, filenames in prov[USED].iteritems():

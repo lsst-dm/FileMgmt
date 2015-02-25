@@ -120,7 +120,7 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
             for f,pinfo in problemfiles.items():
                 print "\t%s %s -> %s: %s" % (f, pinfo['src'], pinfo['dst'], pinfo['err'])
         elif len(files2register) > 0:
-            regprobs = dstfilemgmt.register_file_in_archive(files2register, {'archive': dst_archive})
+            regprobs = dstfilemgmt.register_file_in_archive(files2register, dst_archive)
             if regprobs is not None and len(regprobs) > 0:
                 problemfiles.update(regprobs)
 
@@ -210,7 +210,7 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
             print problemfiles[f]
             print "\t%s %s: %s" % (f, problemfiles[f]['dst'], problemfiles[f]['err'])
     elif len(files2register) > 0:
-        regprobs = dstfilemgmt.register_file_in_archive(files2register, {'archive': dst_archive})
+        regprobs = dstfilemgmt.register_file_in_archive(files2register, dst_archive)
         if regprobs is not None and len(regprobs) > 0:
             problemfiles.update(regprobs)
 
