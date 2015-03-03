@@ -86,7 +86,7 @@ def get_file_disk_info_list(filelist, save_md5sum=False):
 
 
 ######################################################################
-def get_file_disk_info_path(path):
+def get_file_disk_info_path(path, save_md5sum=False):
     """ Returns information about files on disk from given path """
     # if relative path, is treated relative to current directory
 

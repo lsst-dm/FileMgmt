@@ -361,6 +361,8 @@ def process_files(filelist, filemgmt, task_id, archive_name, save_md5sum, commit
 
 ###########################################################################
 def main(args):
+    starttime = time.time()
+
     parser = argparse.ArgumentParser(description='Ingest metadata for files generated outside DESDM framework')
     parser.add_argument('--des_services', action='store', help='')
     parser.add_argument('--section', action='store', help='Must be specified if not set in environment')
@@ -519,6 +521,9 @@ def main(args):
     except:
         filemgmt.end_task(task_id, fmdefs.FM_EXIT_FAILURE, commit)
         raise
+
+    endtime = time.time()
+    print "\n\nTotal time with %s files: %0.2f secs" % (len(filelist), endtime-starttime)
 
 
 if __name__ == '__main__':
