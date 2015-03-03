@@ -229,7 +229,7 @@ class HttpUtils():
                             miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
                 miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
                                                                                  fdict['filename'],
-                                                                                 fdict['filesize'],
+                                                                                 fsize,
                                                                                  copy_time,
                                                                                  time.time(),
                                                                                  'toarchive' if isurl_dst else 'fromarchive'))
