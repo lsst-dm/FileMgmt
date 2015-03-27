@@ -156,6 +156,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                     nfiledict['compression'] = '.' + nfiledict['compression']
 
                 if re.match('^/', path):   # if path is absolute
+                    miscutils.fwdebug(1, "FILEMGMTDB_DEBUG", "absolute path = %s" % path)
+                    miscutils.fwdebug(1, "FILEMGMTDB_DEBUG", "archiveroot = %s/" % archiveroot)
                     if re.match('^%s/' % archiveroot, path):  # get rid of the archive root from the path to store
                         nfiledict['path'] = path[len(archiveroot)+1:]
                     else:
@@ -166,6 +168,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                         else:
                             miscutils.fwdie("Error: file's absolute path (%s) does not contain the archive root (%s) (filedict:%s)" % (path, archiveroot, nfiledict), 1 )
                 else:
+                    miscutils.fwdebug(1, "FILEMGMTDB_DEBUG", "relative path = %s" % path)
                     nfiledict['path'] = path # assume only contains the relative path within the archive
 
                 insfilelist.append(nfiledict)
