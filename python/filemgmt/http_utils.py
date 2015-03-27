@@ -227,12 +227,15 @@ class HttpUtils():
                     for L in lines.split('\n'):
                         if L.strip() != '':
                             miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
-                miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
+                try:
+                    miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
                                                                                  fdict['filename'],
                                                                                  fsize,
                                                                                  copy_time,
                                                                                  time.time(),
                                                                                  'toarchive' if isurl_dst else 'fromarchive'))
+                except Exception as exc:
+                    print str(exc)
                 if isurl_dst:
                     num_copies_to_archive += 1
                     total_copy_time_to_archive += copy_time
@@ -248,8 +251,12 @@ class HttpUtils():
                 print str(err)
         
         if tstats is None:
-            print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
+            try:
+                print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
                 (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive, num_copies_from_archive, total_copy_time_from_archive, time.time())
+            except Exception as exc:
+                print str(exc)
+                
         HttpUtils.copyfiles_called += 1
         return (status, filelist)
 
