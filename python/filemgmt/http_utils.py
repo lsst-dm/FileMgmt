@@ -22,6 +22,19 @@ import despymisc.miscutils as miscutils
 import filemgmt.filemgmt_defs as fmdefs
 
 
+def http_errorcode_str(errorcode):
+    errstr = "Unmapped errorcode (%s)" % errorcode
+    code2str = {'400': 'Bad Request (check command syntax)',
+               '401': 'Unauthorized (check username/password)',
+               '403': 'Forbidden (check url, check perms)',
+               '404': 'Not Found (check url exists and is readable)',
+               '429': 'Too Many Requests (check transfer throttling)'}
+    # convert given errorcode to str (converting to int can fail)
+    if str(errorcode) in code2str:
+        errstr = code2str[str(errorcode)] 
+    return errstr
+       
+
 class HttpUtils():
     copyfiles_called = 0
 
@@ -33,10 +46,10 @@ class HttpUtils():
         25"""
         try:
             # Parse the .desservices.ini file:
-            auth_params = serviceaccess.parse(des_services, des_http_section)
+            self.auth_params = serviceaccess.parse(des_services, des_http_section)
 
             # Create the user/password switch:
-            self.curl_password = "-u %s:%s\n"%(auth_params['user'],auth_params['passwd'])
+            self.curl_password = "-u %s:%s\n"%(self.auth_params['user'], self.auth_params['passwd'])
         except Exception as err:
             miscutils.fwdie("Unable to get curl password (%s)" % err, fmdefs.FM_EXIT_FAILURE)
         
@@ -79,7 +92,7 @@ class HttpUtils():
         ...   print err
         File operation failed with return code 22, http status 404.
         """
-        assert '-K - ' in cmd
+        assert '-K - ' in cmd    # required to be in command so can pass username/password as stdin
         assert '-o ' not in cmd
         
         # allow environment variable to override numTries
@@ -104,38 +117,59 @@ class HttpUtils():
                 process = subprocess.Popen(cmd, shell=True, stdin=subprocess.PIPE,
                                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
-            curl_output = process.communicate(self.curl_password)[0] # Don't know why the -o switch doesn't cause this to go to stdout.
+            # passing --user name:password as stdin so password doesn't show up in ps 
+            curl_stdout = process.communicate(self.curl_password)[0] 
 
             exitcode = process.returncode
 
             if not isTest and x > 0:
-                print curl_output
+                print "output:", curl_stdout
 
             sys.stdout.flush()
             if exitcode == 0:
                 break
 
             # run some diagnostics
-            print "Non-zero return code: %s" % exitcode
-            print "curl output: %s" % curl_output
-            try:
-                print "Running commands to desar2 for diagnostics"
-                print "Directory info"
-                os.system("pwd; find . -type f -print")
-                print "Pinging desar2"
-                os.system("ping -c 4 desar2.cosmology.illinois.edu")
-                print "Running nc to desar2"
-                os.system("nc -z -v desar2.cosmology.illinois.edu 80")
-                print "Running traceroute to desar2"
-                os.system("traceroute desar2.cosmology.illinois.edu")
-            except:   # print exception but continue
-                (type, value, trback) = sys.exc_info()
-                traceback.print_exception(type, value, trback, file=sys.stdout)
-                print "\n\nIgnoring diagnostics exception.   Continuing.\n"
+            print "*" * 75
+            print "Curl exited with non-zero exit code"
+            print "curl cmd: %s" % cmd
+            print "curl exitcode: %s" % exitcode
+            print "curl stdout: %s" % curl_stdout.strip()
+            http_match = re.search('http_code: ?(\d+)', curl_stdout)
+            if http_match:
+                errcode = http_match.group(1)
+                print "http status: %s (%s)" % (errcode, http_errorcode_str(errcode))
+            else:
+                print "http status: unknown (%s)" % curl_stdout
 
+            print "\nDiagnostics:"
+            print "Directory info"
+            os.system("pwd; find . -exec ls -ld {} \;")
+            print "\nFile system disk space usage"
+            os.system("df -h .")
+
+            hostm = re.search(r"https?://([^/]+)/", cmd)
+            if hostm:
+                hname = hostm.group(1)
+                try:   # don't let exception here halt 
+                    print "Running commands to %s for diagnostics" % hname
+                    print "\nPinging %s" % hname
+                    os.system("ping -c 4 %s" % hname)
+                    print "\nRunning traceroute to %s" % hname
+                    os.system("traceroute %s" % hname)
+                except:   # print exception but continue
+                    (type, value, trback) = sys.exc_info()
+                    traceback.print_exception(type, value, trback, file=sys.stdout)
+                    print "\n\nIgnoring remote diagnostics exception.   Continuing.\n"
+            else:
+                print "Couldn't find url in curl cmd:", cmd
+                print "Skipping remote diagnostics.\n"
+                
+            print "*" * 75
             sys.stdout.flush()
 
             if x < numTries-1:    # not the last time in the loop
+                print "Sleeping %s secs" % secondsBetweenRetries
                 time.sleep(secondsBetweenRetries)
 
 
@@ -150,11 +184,13 @@ class HttpUtils():
                         print '\n'.join(lines)
                     
             msg = "File copy failed with return code %d, " % exitcode
-            http_match = re.search('http_code: ?(\d+)', curl_output)
+            http_match = re.search('http_code: ?(\d+)', curl_stdout)
             if http_match:
-                msg += " http status %s" % http_match.group(1)
+                errcode = http_match.group(1)
+                msg += " http status %s (%s)" % (errcode, http_errorcode_str(errcode))
+                
             else:
-                msg += " http status unknown (%s)" % curl_output
+                msg += " http status unknown (%s)" % curl_stdout
         
             raise Exception(msg)
 
@@ -197,9 +233,13 @@ class HttpUtils():
                           % (isurl_src, src, isurl_dst, dst), fmdefs.FM_EXIT_FAILURE)
                 common_switches = "-f -S -s -K - -w \'http_code:%{http_code}\\n\'"
                 copy_time = None
+
+                # if local file and file doesn't already exist
                 if not isurl_dst and not os.path.exists(dst):
                     if tstats is not None:
                         tstats.stat_beg_file(filename)
+
+                    # make the path
                     path = os.path.dirname(dst)
                     if len(path) > 0 and not os.path.exists(path):
                         miscutils.coremakedirs(path)
@@ -212,12 +252,16 @@ class HttpUtils():
                                                       useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
                     if tstats is not None:
                         tstats.stat_end_file(0, fsize)
-                elif isurl_dst:
+                elif isurl_dst:   # if remote file
                     if tstats is not None:
                         tstats.stat_beg_file(filename)
+
+                    # create remote paths
                     self.create_http_intermediate_dirs(dst)
+
                     copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches,src,dst), useShell=True,
                                                       secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
+
                     if tstats is not None:
                         tstats.stat_end_file(0, fsize)
 
@@ -227,15 +271,17 @@ class HttpUtils():
                     for L in lines.split('\n'):
                         if L.strip() != '':
                             miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
-                try:
-                    miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %d %s %s %s" % (HttpUtils.copyfiles_called,
-                                                                                 fdict['filename'],
-                                                                                 fsize,
-                                                                                 copy_time,
-                                                                                 time.time(),
-                                                                                 'toarchive' if isurl_dst else 'fromarchive'))
-                except Exception as exc:
-                    print str(exc)
+
+                miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %s %s %s %s" % (HttpUtils.copyfiles_called,
+                                                                             fdict['filename'],
+                                                                             fsize,
+                                                                             copy_time,
+                                                                             time.time(),
+                                                                             'toarchive' if isurl_dst else 'fromarchive'))
+
+                if copy_time is None:
+                    copy_time = 0
+
                 if isurl_dst:
                     num_copies_to_archive += 1
                     total_copy_time_to_archive += copy_time
@@ -251,11 +297,8 @@ class HttpUtils():
                 print str(err)
         
         if tstats is None:
-            try:
-                print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
-                (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive, num_copies_from_archive, total_copy_time_from_archive, time.time())
-            except Exception as exc:
-                print str(exc)
+            print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
+            (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive, num_copies_from_archive, total_copy_time_from_archive, time.time())
                 
         HttpUtils.copyfiles_called += 1
         return (status, filelist)
