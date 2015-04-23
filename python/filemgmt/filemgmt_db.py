@@ -397,7 +397,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         # join to GTT_FILENAME for query
         result = []
         cursor = self.cursor()
-        sql = "select filetype,file_archive_info.* from genfile,file_archive_info,%(gtt)s where archive_name=%(ar)s and genfile.filename=%(gtt)s.filename and file_archive_info.filename=%(gtt)s.filename" % ({'ar':self.get_named_bind_string('archive_name'), 'gtt':gtt_name})
+        sql = "select genfile.filetype,fai.path,fai.filename,fai.compression, art.filesize, art.md5sum from genfile,file_archive_info fai,opm_artifact art, %(gtt)s where fai.archive_name=%(ar)s and genfile.filename=%(gtt)s.filename and fai.filename=%(gtt)s.filename and art.name=fai.filename and (art.compression=fai.compression or (art.compression is NULL and fai.compression is NULL))" % ({'ar':self.get_named_bind_string('archive_name'), 'gtt':gtt_name})
         curs = self.cursor()
         curs.execute(sql, {'archive_name': arname})
         desc = [d[0].lower() for d in curs.description]
