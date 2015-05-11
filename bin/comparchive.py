@@ -171,7 +171,7 @@ def compressFiles(artifacts,maintaskid,args,dbh):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Compress files and update the database')
-    parser.add_argument('-A','--Archive',action='store')
+    parser.add_argument('-A','--Archive',action='store', required=True)
     parser.add_argument('-r','--reqnum',action='store')
     parser.add_argument('-u','--unitname',action='store',
         help='only valid if a reqnum is also provided')
@@ -194,10 +194,6 @@ if __name__ == '__main__':
     args, unknown_args = parser.parse_known_args()
     args = vars(args)
     failure_threshold = args["Failcount"]
-
-    if "Archive" not in args:
-        sys.stderr.write(printprefix("ERROR") + "you must provide an archive name (-A or --Archive)")
-        exit(1)
 
     dbh = None
     artifacts = None
