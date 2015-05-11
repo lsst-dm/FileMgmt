@@ -24,7 +24,7 @@ failure_threshold=0
 
 def getFilesToCompress(args,dbh):
     cur = dbh.cursor()
-    sqlstr = """select art.id artifact_id, fa.archive_name, ar.root archive_root, fa.path, fa.filename, fa.filesize
+    sqlstr = """select art.id artifact_id, fa.archive_name, ar.root archive_root, fa.path, fa.filename, art.filesize
         from genfile g, 
             opm_artifact art, 
             file_archive_info fa, 

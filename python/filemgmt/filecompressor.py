@@ -12,6 +12,7 @@ import sys
 import time
 import argparse
 import despymisc.miscutils as miscutils
+import filemgmt.disk_utils_local as diskutils
 import despydmdb.desdmdbi as desdmdbi
 from filemgmt import filemgmt_defs as fdefs
 
@@ -30,6 +31,7 @@ class FileCompressor:
     _compressor = None
     _infile_size = None
     _outfile_size = None
+    _outfile_md5sum = None
     _dbmode = None
     _retcode = None
     _cleanup = None
@@ -64,7 +66,9 @@ class FileCompressor:
         self._retcode = self._compressor.execute(self._infile_full)
         if self._retcode == 0:
             print "done.",
-            self._outfile_size = os.path.getsize(self._outfile_full)
+            finfo = diskutils.get_single_file_disk_info(self._outfile_full, save_md5sum=True, archive_root=None)
+            self._outfile_size = finfo['filesize']
+            self._outfile_md5sum = finfo['md5sum']
             print "CR=%.2f:1" % (float(self._infile_size) / self._outfile_size)
         else:
             print "ERROR"
@@ -96,21 +100,21 @@ class FileCompressor:
         if compartid == None:
             compartid = self._dbh.get_seq_next_value(fdefs.PROV_ARTIFACT_TABLE + "_SEQ")
             self._dbh.basic_insert_row(fdefs.PROV_ARTIFACT_TABLE,
-                {'id':compartid,'name':self._filename,'compression':self._ext})
+                {'id':compartid,'name':self._filename,'compression':self._ext, 
+                 'filesize': self._outfile_size, 'md5sum': self._outfile_md5sum})
         self._outfile_artifact_id = compartid
 
     def _updatearchive(self):
         if self._cleanup:
             self._dbh.basic_update_row('file_archive_info',
-                {'compression':self._ext,'filesize':self._outfile_size},
+                {'compression':self._ext},
                 {'archive_name':self._archive_name,'filename':self._filename})
         else:
             self._dbh.basic_insert_row('file_archive_info',
                 {'archive_name':self._archive_name,
                  'filename':self._filename,
                  'compression':self._ext,
-                 'path':self._path,
-                 'filesize':self._outfile_size})
+                 'path':self._path})
 
     def _addwgb(self,task_id):
         self._dbh.basic_insert_row(fdefs.PROV_WGB_TABLE,
