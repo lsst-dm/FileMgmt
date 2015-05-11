@@ -12,7 +12,7 @@ import os
 import shutil
 import copy
 
-import coreutils.miscutils as coremisc
+import despymisc.miscutils as miscutils
 import filemgmt.http_utils as http_utils
 
 DES_SERVICES = 'des_services'
@@ -36,7 +36,7 @@ class JobArchiveHttp():
         
         for x in (DES_SERVICES, DES_HTTP_SECTION):
             if x not in self.config:
-                coremisc.fwdie('Error:  Missing %s in config' % x, 1)
+                miscutils.fwdie('Error:  Missing %s in config' % x, 1)
         self.HU = http_utils.HttpUtils(self.config[DES_SERVICES],
                                        self.config[DES_HTTP_SECTION])
 

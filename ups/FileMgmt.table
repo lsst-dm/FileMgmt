@@ -1,3 +1,14 @@
 envPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)
 envPrepend(PATH, ${PRODUCT_DIR}/tools)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
+
+#setupRequired(despydb)
+#setupRequired(despydmdb)
+#setupRequired(despymisc)
+#setupRequired(despyserviceaccess)
+#setupRequired(filemgmt)
+#setupRequired(intgutils)
+#setupRequired(wrappers)
+
+# only if using globus online transfers
+#setupRequired(globusonline)

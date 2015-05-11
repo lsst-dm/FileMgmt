@@ -12,10 +12,10 @@ import sys
 import time
 import argparse
 import traceback
-#import coreutils.miscutils as miscutils
 import __main__ as main
 from collections import OrderedDict
-from coreutils import desdbi, miscutils
+import despymisc.miscutils as miscutils
+import despydmdb.desdmdbi as desdmdbi
 from filemgmt.filecompressor import FileCompressor
 
 VERSION="1.0.0"
@@ -24,7 +24,7 @@ failure_threshold=0
 
 def getFilesToCompress(args,dbh):
     cur = dbh.cursor()
-    sqlstr = """select art.id artifact_id, fa.archive_name, ar.root archive_root, fa.path, fa.filename, fa.filesize
+    sqlstr = """select art.id artifact_id, fa.archive_name, ar.root archive_root, fa.path, fa.filename, art.filesize
         from genfile g, 
             opm_artifact art, 
             file_archive_info fa, 
@@ -171,7 +171,7 @@ def compressFiles(artifacts,maintaskid,args,dbh):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Compress files and update the database')
-    parser.add_argument('-A','--Archive',action='store')
+    parser.add_argument('-A','--Archive',action='store', required=True)
     parser.add_argument('-r','--reqnum',action='store')
     parser.add_argument('-u','--unitname',action='store',
         help='only valid if a reqnum is also provided')
@@ -195,14 +195,10 @@ if __name__ == '__main__':
     args = vars(args)
     failure_threshold = args["Failcount"]
 
-    if "Archive" not in args:
-        sys.stderr.write(printprefix("ERROR") + "you must provide an archive name (-A or --Archive)")
-        exit(1)
-
     dbh = None
     artifacts = None
     try:
-        dbh = desdbi.DesDbi(section=args['section'])
+        dbh = desdmdbi.DesDmDbi(section=args['section'])
     except:
         print formaterror("error connecting to database",backtrace=True)
         exit(1)

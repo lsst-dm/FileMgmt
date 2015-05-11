@@ -12,7 +12,7 @@ import sys
 import argparse
 
 import filemgmt.filemgmtdb as filemgmtdb
-from coreutils.miscutils import *
+import despymisc.miscutils as miscutils
 
 
 class arcp():
@@ -20,28 +20,28 @@ class arcp():
         self.argv = argv
 
         if 'archive' not in config:
-            fwdebug(2, "ARCP_DEBUG", "config = %s", config)
+            miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
             raise KeyError('config missing archive')
 
         if 'archive_val' not in config:
-            fwdebug(2, "ARCP_DEBUG", "config = %s", config)
+            miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
             raise KeyError('config missing archive_val')
 
         if 'archive_transfer' not in config:
-            fwdebug(2, "ARCP_DEBUG", "config = %s", config)
+            miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
             raise KeyError('config missing archive_transfer')
 
         if 'archive_transfer_opt' not in config:
-            fwdebug(2, "ARCP_DEBUG", "warning archive_transfer_opt is not in config")
+            miscutils.fwdebug(2, "ARCP_DEBUG", "warning archive_transfer_opt is not in config")
         self.config = config
 
         if src not in config['archive']:
-            fwdebug(2, "ARCP_DEBUG", "config = %s", config)
+            miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
             raise KeyError('%s is not valid archive name' % src)
         self.src = src
 
         if dst not in config['archive']:
-            fwdebug(2, "ARCP_DEBUG", "config = %s", config)
+            miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
             raise KeyError('%s is not valid archive name' % dst)
         self.dst = dst
 
@@ -60,7 +60,7 @@ class arcp():
             err = True
         
         if err:
-            fwdebug(2, "ARCP_DEBUG", "config = %s", config)
+            miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
             raise KeyError("'missing entry in config['archive_transfer'] for %s,%s" % (src,dst))
 
 
@@ -69,12 +69,12 @@ class arcp():
             # dynamically load class for filemgmt
             filemgmt = None
             try:
-                fwdebug(3, 'ARCP_DEBUG', "filemgmt_class = %s" % filemgmt_class)
+                miscutils.fwdebug(3, 'ARCP_DEBUG', "filemgmt_class = %s" % filemgmt_class)
                 modparts = filemgmt_class.split('.')
                 fromname = '.'.join(modparts[0:-1])
                 importname = modparts[-1]
-                fwdebug(3, 'ARCP_DEBUG', "\tfromname = %s" % fromname)
-                fwdebug(3, 'ARCP_DEBUG', "\timportname = %s" % importname)
+                miscutils.fwdebug(3, 'ARCP_DEBUG', "\tfromname = %s" % fromname)
+                miscutils.fwdebug(3, 'ARCP_DEBUG', "\timportname = %s" % importname)
                 mod = __import__(fromname, fromlist=[importname])
                 filemgmt_class = getattr(mod, importname)
                 filemgmt = filemgmt_class(self.argv)
@@ -88,7 +88,7 @@ class arcp():
 
         self.filelist = filelist
         
-        fwdebug(2, "ARCP_DEBUG", "filelist = %s", filelist)
+        miscutils.fwdebug(2, "ARCP_DEBUG", "filelist = %s", filelist)
 
 
 
@@ -102,7 +102,7 @@ class arcp():
         if filemgmt_class is None or '.' not in filemgmt_class:
             print "Error: Invalid filemgmt class name (%s)" % filemgmt_class
             print "\tMake sure it contains at least 1 period."
-            fwdie("Invalid filemgmt class name", 1)
+            miscutils.fwdie("Invalid filemgmt class name", 1)
 
 
     
@@ -136,8 +136,8 @@ def get_config_from_db(argv)
         section = args['section']
 
     qdict = OrderedDict()
-    import coreutils.desdbi
-    with coreutils.desdbi.DesDbi(desservices, section) as dbh:
+    import despydb.desdbi as desdbi
+    with desdbi.DesDbi(desservices, section) as dbh:
         (qdict['archive'], qdict['archive_val'])  = dbh.get_archive_info()
         (qdict['archive_transfer'], qdict['archive_transfer_opt']).dbh.get_archive_transfer()
 

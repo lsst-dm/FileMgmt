@@ -12,7 +12,7 @@ import sys
 import time
 import argparse
 import subprocess
-import coreutils.miscutils as miscutils
+import despymisc.miscutils as miscutils
 import traceback
 from abc import ABCMeta, abstractmethod
 

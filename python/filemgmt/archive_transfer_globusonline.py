@@ -11,8 +11,8 @@ __version__ = "$Rev$"
 import os
 import copy
 
-from coreutils.miscutils import *
-from filemgmt.filemgmt_defs import *
+import despymisc.miscutils as miscutils
+import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.gonline as globonline
 
 GO_USER = 'go_user'
@@ -58,7 +58,7 @@ class ArchiveTransferGlobusOnline():
             credfile = os.environ['X509_USER_PROXY']
 
         if credfile is None:
-            fwdie('Error:  Cannot determine location of X509 proxy.  Either set in config or environment.', 1)
+            miscutils.fwdie('Error:  Cannot determine location of X509 proxy.  Either set in config or environment.', 1)
 
 
         proxy_valid_hrs = 12
@@ -66,7 +66,7 @@ class ArchiveTransferGlobusOnline():
             proxy_valid_hrs = self.config[PROXY_VALID_HRS]
 
         if GO_USER not in self.config:
-            fwdie('Error:  Missing %s in config' % GO_USER, 1)
+            miscutils.fwdie('Error:  Missing %s in config' % GO_USER, 1)
 
     
         goclient = globonline.DESGlobusOnline(self.src_archive_info, self.dst_archive_info, credfile, 
@@ -76,7 +76,7 @@ class ArchiveTransferGlobusOnline():
         #retresults = copy.deepcopy(filelist)
         #for src, trans_info in trans_results.items():
         #    print "\n\n\nsrc = %s, trans_info = %s" % (src, trans_info)
-        #    filename = parse_fullname(src, CU_PARSE_FILENAME)
+        #    filename = miscutils.parse_fullname(src, miscutils.CU_PARSE_FILENAME)
         #    if trans_info is not None:
         #        retresults[filename].update(trans_info)
             
@@ -88,7 +88,7 @@ class ArchiveTransferGlobusOnline():
     def transfer_directory(self, relpath):
         """ Transfer a directory between two archives """
 
-        fwdebug(0, "ARCHIVE_TRANSFER_GLOBUSONLINE", "\trelpath: %s" % relpath)
+        miscutils.fwdebug(0, "ARCHIVE_TRANSFER_GLOBUSONLINE", "\trelpath: %s" % relpath)
 
         srcpath = "%s/%s" % (self.src_archive_info['root'], relpath)
         dstpath = "%s/%s" % (self.dst_archive_info['root'], relpath)
@@ -100,14 +100,14 @@ class ArchiveTransferGlobusOnline():
             credfile = os.environ['X509_USER_PROXY']
 
         if credfile is None:
-            fwdie('Error:  Cannot determine location of X509 proxy.  Either set in config or environment.', 1)
+            miscutils.fwdie('Error:  Cannot determine location of X509 proxy.  Either set in config or environment.', 1)
 
         proxy_valid_hrs = 12
         if PROXY_VALID_HRS in self.config:
             proxy_valid_hrs = self.config[PROXY_VALID_HRS]
 
         if GO_USER not in self.config:
-            fwdie('Error:  Missing %s in config' % GO_USER, 1)
+            miscutils.fwdie('Error:  Missing %s in config' % GO_USER, 1)
 
         goclient = globonline.DESGlobusOnline(self.src_archive_info, self.dst_archive_info, credfile, 
                                               self.config[GO_USER], proxy_valid_hrs)
@@ -119,7 +119,7 @@ class ArchiveTransferGlobusOnline():
 
         retresults = {}
         for fullname,finfo in dstlisting.items():
-            filename = parse_fullname(fullname, CU_PARSE_FILENAME)
+            filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
             if finfo is not None:   # include labels required by framework
                 if finfo['type'] == 'file':
                     retresults[filename]=finfo   
@@ -129,7 +129,7 @@ class ArchiveTransferGlobusOnline():
         # check for missing files
         srclisting = goclient.get_directory_listing(srcpath, self.src_archive_info['endpoint'], True)
         for fullname,finfo in srclisting.items():
-            filename = parse_fullname(fullname, CU_PARSE_FILENAME)
+            filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
             if finfo is not None and finfo['type'] == 'file' and filename not in retresults:
                 retresults[filename]=finfo
                 retresults[filename]['filesize'] = retresults[filename]['size']

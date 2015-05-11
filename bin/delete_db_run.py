@@ -8,8 +8,8 @@
 
 import sys
 import re
-import coreutils.desdbi as desdbi
-from coreutils.miscutils import *
+import despydmdb.desdmdbi as desdmdbi
+import despymisc.miscutils as miscutils
 
 
 def delete_using_run_vals(dbh, tablename, reqnum, unitname, attnum, verbose=0):
@@ -72,7 +72,7 @@ def delete_db_run(dbh, unitname, reqnum, attnum, verbose=0):
             files2del.append(line[0])
 
     if verbose > 3:
-        pretty_print_dict(del_by_table, None, True, 4)
+        miscutils.pretty_print_dict(del_by_table, None, True, 4)
         print "\n\n\n"
     
     sql = "select id from pfw_exec where unitname='%s' and reqnum='%s' and attnum='%s'" % (unitname, reqnum, attnum) 
@@ -149,7 +149,7 @@ if __name__ == "__main__":
     print "attnum =", attnum
     print "\n"
     
-    dbh = desdbi.DesDbi() 
+    dbh = desdmdbi.DesDmDbi() 
 
     try:
         delete_db_run(dbh, unitname, reqnum, attnum, 1)
