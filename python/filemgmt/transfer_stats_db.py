@@ -34,7 +34,6 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
     def __init__ (self, parent_task_id, root_task_id, config):
         if not miscutils.use_db(config):
             miscutils.fwdie("Error:  TransferStatsDB class requires DB but was told not to use DB", 1)
-
         self.desservices = None
         if config is not None and 'des_services' in config:
             self.desservices = config['des_services']
@@ -50,6 +49,12 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
 
         self.parent_task_id = parent_task_id
         self.root_task_id = root_task_id
+
+        if 'transfer_stats_per_file' in config:
+            self.transfer_stats_per_file = miscutils.convertBool(config['transfer_stats_per_file'])
+        else:
+            self.transfer_stats_per_file = False
+
         self.__initialize_values__()
 
 
@@ -123,12 +128,16 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
     def stat_beg_file(self, filename):
         """ Insert a row into a file transfer stats table (and task table) and commit """
         
-        miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "beg - %s" % filename)
-        if self.batch_task_id is None:
-            raise Exception('Cannot call this function without prior calling stat_beg_batch')
+        self.numfiles += 1
+        self.file_task_id = -1
 
-        row = {'filename': filename}
-        row['task_id'] = self.create_task(name = 'transfer_file', 
+        if self.transfer_stats_per_file:
+            miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "beg - %s" % filename)
+            if self.batch_task_id is None:
+                raise Exception('Cannot call this function without prior calling stat_beg_batch')
+
+            row = {'filename': filename}
+            row['task_id'] = self.create_task(name = 'transfer_file', 
                                           info_table = 'transfer_file',
                                           parent_task_id = self.batch_task_id,
                                           root_task_id = self.root_task_id,
@@ -136,13 +145,12 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
                                           do_begin = True,
                                           do_commit = False)
 
-        row['batch_task_id'] = self.batch_task_id
-        self.basic_insert_row('transfer_file', row)
-        self.commit()
+            row['batch_task_id'] = self.batch_task_id
+            self.basic_insert_row('transfer_file', row)
+            self.commit()
 
-        self.file_task_id = row['task_id']
-        self.numfiles += 1
-        miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "end - file_task_id = %s" % self.file_task_id)
+            self.file_task_id = row['task_id']
+            miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "end - file_task_id = %s" % self.file_task_id)
         return self.file_task_id
 
         
@@ -150,18 +158,19 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
     def stat_end_file(self, status, bytes=0, task_id=None):
         """ Update rows for end of file transfer and commit """
 
-        miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "beg - %s %s %s" % (status, bytes, task_id))
-
-        if task_id is None:
-            task_id = self.file_task_id
-        self.end_task(task_id, status)
-        wherevals = {'task_id': task_id}
-
         self.totbytes += bytes
-        updatevals= {'bytes': bytes}
 
-        self.basic_update_row('transfer_file', updatevals, wherevals)
-        self.commit()
-        miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "end")
+        if self.transfer_stats_per_file:
+            miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "beg - %s %s %s" % (status, bytes, task_id))
+
+            if task_id is None:
+                task_id = self.file_task_id
+            self.end_task(task_id, status)
+            wherevals = {'task_id': task_id}
+            updatevals= {'bytes': bytes}
+
+            self.basic_update_row('transfer_file', updatevals, wherevals)
+            self.commit()
+            miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "end")
 
 
