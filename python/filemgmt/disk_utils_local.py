@@ -130,6 +130,8 @@ def del_file_disk_list(filelist):
 ######################################################################
 def copyfiles(filelist, tstats):
     """ Copies files in given src,dst in filelist """
+
+    print filelist
     results = {}
     status = 0
     for filename, fdict in filelist.items():
@@ -138,10 +140,10 @@ def copyfiles(filelist, tstats):
             src = fdict['src']
             dst = fdict['dst']
 
-            #if 'filesize' in fdict:
-            #    fsize = fdict['filesize']
-            #elif os.path.exists(src):
-            #    fsize = os.path.getsize(filename)
+            if 'filesize' in fdict:
+                fsize = fdict['filesize']
+            elif os.path.exists(src):
+                fsize = os.path.getsize(src)
 
             if not os.path.exists(dst):
                 if tstats is not None:
@@ -156,7 +158,7 @@ def copyfiles(filelist, tstats):
             status = 1
             if tstats is not None:
                 tstats.stat_end_file(1, fsize)
-            (etype, value, traceback) = sys.exc_info()
+            (etype, value, trback) = sys.exc_info()
             filelist[filename]['err'] = str(value)
     return (status, filelist)
 
