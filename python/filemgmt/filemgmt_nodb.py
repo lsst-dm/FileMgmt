@@ -62,6 +62,8 @@ class FileMgmtNoDB ():
                 in_archive.append(f)
         return in_archive
                 
+    def save_file_info(self, artifacts, metadata, prov, execids):
+        pass
 
     def ingest_file_metadata(self, filemeta):
         pass

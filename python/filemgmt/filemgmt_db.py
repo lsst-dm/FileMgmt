@@ -74,9 +74,10 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         else:
             fileconfig = None
             if 'config' in args and args['config'] is not None:
-                import intgutils.wclutils as wclutils
+                from intgutils.wcl import WCL
+                fileconfig = WCL()
                 with open(args['config'], 'r') as fh:
-                    fileconfig = wclutils.read_wcl(fh)
+                    fileconfig.read_wcl(fh)
                     self.config.update(fileconfig)
 
 
@@ -530,8 +531,14 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                 NVL(a2.compression,'1') = NVL(gt.compression,'1')
             )""" % gtt_name
         cursor = self.cursor()
-        cursor.execute(sqlstr)
-
+        try:
+            cursor.execute(sqlstr)
+        except Exception as exc:
+            print "Error: problems creating artifacts"
+            print "       %s\n" % exc
+            print "Values trying to load:"
+            print filelist
+            raise
         
     def getFilenameIdMap(self, prov):
         DELIM = ","

@@ -15,14 +15,14 @@ import sys
 import time
 from collections import OrderedDict
 
-import wrappers.WrapperUtils as wraputils    # read metadata from fits file
+import despymisc.miscutils as miscutils
+#import wrappers.WrapperUtils as wraputils    # read metadata from fits file
 import filemgmt.disk_utils_local as diskutils
 import filemgmt.filemgmt_defs as fmdefs
-import despymisc.miscutils as miscutils
-import intgutils.metautils as metautils
-import intgutils.metadefs as imetadefs
+import filemgmt.metautils as metautils
+import filemgmt.metadefs as metadefs
 
-VERSION = '$Rev$'
+__version__ = '$Rev$'
 
 
 ###########################################################################
@@ -189,9 +189,9 @@ def get_register_metadata_specs(ftype, filemgmt, verbose):
         for key in metaspecs:
             #print "metaspecs key = ", key
             if type(metaspecs[key]) == dict or type(metaspecs[key]) == OrderedDict:
-                if imetadefs.WCL_META_WCL in metaspecs[key]:
+                if metadefs.WCL_META_WCL in metaspecs[key]:
                     #print "deleting wcl from", key
-                    del metaspecs[key][imetadefs.WCL_META_WCL]   # remove wcl requirements for manual file ingestion
+                    del metaspecs[key][metadefs.WCL_META_WCL]   # remove wcl requirements for manual file ingestion
                 elif len(metaspecs[key]) == 0:
                     #print "deleting", key
                     del metaspecs[key]
@@ -201,8 +201,7 @@ def get_register_metadata_specs(ftype, filemgmt, verbose):
         if verbose >= 3:
             # print metaspecs to stdout
             print "\n\nmetaspecs = "
-            import intgutils.wclutils as wclutils
-            wclutils.write_wcl(metaspecs)
+            miscutils.pretty_print_dict(metaspecs, sortit=True)
             print "\n\n"
 
 
@@ -236,8 +235,7 @@ def save_file_info(filemgmt, task_id, ftype, metaspecs, filelist, save_md5sum, v
         if verbose >= 3:
             print "\n\noutput wcl"
             if filemeta is not None:
-                import intgutils.wclutils as wclutils
-                wclutils.write_wcl(filemeta)
+                miscutils.pretty_print_dict(filemeta, sortit=True)
             else:
                 print "None"
 
@@ -290,8 +288,7 @@ def save_file_info(filemgmt, task_id, ftype, metaspecs, filelist, save_md5sum, v
             print "\n\n\nError: %s" % err
             print "Rerun using --outcfg <outfile> to see config from DB, esp filetype_metadata"
             print "---------- filemeta to ingest:"
-            import intgutils.wclutils as wclutils
-            wclutils.write_wcl(filemeta)
+            miscutils.pretty_print_dict(metaspecs, sortit=True)
             print "----------"
             raise
         print "DONE (%0.2f secs)" % (endtime-starttime)
@@ -385,7 +382,7 @@ def main(args):
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout
 
-    m = re.search('\$Rev:\s+(\d+)\s+\$', VERSION)
+    m = re.search('\$Rev:\s+(\d+)\s+\$', __version__)
     print '\nUsing revision %s of %s\n' % (m.group(1), os.path.basename(sys.argv[0]))
 
     if args['version']:
@@ -436,9 +433,10 @@ def main(args):
         filemgmt_class = args['classmgmt']
     elif args['config']:
         if args['config'] is not None:
-            import intgutils.wclutils as wclutils
+            from intgutils.wcl import WCL
+            config = WCL()
             with open(args['config'], 'r') as fh:
-                config = wclutils.read_wcl(fh)
+                config.read_wcl(fh)
         if archive in config['archive']:
             filemgmt_class = config['archive'][archive]['filemgmt']
         else:
@@ -476,9 +474,8 @@ def main(args):
 
 
     if args['outcfg'] is not None:
-        import intgutils.wclutils as wclutils
         with open(args['outcfg'], 'w') as fh:
-           wclutils.write_wcl(filemgmt.config, fh)
+            filemgmt.config.write_wcl(fh)
 
     print "Creating list of files to register...",
     starttime = time.time()
