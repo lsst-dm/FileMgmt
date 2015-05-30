@@ -12,9 +12,10 @@ import sys
 import time
 import argparse
 import despymisc.miscutils as miscutils
+import despymisc.provdefs as provdefs
 import filemgmt.disk_utils_local as diskutils
 import despydmdb.desdmdbi as desdmdbi
-from filemgmt import filemgmt_defs as fdefs
+from filemgmt import filemgmt_defs as fmdefs
 
 class FileCompressor:
     
@@ -91,15 +92,15 @@ class FileCompressor:
         return self._errmsg
 
     def _createartifact(self):
-        sqlstr = "select id from %s where name=:fname and compression=:comp" % fdefs.PROV_ARTIFACT_TABLE
+        sqlstr = "select id from %s where name=:fname and compression=:comp" % fmdefs.PROV_ARTIFACT_TABLE
         cur = self._dbh.cursor()
         cur.execute(sqlstr,{'fname':self._filename,'comp':self._ext})
         compartid = None
         for row in cur:
             compartid = row[0]
         if compartid == None:
-            compartid = self._dbh.get_seq_next_value(fdefs.PROV_ARTIFACT_TABLE + "_SEQ")
-            self._dbh.basic_insert_row(fdefs.PROV_ARTIFACT_TABLE,
+            compartid = self._dbh.get_seq_next_value(fmdefs.PROV_ARTIFACT_TABLE + "_SEQ")
+            self._dbh.basic_insert_row(fmdefs.PROV_ARTIFACT_TABLE,
                 {'id':compartid,'name':self._filename,'compression':self._ext, 
                  'filesize': self._outfile_size, 'md5sum': self._outfile_md5sum})
         self._outfile_artifact_id = compartid
@@ -117,17 +118,19 @@ class FileCompressor:
                  'path':self._path})
 
     def _addwgb(self,task_id):
-        self._dbh.basic_insert_row(fdefs.PROV_WGB_TABLE,
-                {'task_id':task_id,'opm_artifact_id':self._outfile_artifact_id})
+        self._dbh.basic_insert_row(fmdefs.PROV_WGB_TABLE,
+                {fmdefs.PROV_TASK_ID:task_id,
+                 fmdefs.OPM_ARTIFACT_ID:self._outfile_artifact_id})
 
     def _addwdf(self):
-        self._dbh.basic_insert_row(fdefs.PROV_WDF_TABLE,
-                {'parent_opm_artifact_id':self._infile_artifact_id,
-                 'child_opm_artifact_id':self._outfile_artifact_id})
+        self._dbh.basic_insert_row(fmdefs.PROV_WDF_TABLE,
+                {fmdefs.PARENT_OPM_ARTIFACT_ID:self._infile_artifact_id,
+                 fmdefs.CHILD_OPM_ARTIFACT_ID:self._outfile_artifact_id})
 
     def _addused(self,task_id):
-        self._dbh.basic_insert_row(fdefs.PROV_USED_TABLE,
-                {'task_id':task_id,'opm_artifact_id':self._infile_artifact_id})
+        self._dbh.basic_insert_row(fmdefs.PROV_USED_TABLE,
+                {fmdefs.PROV_TASK_ID:task_id,
+                 fmdefs.OPM_ARTIFACT_ID:self._infile_artifact_id})
 
     def updatedb(self,task_id,do_commit=True):
         if self._dbh == None:
@@ -143,26 +146,26 @@ class FileCompressor:
 
     def getProvenanceData(self, exec_id, updateMe):
         if updateMe == None:
-            updateMe = {fdefs.PROV_USED:{},fdefs.PROV_WGB:{},fdefs.PROV_WDF:[]}
+            updateMe = {provdefs.PROV_USED:{},provdefs.PROV_WGB:{},provdefs.PROV_WDF:[]}
         else:
-            if fdefs.PROV_USED not in updateMe:
-                updateMe[fdefs.PROV_USED] = {}
-            if fdefs.PROV_WGB not in updateMe:
-                updateMe[fdefs.PROV_WGB] = {}
-            if fdefs.PROV_WDF not in updateMe:
-                updateMe[fdefs.PROV_WDF] = []
+            if provdefs.PROV_USED not in updateMe:
+                updateMe[provdefs.PROV_USED] = {}
+            if provdefs.PROV_WGB not in updateMe:
+                updateMe[provdefs.PROV_WGB] = {}
+            if provdefs.PROV_WDF not in updateMe:
+                updateMe[provdefs.PROV_WDF] = []
         
-        if exec_id in updateMe[fdefs.PROV_USED]:    
-            updateMe[fdefs.PROV_USED][exec_id] += fdefs.PROV_DELIM + self._filename
+        if exec_id in updateMe[provdefs.PROV_USED]:    
+            updateMe[provdefs.PROV_USED][exec_id] += provdefs.PROV_DELIM + self._filename
         else:
-            updateMe[fdefs.PROV_USED][exec_id] = self._filename
+            updateMe[provdefs.PROV_USED][exec_id] = self._filename
 
-        if exec_id in updateMe[fdefs.PROV_WGB]:
-            updateMe[fdefs.PROV_WGB][exec_id] += fdefs.PROV_DELIM + self._filename + self._ext
+        if exec_id in updateMe[provdefs.PROV_WGB]:
+            updateMe[provdefs.PROV_WGB][exec_id] += provdefs.PROV_DELIM + self._filename + self._ext
         else:
-            updateMe[fdefs.PROV_WGB][exec_id] = self._filename + self._ext
-        updateMe[fdefs.PROV_WDF].append(
-            {fdefs.PROV_PARENTS:self._filename,fdefs.PROV_CHILDREN:self._filename + self._ext})
+            updateMe[provdefs.PROV_WGB][exec_id] = self._filename + self._ext
+        updateMe[provdefs.PROV_WDF].append(
+            {provdefs.PROV_PARENTS:self._filename,provdefs.PROV_CHILDREN:self._filename + self._ext})
 
 
 
