@@ -20,6 +20,7 @@ from collections import OrderedDict
 
 import despydmdb.desdmdbi as desdmdbi
 import despymisc.miscutils as miscutils
+import despymisc.provdefs as provdefs
 import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.errors as fmerrs
 import filemgmt.utils as fmutils
@@ -541,26 +542,21 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             raise
         
     def getFilenameIdMap(self, prov):
-        DELIM = ","
-        USED  = "used"
-        WGB   = "was_generated_by"
-        WDF   = "was_derived_from"
-
         miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "prov = %s" % prov)
 
         allfiles = set()
-        if USED in prov:
-            for filenames in prov[USED].values():
-                for file in filenames.split(DELIM):
+        if provdefs.PROV_USED in prov:
+            for filenames in prov[provdefs.PROV_USED].values():
+                for file in filenames.split(provdefs.PROV_DELIM):
                     allfiles.add(file.strip())
-        if WGB in prov:
-            for filenames in prov[WGB].values():
-                for file in filenames.split(DELIM):
+        if provdefs.PROV_WGB in prov:
+            for filenames in prov[provdefs.PROV_WGB].values():
+                for file in filenames.split(provdefs.PROV_DELIM):
                     allfiles.add(file.strip())
-        if WDF in prov:
-            for tuples in prov[WDF].values():
+        if provdefs.PROV_WDF in prov:
+            for tuples in prov[provdefs.PROV_WDF].values():
                 for filenames in tuples.values():
-                    for file in filenames.split(DELIM):
+                    for file in filenames.split(provdefs.PROV_DELIM):
                         allfiles.add(file.strip())
 
         result = []
@@ -584,21 +580,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
 
     def ingest_provenance(self, prov, execids):
-        DELIM = ","
-        USED  = "used"
-        WGB   = "was_generated_by"
-        WDF   = "was_derived_from"
-        TASK_ID = "TASK_ID"
-        OPM_ARTIFACT_ID = "OPM_ARTIFACT_ID"
-        PARENT_OPM_ARTIFACT_ID = "PARENT_OPM_ARTIFACT_ID"
-        CHILD_OPM_ARTIFACT_ID  = "CHILD_OPM_ARTIFACT_ID"
-        USED_TABLE = "OPM_USED"
-        WGB_TABLE  = "OPM_WAS_GENERATED_BY"
-        WDF_TABLE  = "OPM_WAS_DERIVED_FROM"
-        COLMAP_USED_WGB = [TASK_ID,OPM_ARTIFACT_ID]
-        COLMAP_WDF = [PARENT_OPM_ARTIFACT_ID,CHILD_OPM_ARTIFACT_ID]
-        PARENTS = "parents"
-        CHILDREN = "children"
+        COLMAP_USED_WGB = [fmdefs.PROV_TASK_ID, fmdefs.OPM_ARTIFACT_ID]
+        COLMAP_WDF = [fmdefs.PARENT_OPM_ARTIFACT_ID, fmdefs.CHILD_OPM_ARTIFACT_ID]
 
         insertSQL = """insert into %s d (%s) select %s,%s %s where not exists(
                     select * from %s n where n.%s=%s and n.%s=%s)"""
@@ -609,49 +592,49 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         filemap = self.getFilenameIdMap(prov)
         miscutils.fwdebug(6, 'FILEMGMT_DEBUG', "filemap = %s" % filemap)
 
-        if USED in prov:
-            for execname, filenames in prov[USED].iteritems():
-                for file in filenames.split(DELIM):
+        if provdefs.PROV_USED in prov:
+            for execname, filenames in prov[provdefs.PROV_USED].iteritems():
+                for file in filenames.split(provdefs.PROV_DELIM):
                     rowdata = []
                     rowdata.append(execids[execname])
                     rowdata.append(filemap[file.strip()])
                     rowdata.append(execids[execname])
                     rowdata.append(filemap[file.strip()])
                     data.append(rowdata)
-            execSQL = insertSQL % (USED_TABLE, TASK_ID + "," + OPM_ARTIFACT_ID,
-                bindStr, bindStr,self.from_dual(), USED_TABLE, TASK_ID, bindStr,
-                OPM_ARTIFACT_ID, bindStr)
+            execSQL = insertSQL % (fmdefs.PROV_USED_TABLE, fmdefs.PROV_TASK_ID + "," + fmdefs.OPM_ARTIFACT_ID,
+                bindStr, bindStr,self.from_dual(), fmdefs.PROV_USED_TABLE, fmdefs.PROV_TASK_ID, bindStr,
+                fmdefs.OPM_ARTIFACT_ID, bindStr)
             cursor.executemany(execSQL, data)
             data = []
 
-        if WGB in prov:
-            for execname, filenames in prov[WGB].iteritems():
-                for file in filenames.split(DELIM):
+        if provdefs.PROV_WGB in prov:
+            for execname, filenames in prov[provdefs.PROV_WGB].iteritems():
+                for file in filenames.split(provdefs.PROV_DELIM):
                     rowdata = []
                     rowdata.append(execids[execname])
                     rowdata.append(filemap[file.strip()])
                     rowdata.append(execids[execname])
                     rowdata.append(filemap[file.strip()])
                     data.append(rowdata)
-            execSQL = insertSQL % (WGB_TABLE, TASK_ID + "," + OPM_ARTIFACT_ID,
-                bindStr, bindStr, self.from_dual(), WGB_TABLE, TASK_ID, bindStr,
-                OPM_ARTIFACT_ID, bindStr)
+            execSQL = insertSQL % (fmdefs.PROV_WGB_TABLE, fmdefs.PROV_TASK_ID + "," + fmdefs.OPM_ARTIFACT_ID,
+                bindStr, bindStr, self.from_dual(), fmdefs.PROV_WGB_TABLE, fmdefs.PROV_TASK_ID, bindStr,
+                fmdefs.OPM_ARTIFACT_ID, bindStr)
             cursor.executemany(execSQL, data)
             data = []
 
-        if WDF in prov:
-            for tuples in prov[WDF].values():
-                for parentfile in tuples[PARENTS].split(DELIM):
-                    for childfile in tuples[CHILDREN].split(DELIM):
+        if provdefs.PROV_WDF in prov:
+            for tuples in prov[provdefs.PROV_WDF].values():
+                for parentfile in tuples[provdefs.PROV_PARENTS].split(provdefs.PROV_DELIM):
+                    for childfile in tuples[provdefs.PROV_CHILDREN].split(provdefs.PROV_DELIM):
                         rowdata = []
                         rowdata.append(filemap[parentfile.strip()])
                         rowdata.append(filemap[childfile.strip()])
                         rowdata.append(filemap[parentfile.strip()])
                         rowdata.append(filemap[childfile.strip()])
                         data.append(rowdata)
-            execSQL = insertSQL % (WDF_TABLE, PARENT_OPM_ARTIFACT_ID + "," +
-                CHILD_OPM_ARTIFACT_ID, bindStr, bindStr, self.from_dual(),
-                WDF_TABLE, PARENT_OPM_ARTIFACT_ID, bindStr, CHILD_OPM_ARTIFACT_ID,
+            execSQL = insertSQL % (fmdefs.PROV_WDF_TABLE, fmdefs.PARENT_OPM_ARTIFACT_ID + "," +
+                fmdefs.CHILD_OPM_ARTIFACT_ID, bindStr, bindStr, self.from_dual(),
+                fmdefs.PROV_WDF_TABLE, fmdefs.PARENT_OPM_ARTIFACT_ID, bindStr, fmdefs.CHILD_OPM_ARTIFACT_ID,
                 bindStr)
             cursor.executemany(execSQL, data)
     #        self.commit()
