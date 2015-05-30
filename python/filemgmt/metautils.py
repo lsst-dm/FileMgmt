@@ -11,12 +11,13 @@ Contains utilities for use with generating WCL for collecting file metadata/upda
 
 from collections import OrderedDict
 import re
+import pyfits
 
 import despymisc.miscutils as miscutils
 import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.metadefs as metadefs
 import despyfits.fitsutils as fitsutils
-import filemgmt.special_metadata_funcs as smfuncs
+import despyfits.fits_special_metadata as spmeta
 
 
 
@@ -254,6 +255,7 @@ def update_headers_file(hdulist, update_info):
     fullname = hdulist.filename()
 
     # camsym = $HDRFNC{CAMSYM}/a char for Camera (D,S)/str
+    # camsym = $OPTFNC{CAMSYM}/a char for Camera (D,S)/str
     # update_info = {whichhdu :[(key, val, def)]}
     miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: fullname=%s, update_info=%s" % (fullname, update_info))
 
@@ -273,15 +275,31 @@ def update_headers_file(hdulist, update_info):
 
                 miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: whichhdu=%s, data=%s" % (whichhdu, data))
                 val = data[0]
-                if '$HDRFNC' in data[0]:
-                    match = re.search("(?i)\$HDRFNC\{([^}]+)\}", data[0])
+
+                if '$HDRFNC' in val:
+                    match = re.search("(?i)\$HDRFNC\{([^}]+)\}", val)
                     if match:
                         funckey = match.group(1)
-                        specmf = getattr(smfuncs, 'func_%s' % funckey.lower())
+                        specmf = getattr(spmeta, 'func_%s' % funckey.lower())
                         val = specmf(fullname, hdulist, whichhdu)
+                        miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: hdr.update(%s, %s, %s)" % (key.upper(), val, data[1]))
+                        hdr[key.upper()] = (val, data[1])
+                elif '$OPTFNC' in val:
+                    match = re.search("(?i)\$OPTFNC\{([^}]+)\}", val)
+                    if match:
+                        funckey = match.group(1)
+                        specmf = getattr(spmeta, 'func_%s' % funckey.lower())
+                        try:
+                            val = specmf(fullname, hdulist, whichhdu)
+                        except:
+                            miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: Optional value %s not found" % (key))
+                        else:
+                            miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: hdr.update(%s, %s, %s)" % (key.upper(), val, data[1]))
+                            hdr[key.upper()] = (val, data[1])
+                else:
+                    miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: hdr.update(%s, %s, %s)" % (key.upper(), val, data[1]))
+                    hdr[key.upper()] = (val, data[1])
 
-                miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: hdr.update(%s, %s, %s)" % (key.upper(), val, data[1]))
-                hdr.update(key.upper(), val, data[1])
 
     miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: end")
 
@@ -376,8 +394,8 @@ def gather_metadata_file(hdulist, fullname, metadata_defs, extra_info):
 def process_file(self, outfile, filedef, metadef):
         """ Steps """
 
-        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: begin", WRAPPER_OUTPUT_PREFIX)
-        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: outfile = %s" % outfile, WRAPPER_OUTPUT_PREFIX)
+        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: begin")
+        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: outfile = %s" % outfile)
 
         # open file
         hdulist = pyfits.open(outfile, 'update')
@@ -396,5 +414,5 @@ def process_file(self, outfile, filedef, metadef):
         # close file
         hdulist.close()
 
-        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: end", WRAPPER_OUTPUT_PREFIX)
+        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: end")
         return metadata
