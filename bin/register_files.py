@@ -181,7 +181,7 @@ def get_register_metadata_specs(ftype, filemgmt, verbose):
         #    updatemeta = None
 
         if metaspecs is None:
-            msg = "Error: Could not find metadata specs for filetype '%s'" % filetype
+            msg = "Error: Could not find metadata specs for filetype '%s'" % ftype
             print msg
             print "Minimum metadata specs for a filetype are defs for filetype and filename"
             miscutils.fwdie("Aborting", fmdefs.FM_EXIT_FAILURE)
