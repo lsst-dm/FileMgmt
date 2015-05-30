@@ -131,7 +131,6 @@ def del_file_disk_list(filelist):
 def copyfiles(filelist, tstats):
     """ Copies files in given src,dst in filelist """
 
-    print filelist
     results = {}
     status = 0
     for filename, fdict in filelist.items():
