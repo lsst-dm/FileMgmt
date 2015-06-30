@@ -104,7 +104,7 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
         return self.batch_task_id
 
 
-    def stat_end_batch(self, status, totbytes = 0, numfiles = 0, task_id = None):
+    def stat_end_batch(self, status, totbytes=0, numfiles=0, task_id=None):
         """ Update rows for end of a batch transfer and commit """
 
         miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "beg - %s %s %s" % (status, totbytes, task_id))
@@ -158,7 +158,8 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
     def stat_end_file(self, status, bytes=0, task_id=None):
         """ Update rows for end of file transfer and commit """
 
-        self.totbytes += bytes
+	if bytes is not None:
+            self.totbytes += bytes
 
         if self.transfer_stats_per_file:
             miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "beg - %s %s %s" % (status, bytes, task_id))
@@ -172,5 +173,3 @@ class TransferStatsDB (desdmdbi.DesDmDbi):
             self.basic_update_row('transfer_file', updatevals, wherevals)
             self.commit()
             miscutils.fwdebug(3, 'TRANSFERSTATS_DEBUG', "end")
-
-
