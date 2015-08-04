@@ -251,13 +251,15 @@ def update_headers_file(hdulist, update_info):
     """ Update/insert key/value into header of single output file """
     # update_info { file_header_name: 'value/definition/fits data type', ... }
 
-    miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: begin")
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print(3, 'FM_METAUTILS_DEBUG', "INFO: begin")
     fullname = hdulist.filename()
 
     # camsym = $HDRFNC{CAMSYM}/a char for Camera (D,S)/str
     # camsym = $OPTFNC{CAMSYM}/a char for Camera (D,S)/str
     # update_info = {whichhdu :[(key, val, def)]}
-    miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: fullname=%s, update_info=%s" % (fullname, update_info))
+    if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: fullname=%s, update_info=%s" % (fullname, update_info))
 
     if update_info is not None:
         for whichhdu in sorted(update_info.keys()):
@@ -273,7 +275,8 @@ def update_headers_file(hdulist, update_info):
             for key, updline in update_info[whichhdu].items():
                 data = miscutils.fwsplit(updline, '/')
 
-                miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: whichhdu=%s, data=%s" % (whichhdu, data))
+                if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+                    miscutils.fwdebug_print("INFO: whichhdu=%s, data=%s" % (whichhdu, data))
                 val = data[0]
 
                 if '$HDRFNC' in val:
@@ -282,7 +285,9 @@ def update_headers_file(hdulist, update_info):
                         funckey = match.group(1)
                         specmf = getattr(spmeta, 'func_%s' % funckey.lower())
                         val = specmf(fullname, hdulist, whichhdu)
-                        miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: hdr.update(%s, %s, %s)" % (key.upper(), val, data[1]))
+                        if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+                            miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" % \
+                                                    (key.upper(), val, data[1]))
                         hdr[key.upper()] = (val, data[1])
                 elif '$OPTFNC' in val:
                     match = re.search("(?i)\$OPTFNC\{([^}]+)\}", val)
@@ -292,16 +297,21 @@ def update_headers_file(hdulist, update_info):
                         try:
                             val = specmf(fullname, hdulist, whichhdu)
                         except:
-                            miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: Optional value %s not found" % (key))
+                            miscutils.fwdebug_print("INFO: Optional value %s not found" % (key))
                         else:
-                            miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: hdr.update(%s, %s, %s)" % (key.upper(), val, data[1]))
+                            if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+                                miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" % 
+                                                        (key.upper(), val, data[1]))
                             hdr[key.upper()] = (val, data[1])
                 else:
-                    miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: hdr.update(%s, %s, %s)" % (key.upper(), val, data[1]))
+                    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+                        miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" % \
+                                                (key.upper(), val, data[1]))
                     hdr[key.upper()] = (val, data[1])
 
 
-    miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: end")
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: end")
 
 
 ######################################################################
@@ -312,14 +322,17 @@ def convert_metadata_specs(metadata_def, file_header_info):
     if metadata_def is None:
         return metadata2
 
-    miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: metadata_def.keys()=%s" % (metadata_def.keys()))
-    miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: metadata_def=%s" % (metadata_def))
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: metadata_def.keys()=%s" % (metadata_def.keys()))
+    if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: metadata_def=%s" % (metadata_def))
 
     metadata2['wcl'] = []
     metadata2['headers'] = {}
     metadata2['update'] = {}
     for hdu in [i for i in metadata_def.keys() if isinstance(metadata_def[i], dict)]:
-        miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: hdu=%s" % (hdu))
+        if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+            miscutils.fwdebug_print("INFO: hdu=%s" % (hdu))
         metadata2['headers'][hdu] = []
         metadata2['update'][hdu] = {}
         for metastatus in metadata_def[hdu].keys():
@@ -332,7 +345,8 @@ def convert_metadata_specs(metadata_def, file_header_info):
             if 'h' in dict1:
                 metadata2['headers'][hdu].extend(dict1['h'].keys())
 
-    miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: metadata2=%s" % (metadata2))
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: metadata2=%s" % (metadata2))
     return metadata2
 
 
@@ -347,14 +361,17 @@ def gather_metadata_file(hdulist, fullname, metadata_defs, extra_info):
     elif fullname is None:
         fullname = hdulist.filename()
 
-    miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: Beg file=%s" % (fullname))
-    miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: metadata_defs=%s" % (metadata_defs))
-    miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: extra_info=%s" % (extra_info))
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: Beg file=%s" % (fullname))
+    if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: metadata_defs=%s" % (metadata_defs))
+        miscutils.fwdebug_print("INFO: extra_info=%s" % (extra_info))
 
     metadata = { 'fullname': fullname }
 
     if 'wcl' in metadata_defs:
-        miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: wcl=%s" % (metadata_defs['wcl']))
+        if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+            miscutils.fwdebug_print("INFO: wcl=%s" % (metadata_defs['wcl']))
 
         wcllist = None
         if isinstance(metadata_defs['wcl'], str):
@@ -368,13 +385,16 @@ def gather_metadata_file(hdulist, fullname, metadata_defs, extra_info):
             elif metakey == 'filename':
                 metadata['filename'] = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
             else:
-                miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: wclkey=%s" % (wclkey))
+                if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+                    miscutils.fwdebug("INFO: wclkey=%s" % (wclkey))
                 metadata[metakey] = extra_info[wclkey]
 
     if 'headers' in metadata_defs:
-        miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: headers=%s" % (metadata_defs['headers']))
+        if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+            miscutils.fwdebug_print("INFO: headers=%s" % (metadata_defs['headers']))
         for hdu, keys in metadata_defs['headers'].items():
-            miscutils.fwdebug(6, 'FM_METAUTILS_DEBUG', "INFO: hdu=%s, keys=%s" % (hdu, keys))
+            if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+                miscutils.fwdebug_print("INFO: hdu=%s, keys=%s" % (hdu, keys))
             keylist = None
             if isinstance(metadata_defs['wcl'], str):
                 keylist = miscutils.fwsplit(keys, ',')
@@ -384,9 +404,11 @@ def gather_metadata_file(hdulist, fullname, metadata_defs, extra_info):
                 try:
                     metadata[key] = fitsutils.get_hdr_value(hdulist, key.upper(), hdu)
                 except KeyError:
-                    miscutils.fwdebug(0, 'FM_METAUTILS_DEBUG', "INFO: didn't find key %s in %s header of file %s" % (key, hdu, fullname))
+                    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+                        miscutils.fwdebug_print("INFO: didn't find key %s in %s header of file %s" % (key, hdu, fullname))
 
-    miscutils.fwdebug(3, 'FM_METAUTILS_DEBUG', "INFO: end")
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: end")
     return metadata
 
 
@@ -394,25 +416,30 @@ def gather_metadata_file(hdulist, fullname, metadata_defs, extra_info):
 def process_file(self, outfile, filedef, metadef):
         """ Steps """
 
-        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: begin")
-        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: outfile = %s" % outfile)
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: begin")
+        miscutils.fwdebug_print("INFO: outfile = %s" % outfile)
+    if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: filedef = %s" % filedef)
 
-        # open file
-        hdulist = pyfits.open(outfile, 'update')
+    # open file
+    hdulist = pyfits.open(outfile, 'update')
 
-        # update headers
-        updatedef = None
-        if 'update' in metadef:
-            updatedef = metadef['update']
+    # update headers
+    updatedef = None
+    if 'update' in metadef:
+        updatedef = metadef['update']
 
-        # call even if no update in case special wrapper has overloaded func
-        self.update_headers_file(hdulist, filedef, updatedef)
+    # call even if no update in case special wrapper has overloaded func
+    self.update_headers_file(hdulist, filedef, updatedef)
 
-        # read metadata
-        metadata = self.gather_metadata_file(hdulist, metadef)
+    # read metadata
+    metadata = self.gather_metadata_file(hdulist, metadef)
 
-        # close file
-        hdulist.close()
+    # close file
+    hdulist.close()
 
-        miscutils.fwdebug(3, 'BASICWRAP_DEBUG', "INFO: end")
-        return metadata
+    if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
+        miscutils.fwdebug_print("INFO: end")
+    return metadata
+

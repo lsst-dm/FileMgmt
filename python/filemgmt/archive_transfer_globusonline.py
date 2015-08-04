@@ -88,7 +88,8 @@ class ArchiveTransferGlobusOnline():
     def transfer_directory(self, relpath):
         """ Transfer a directory between two archives """
 
-        miscutils.fwdebug(0, "ARCHIVE_TRANSFER_GLOBUSONLINE", "\trelpath: %s" % relpath)
+        if miscutils.fwdebug_check(0, "ARCHIVE_TRANSFER_GLOBUSONLINE"):
+            miscutils.fwdebug_print("\trelpath: %s" % relpath)
 
         srcpath = "%s/%s" % (self.src_archive_info['root'], relpath)
         dstpath = "%s/%s" % (self.dst_archive_info['root'], relpath)

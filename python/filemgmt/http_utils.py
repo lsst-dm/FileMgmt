@@ -106,9 +106,10 @@ class HttpUtils():
         for x in range(0,numTries):
             if not isTest:
                 if x == 0: 
-                    miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "curl command: %s" % cmd)
+                    if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
+                        miscutils.fwdebug_print("curl command: %s" % cmd)
                 else:
-                    miscutils.fwdebug(0, "HTTP_UTILS_DEBUG", "Repeating curl command after failure (%d): %s" % (x,cmd))
+                    miscutils.fwdebug_print("Repeating curl command after failure (%d): %s" % (x,cmd))
 
             if not useShell:
                 process = subprocess.Popen(cmd.split(), shell=False, stdin=subprocess.PIPE,
@@ -266,13 +267,14 @@ class HttpUtils():
                         tstats.stat_end_file(0, fsize)
 
                 # Print some debugging info:
-                miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "\n")
-                for lines in traceback.format_stack():
-                    for L in lines.split('\n'):
-                        if L.strip() != '':
-                            miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "call stack: %s" % L)
+                if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
+                    miscutils.fwdebug_print("\n")
+                    for lines in traceback.format_stack():
+                        for L in lines.split('\n'):
+                            if L.strip() != '':
+                                miscutils.fwdebug_print("call stack: %s" % L)
 
-                miscutils.fwdebug(3, "HTTP_UTILS_DEBUG", "Copy info: %d %s %s %s %s %s" % (HttpUtils.copyfiles_called,
+                    miscutils.fwdebug_print(3, "HTTP_UTILS_DEBUG", "Copy info: %s %s %s %s %s %s" % (HttpUtils.copyfiles_called,
                                                                              fdict['filename'],
                                                                              fsize,
                                                                              copy_time,
@@ -294,7 +296,7 @@ class HttpUtils():
                 if tstats is not None:
                     tstats.stat_end_file(1, fsize)
                 filelist[filename]['err'] = str(err)
-                print str(err)
+                miscutils.fwdebug_print(str(err))
         
         if tstats is None:
             print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \

@@ -21,16 +21,19 @@ def get_config_vals(archive_info, config, keylist):
         elif config is not None and k in config:
             info[k] = config[k]
         elif stat.lower() == 'req':
-            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', '******************************')
-            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', 'keylist = %s' % keylist)
-            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', 'archive_info = %s' % archive_info)
-            miscutils.fwdebug(0, 'ARCHIVE_TRANSFER_UTILS_DEBUG', 'config = %s' % config)
+            miscutils.fwdebug_print('******************************')
+            miscutils.fwdebug_print('keylist = %s' % keylist)
+            miscutils.fwdebug_print('archive_info = %s' % archive_info)
+            miscutils.fwdebug_print('config = %s' % config)
             miscutils.fwdie('Error: Could not find required key (%s)' % k, 1, 2)
     return info
               
 
 
 def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, filelist, config=None):
+    if miscutils.fwdebug_check(3, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("BEG")
+
     src_archive = src_archive_info['name']
     dst_archive = dst_archive_info['name']
 
@@ -41,14 +44,20 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
     valDict = get_config_vals(dst_archive_info, config, dstfilemgmt_class.requested_config_vals())
     dstfilemgmt = dstfilemgmt_class(config=valDict)
 
-    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_archive = %s" % dst_archive)
-    dst_file_archive_info = dstfilemgmt.get_file_archive_info(filelist, dst_archive, fmdefs.FM_PREFER_UNCOMPRESSED)
-    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "number of files already at dst %s" % len(dst_file_archive_info))
-    miscutils.fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_file_archive_info %s" % dst_file_archive_info)
+    if miscutils.fwdebug_check(0, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("dst_archive = %s" % dst_archive)
+    dst_file_archive_info = dstfilemgmt.get_file_archive_info(filelist, dst_archive, 
+                                                              fmdefs.FM_PREFER_UNCOMPRESSED)
+    if miscutils.fwdebug_check(3, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("number of files already at dst %s" % len(dst_file_archive_info))
+    if miscutils.fwdebug_check(6, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("dst_file_archive_info %s" % dst_file_archive_info)
     files2stage = set(filelist) - set(dst_file_archive_info.keys())
 
-    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "number of files to stage %s" % len(files2stage))
-    miscutils.fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "files to stage %s" % files2stage)
+    if miscutils.fwdebug_check(3, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("number of files to stage %s" % len(files2stage))
+    if miscutils.fwdebug_check(6, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("files to stage %s" % files2stage)
 
     if files2stage is not None and len(files2stage) > 0:
         ## Stage files not already on dst
@@ -73,7 +82,8 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         #dst_root = dst_archive_info['root']
         files2copy = {}
         for filename, fileinfo in src_file_archive_info.items():
-            miscutils.fwdebug(6, "ARCHIVE_TRANSFER_UTILS_DEBUG", "%s: fileinfo = %s" % (filename, fileinfo))
+            if miscutils.fwdebug_check(6, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+                miscutils.fwdebug_print("%s: fileinfo = %s" % (filename, fileinfo))
             files2copy[filename] = copy.deepcopy(fileinfo)
             #files2copy[filename]['src'] = "%s/%s" % (src_root, fileinfo['rel_filename'])
             #iles2copy[filename]['dst'] = "%s/%s" % (dst_root, fileinfo['rel_filename'])
@@ -136,12 +146,16 @@ def archive_copy(src_archive_info, dst_archive_info, archive_transfer_info, file
         # if db, save staging info to DB
         # todo
 
-    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "END\n\n")
+    if miscutils.fwdebug_check(3, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("END\n\n")
 
 
 def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, relpath, config=None):
     # relpath is relative path within archive
     # this function doesn't check which files already exist on dst.   
+
+    if miscutils.fwdebug_check(3, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("BEG")
 
     src_archive = src_archive_info['name']
     dst_archive = dst_archive_info['name']
@@ -153,7 +167,8 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
     valDict = get_config_vals(dst_archive_info, config, dstfilemgmt_class.requested_config_vals())
     dstfilemgmt = dstfilemgmt_class(config=valDict)
 
-    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "dst_archive = %s" % dst_archive)
+    if miscutils.fwdebug_check(3, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("dst_archive = %s" % dst_archive)
 
     
     ## dynamically load filemgmt class for src
@@ -179,7 +194,8 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
     elif dst_archive in archive_transfer_info and src_archive in archive_transfer_info[dst_archive]:
         transinfo = archive_transfer_info[dst_archive][src_archive]
     else:
-        miscutils.fwdie("Error:  Could not determine transfer class for %s and %s" % (src_archive, dst_archive), 1)
+        miscutils.fwdie("Error:  Could not determine transfer class for %s and %s" % \
+                        (src_archive, dst_archive), 1)
 
     # import archive 2 archive class
     transobj = None
@@ -226,4 +242,5 @@ def archive_copy_dir(src_archive_info, dst_archive_info, archive_transfer_info, 
         # if db, save staging info to DB
         # todo
 
-    miscutils.fwdebug(0, "ARCHIVE_TRANSFER_UTILS_DEBUG", "END\n\n")
+    if miscutils.fwdebug_check(3, "ARCHIVE_TRANSFER_UTILS_DEBUG"):
+        miscutils.fwdebug_print("END\n\n")

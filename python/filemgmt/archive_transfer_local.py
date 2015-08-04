@@ -31,8 +31,9 @@ class ArchiveTransferLocal():
 
 
     def blocking_transfer(self, filelist):
-        miscutils.fwdebug(0, "ARCHIVETRANSFER_DEBUG", "\tNumber files to transfer: %d" % len(filelist))
-        miscutils.fwdebug(1, "ARCHIVETRANSFER_DEBUG", "\tfilelist: %s" % filelist)
+        miscutils.fwdebug_print("\tNumber files to transfer: %d" % len(filelist))
+        if miscutils.fwdebug_check(1, "ARCHIVETRANSFER_DEBUG"):
+            miscutils.fwdebug_print("\tfilelist: %s" % filelist)
 
         srcroot = self.src_archive_info['root']
         dstroot = self.dst_archive_info['root']

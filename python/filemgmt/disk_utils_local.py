@@ -41,12 +41,16 @@ def get_file_disk_info(arg):
     
 ######################################################################
 def get_single_file_disk_info(fname, save_md5sum=False, archive_root=None):
-    miscutils.fwdebug(3, "DISK_UTILS_LOCAL_DEBUG", "fname=%s, save_md5sum=%s, archive_root=%s" % (fname,save_md5sum,archive_root))
+    if miscutils.fwdebug_check(3, "DISK_UTILS_LOCAL_DEBUG"):
+        miscutils.fwdebug_print("fname=%s, save_md5sum=%s, archive_root=%s" % \
+                                (fname, save_md5sum, archive_root))
 
     parsemask = miscutils.CU_PARSE_PATH | miscutils.CU_PARSE_FILENAME | miscutils.CU_PARSE_COMPRESSION
 
     (path, filename, compress) = miscutils.parse_fullname(fname, parsemask)
-    miscutils.fwdebug(3, "DISK_UTILS_LOCAL_DEBUG", "path=%s, filename=%s, compress=%s" % (path,filename,compress))
+    if miscutils.fwdebug_check(3, "DISK_UTILS_LOCAL_DEBUG"):
+        miscutils.fwdebug_print("path=%s, filename=%s, compress=%s" % (path,filename,compress))
+
     fdict = {
         'filename' : filename,
         'compression': compress,
@@ -115,7 +119,8 @@ def del_file_disk_list(filelist):
     #for fname in filelist:
     #    if os.path.exists(fname):
     #        paths[os.path.dirname(fname)] = True
-    #        miscutils.fwdebug(0, "DISK_UTILS_LOCAL_DEBUG", "Deleting %s" % fname)
+    #        if miscutils.fwdebug_check(3, "DISK_UTILS_LOCAL_DEBUG"):
+    #           miscutils.fwdebug_print("Deleting %s" % fname)
     #        #os.unlink(fname)
     #    else:
     #        fileinfo[fname] = { 'err': "Could not find file" }

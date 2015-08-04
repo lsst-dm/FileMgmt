@@ -15,7 +15,7 @@ import filemgmt.filemgmtdb as filemgmtdb
 import despymisc.miscutils as miscutils
 
 
-class arcp():
+class arcp(object):
     def __init__ (self, src, dst, config, argv):
         self.argv = argv
 
@@ -63,8 +63,41 @@ class arcp():
             miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
             raise KeyError("'missing entry in config['archive_transfer'] for %s,%s" % (src,dst))
 
+    def get_list_filenames(self, dbh, args):
+        """ Get a lit of filenames whose specs are defined inputs to argparse """
+        # args is an array of "command-line" args possibly with keys for query
+        # returns python list of filenames
 
-    def add_file_list(filelist=None):
+        # get metatable's columns to parse from args
+        parser = argparse.ArgumentParser(description='get_src_file_path')
+        parser.add_argument('--metatable', action='store', default=None)
+        myargs, unknown = parser.parse_known_args(args)
+        myargs = vars(myargs)
+        if myargs['metatable'] is None:
+            miscutils.fwdie("Error: must specify either list or metatable", 1)
+        metatable = myargs['metatable']
+
+        # parse all args for column keys in order to build query
+        colnames = self.get_column_names(metatable);
+        parser = argparse.ArgumentParser(description='get_src_file_path')
+        for c in colnames:
+            parser.add_argument('--%s' % c, action='store', default=None)
+        myargs, unknown = parser.parse_known_args(args)
+        myargs = vars(myargs)
+        key_vals = { k : myargs[k] for k in myargs if myargs[k] != None }
+
+        # create query string to get filenames
+        querydict = {metatable: {'select_fields': ['filename'], 'key_vals': key_vals}}
+        querystr = queryutils.create_query_string(dbh, querydict)
+        curs = self.cursor()
+        curs.execute(querystr)
+        filelist = []
+        for line in curs:
+            filelist.append(line[0])
+
+        return filelist
+
+   add_file_list(filelist=None):
         if filelist is None:
             # dynamically load class for filemgmt
             filemgmt = None
