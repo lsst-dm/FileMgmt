@@ -223,7 +223,7 @@ class HttpUtils():
 
         for filename, fdict in filelist.items():
             fsize = 0
-            if 'filesize' in fdict:
+            if 'filesize' in fdict and fdict['filesize'] is not None:
                 fsize = fdict['filesize']
             try:
                 (src,isurl_src) = self.check_url(fdict['src'])
