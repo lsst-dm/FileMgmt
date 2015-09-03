@@ -162,7 +162,7 @@ class FtMgmtRaw(FtMgmtGenFits):
             for fname in listfullnames:
                 results[fname] = check_single_valid(keywords, fname, 0)
         else:
-            raise OSError('Error:  Could not find keywords file') 
+            raise OSError('Error:  Could not find keywords file')
 
         return results
 
@@ -174,6 +174,13 @@ def check_single_valid(keywords, fullname, verbose): # should raise exception if
     # check fits file
     hdulist = pyfits.open(fullname)
     prihdr = hdulist[0].header
+
+    # check exposure has correct filename (sometimes get NOAO-science-archive renamed exposures)
+    correct_filename = prihdr['FILENAME']
+    actual_filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
+    if actual_filename != correct_filename:
+        raise ValueError('Error: invalid filename (%s)' % actual_filename)
+
 
     instrume = prihdr['INSTRUME'].lower()
 
@@ -239,7 +246,7 @@ def check_header_keywords(keywords, hdunum, hdr):
 
 ######################################################################
 def get_vals_from_header(primary_hdr):
-    """ Helper function for ingest_contents to get values from primary header 
+    """ Helper function for ingest_contents to get values from primary header
         for insertion into rasicam_DECam table """
 
     #  Keyword list needed to update the database.
