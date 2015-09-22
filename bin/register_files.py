@@ -32,7 +32,7 @@ def create_list_of_files(filemgmt, args):
     elif args['list'] is not None:
         filelist = parse_provided_list(args['list'])
     endtime = time.time()
-    print "DONE (%0.2f secs)" % (endtime - starttime).total_seconds()
+    print "DONE (%0.2f secs)" % (endtime - starttime)
     print "\t%s files in list" % sum([len(x) for x in filelist.values()])
     if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
         miscutils.fwdebug_print("filelist=%s" % (filelist))
@@ -112,11 +112,14 @@ def list_missing_metadata(filemgmt, ftype, filelist):
 
     print "\tChecking which files already have metadata registered",
     starttime = time.time()
-    havelist = filemgmt.has_metadata_ingested(ftype, filelist)
+    results = filemgmt.has_metadata_ingested(ftype, filelist)
     endtime = time.time()
-    print "(%0.2f secs)" % (endtime - starttime).total_seconds()
+    print "(%0.2f secs)" % (endtime - starttime)
 
-    misslist = list(set(filelist) - set(havelist))
+    # no metadata if results[name] == False
+    havelist = [fname for fname in results if results[fname]]
+    misslist = [fname for fname in results if not results[fname]]
+
     print "\t\t%0d file(s) already have metadata ingested" % (len(havelist))
     print "\t\t%0d file(s) still to have metadata ingested" % (len(misslist))
 
@@ -137,11 +140,12 @@ def list_missing_contents(filemgmt, ftype, filelist):
 
     print "\tChecking which files still need contents ingested",
     starttime = time.time()
-    havelist = filemgmt.has_contents_ingested(ftype, filelist)
+    results = filemgmt.has_contents_ingested(ftype, filelist)
     endtime = time.time()
-    print "(%0.2f secs)" % (endtime - starttime).total_seconds()
+    print "(%0.2f secs)" % (endtime - starttime)
 
-    misslist = list(set(filelist) - set(havelist))
+    # no metadata if results[name] == False
+    misslist = [fname for fname in results if not results[fname]]
 
     print "\t\t%0d file(s) already have content ingested" % (len(filelist) - len(misslist))
     print "\t\t%0d file(s) still to have content ingested" % len(misslist)
@@ -160,7 +164,7 @@ def list_missing_archive(filemgmt, filelist, archive_name):
     starttime = time.time()
     existing = filemgmt.is_file_in_archive(filelist, archive_name)
     endtime = time.time()
-    print "(%0.2f secs)" % (endtime - starttime).total_seconds()
+    print "(%0.2f secs)" % (endtime - starttime)
 
     filenames = {}
     for fullname in filelist:
@@ -193,7 +197,7 @@ def save_file_info(filemgmt, task_id, ftype, filelist):
             miscutils.fwdie("Error: %s" % err, 1)
 
         endtime = time.time()
-        print "DONE (%0.2f secs)" % (endtime - starttime).total_seconds()
+        print "DONE (%0.2f secs)" % (endtime - starttime)
 
     # check which files already have contents in database
     #     don't bother with updating existing data, as files should be immutable
@@ -204,7 +208,7 @@ def save_file_info(filemgmt, task_id, ftype, filelist):
         starttime = time.time()
         filemgmt.ingest_contents(ftype, misslist)
         endtime = time.time()
-        print "DONE (%0.2f secs)" % (endtime - starttime).total_seconds()
+        print "DONE (%0.2f secs)" % (endtime - starttime)
 
 ###########################################################################
 def save_archive_location(filemgmt, filelist, archive_name):
@@ -220,12 +224,12 @@ def save_archive_location(filemgmt, filelist, archive_name):
         problemfiles = filemgmt.register_file_in_archive(missing_files, archive_name)
         endtime = time.time()
         if problemfiles is not None and len(problemfiles) > 0:
-            print "ERROR (%0.2f secs)" % (endtime-starttime).total_seconds()
+            print "ERROR (%0.2f secs)" % (endtime - starttime)
             print "\n\n\nError: putting %0d files into archive" % len(problemfiles)
             for pfile in problemfiles:
                 print pfile, problemfiles[pfile]
                 sys.exit(1)
-        print "DONE (%0.2f secs)" % (endtime-starttime).total_seconds()
+        print "DONE (%0.2f secs)" % (endtime - starttime)
 
 
 
@@ -261,7 +265,7 @@ def parse_cmdline(argv):
     parser.add_argument('--section', action='store',
                         help='Must be specified if not set in environment')
     parser.add_argument('--provmsg', action='store', required=True)
-    parser.add_argument('--config', action='store')
+    parser.add_argument('--wclfile', action='store')
     parser.add_argument('--outcfg', action='store')
     parser.add_argument('--classmgmt', action='store')
     parser.add_argument('--classutils', action='store')
@@ -314,11 +318,11 @@ def get_filemgmt_class(args):
 
     if args['classmgmt']:
         filemgmt_class = args['classmgmt']
-    elif args['config']:
-        if args['config'] is not None:
+    elif args['wclfile']:
+        if args['wclfile'] is not None:
             from intgutils.wcl import WCL
             config = WCL()
-            with open(args['config'], 'r') as configfh:
+            with open(args['wclfile'], 'r') as configfh:
                 config.read(configfh)
         if archive in config['archive']:
             filemgmt_class = config['archive'][archive]['filemgmt']
@@ -359,6 +363,10 @@ def main(argv):
 
     do_commit = not args['no_commit']
 
+    # tell filemgmt class to get config from DB
+    args['get_db_config'] = True
+
+
     # figure out which python class to use for filemgmt
     filemgmt_class = get_filemgmt_class(args)
 
@@ -392,7 +400,7 @@ def main(argv):
     # save provenance message
     save_register_info(filemgmt, task_id, args['provmsg'], do_commit)
     endtime = time.time()
-    print "DONE (%0.2f secs)" % (endtime - starttime).total_seconds()
+    print "DONE (%0.2f secs)" % (endtime - starttime)
 
 
     print """\nReminder:
@@ -411,8 +419,7 @@ def main(argv):
 
     endtime = time.time()
     totfilecnt = sum([len(x) for x in filelist.values()])
-    print "\n\nTotal time with %s files: %0.2f secs" % (totfilecnt, (endtime - starttime).total_seconds())
-
+    print "\n\nTotal time with %s files: %0.2f secs" % (totfilecnt, (endtime - starttime))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))

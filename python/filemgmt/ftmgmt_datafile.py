@@ -12,110 +12,46 @@ Generic filetype management class used to do filetype specific tasks
 
 __version__ = "$Rev$"
 
-from collections import OrderedDict
+from filemgmt.ftmgmt_generic import FtMgmtGeneric
 
 import despymisc.miscutils as miscutils
+import databaseapps.datafile_ingest_utils as dfiutils
 
-class FiletypeMgmtGeneric(object):
-    """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
+class FtMgmtDatafile(FtMgmtGeneric):
+    """  Class for managing a filetype whose contents can be read by datafile_ingest """
 
     ######################################################################
     def __init__(self, filetype, dbh, config):
         """ Initialize object """
         # config must have filetype_metadata and file_header_info
-        self.filetype = filetype
-        self.dbh = dbh
-        self.config = config
+        FtMgmtGeneric.__init__(self, filetype, dbh, config)
+
+        [self.tablename, self.didatadefs] = self.dbh.get_datafile_metadata(filetype)
 
     ######################################################################
-    def perform_metadata_tasks(self, fullname, do_update, update_info):
-        """ Read metadata from file, updating file values """
+    def has_contents_ingested(self, listfullnames):
+        """ Check if file has contents ingested """
 
-        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_print("INFO: beg")
+        assert(isinstance(listfullnames, list))
 
-        # read metadata and call any special calc functions
-        metadata = self.gather_metadata_file(fullname)
+        results = {}
+        for fname in listfullnames:
+            filename = miscutils.parse_fullname(fname, miscutils.CU_PARSE_FILENAME)
+            results[fname] = dfiutils.is_ingested(filename, self.tablename, self.dbh) 
 
-        if do_update:
-            miscutils.fwdebug_print("WARN: Generic filetype mgmt cannot update a file's metadata")
-
-        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_print("INFO: end")
-        return metadata
-
+        return results
 
     ######################################################################
-    def gather_metadata_file(self, fullname, **kwargs):
-        """ Gather metadata for a single file """
-
-        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_print("INFO: beg  file=%s" % (fullname))
-
-        metadata = OrderedDict()
-
-        metadefs = self.config['filetype_metadata'][self.filetype]
-        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_print("INFO: metadefs=%s" % (metadefs))
-        for hdname, hddict in metadefs['hdus'].items():
-            for status_sect in hddict:  # don't worry about missing here, ingest catches
-                # get value from wcl/config
-                if 'w' in hddict[status_sect]:
-                    metakeys = hddict[status_sect]['w'].keys()
-                    mdata2 = self.gather_metadata_from_config(fullname, metakeys)
-                    metadata.update(mdata2)
-
-                # get value directly from header
-                if 'h' in hddict[status_sect]:
-                    miscutils.fwdie("ERROR: Generic filetype mgmt cannot get values from header = %s" % \
-                                    (hddict[status_sect]['h'].keys()), 1)
-
-                # calculate value from different header values(s)
-                if 'c' in hddict[status_sect]:
-                    miscutils.fwdie("ERROR: Generic filetype mgmt cannot calculate values = %s" % \
-                                    (hddict[status_sect]['c'].keys()), 1)
-
-                # copy value from 1 hdu to primary
-                if 'p' in hddict[status_sect]:
-                    miscutils.fwdie("ERROR: Generic filetype mgmt cannot copy values between headers = %s" % \
-                                    (hddict[status_sect]['p'].keys()), 1)
-
-        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_check("INFO: end")
-        return metadata
-
-
-    ######################################################################
-    def gather_metadata_from_config(self, fullname, metakeys):
-        """ Get values from config """
-        metadata = OrderedDict()
-
-        if miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_print("INFO: fullname=%s" % (fullname))
-            miscutils.fwdebug_print("INFO: metakeys=%s" % (metakeys))
-
-        for wclkey in metakeys:
-            metakey = wclkey.split('.')[-1]
-            if metakey == 'fullname':
-                metadata['fullname'] = fullname
-            elif metakey == 'filename':
-                metadata['filename'] = miscutils.parse_fullname(fullname, 
-                                                                miscutils.CU_PARSE_FILENAME)
-            elif metakey == 'filetype':
-                metadata['filetype'] = self.filetype
-            else:
-                if miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
-                    miscutils.fwdebug_print("INFO: wclkey=%s" % (wclkey))
-                metadata[metakey] = self.config[wclkey]
-
-        return metadata
-
-    ######################################################################
-    def check_valid(self, fullname): # should raise exception if not valid
-        """ Check if a valid file of the filetype """
-        pass
-
-    ######################################################################
-    def ingest_contents(self, fullname): # e.g., Rasicam
+    def ingest_contents(self, listfullnames, **kwargs):
         """ Ingest certain content into a non-metadata table """
-        pass
+
+        assert(isinstance(listfullnames, list))
+
+        for fname in listfullnames:
+            miscutils.fwdebug_print("********************* %s" % fname)
+            numrows = dfiutils.datafile_ingest_main(self.dbh, self.filetype, fname,
+                                                    self.tablename, self.didatadefs)
+            if numrows == None or numrows == 0:
+                miscutils.fwdebug_print("WARN: 0 rows ingested from %s" % fname)
+            elif miscutils.fwdebug_check(0, 'FTMGMT_DEBUG'):
+                miscutils.fwdebug_print("INFO: %s rows ingested from %s" % (numrows, fname))

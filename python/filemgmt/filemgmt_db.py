@@ -18,6 +18,7 @@ import sys
 import argparse
 from collections import OrderedDict
 
+from intgutils.wcl import WCL
 import despydmdb.desdmdbi as desdmdbi
 import despymisc.miscutils as miscutils
 import filemgmt.disk_utils_local as diskutils
@@ -40,7 +41,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                 'filetype_metadata':'req', 'des_services':'opt', 'des_db_section':'req'}
 
     ###########################################################################
-    def __init__(self, initvals=None):
+    def __init__(self, initvals=None, fullconfig=None):
 
         if not miscutils.use_db(initvals):
             miscutils.fwdie("Error:  FileMgmtDB class requires DB but was told not to use DB", 1)
@@ -62,17 +63,21 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                              "\tCheck desservices file and environment variables") % err, 1)
 
         # precedence - db, file, params
-        self.config = OrderedDict()
-        self._get_config_from_db()
+        self.config = WCL()
 
-        if 'config' in initvals and initvals['config'] is not None:
-            from intgutils.wcl import WCL
+        if miscutils.checkTrue('get_db_config', initvals, False):
+            self._get_config_from_db()
+
+        if 'wclfile' in initvals and initvals['wclfile'] is not None:
             fileconfig = WCL()
-            with open(initvals['config'], 'r') as fh:
-                fileconfig.read_wcl(fh)
+            with open(initvals['wclfile'], 'r') as fh:
+                fileconfig.read(fh)
                 self.config.update(fileconfig)
 
+        if fullconfig is not None:
+            self.config.update(fullconfig)
         self.config.update(initvals)
+
         self.filetype = None
         self.ftmgmt = None
 
@@ -80,7 +85,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
     ###########################################################################
     def _get_config_from_db(self):
         """ reads some configuration values from the database """
-        self.config = OrderedDict()
+        self.config = WCL()
         self.config['archive'] = self.get_archive_info()
         self.config['filetype_metadata'] = self.get_all_filetype_metadata()
         self.config[fmdefs.FILE_HEADER_INFO] = self.query_results_dict('select * from OPS_FILE_HEADER', 'name')
@@ -223,11 +228,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         if isinstance(fullnames, str):
             listfullnames = [fullnames]
         
-        contents = self.has_contents_ingested(filetype, listfullnames)
-        newlist = []
-        for fname, hascontents in contents.items():
-            if not hascontents:
-                newlist.append(fname)
+        results = self.has_contents_ingested(filetype, listfullnames)
+        newlist = [fname for fname in results if not results[fname]]
 
         self.dynam_load_ftmgmt(filetype)
         self.ftmgmt.ingest_contents(newlist)
@@ -311,6 +313,10 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         try:
             for key, filedata in filemeta.iteritems():
+                if not isinstance(filedata, dict):
+                    print "Invalid type for filedata:", type(filedata)
+                    print filedata
+                    
                 if FILENAME not in filedata.keys():
                     fullmessage = '\n'.join(["ERROR: cannot upload file <" + key + ">, no FILENAME provided.", fullmessage])
                     continue
@@ -547,7 +553,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
     def dynam_load_ftmgmt(self, filetype):
         """ Dynamically load a filetype mgmt class """
 
-        miscutils.fwdebug_print("filetype = %s" % self.filetype)
+        if miscutils.fwdebug_check(3, 'FILEMGMT_DEBUG'):
+            miscutils.fwdebug_print("filetype = %s" % self.filetype)
 
         if self.filetype is None or filetype != self.filetype or \
            self.ftmgmt is None:
@@ -584,23 +591,28 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             metadata = {}
             fileinfo = {}
             
-            # if missing metadata:
-            if not self.has_metadata_ingested(ftype, fname):
-                metadata = self.ftmgmt.perform_metadata_tasks(fname, do_update, update_info)
-                fileinfo = diskutils.get_single_file_disk_info(fname,
-                                                               save_md5sum=True,
-                                                               archive_root=None)
-                basename = fileinfo['filename']
-                if fileinfo['compression'] is not None:
-                    basename += fileinfo['compression']    
+            metadata = self.ftmgmt.perform_metadata_tasks(fname, do_update, update_info)
+            fileinfo = diskutils.get_single_file_disk_info(fname,
+                                                           save_md5sum=True,
+                                                           archive_root=None)
+            basename = fileinfo['filename']
+            if fileinfo['compression'] is not None:
+                basename += fileinfo['compression']    
 
+            has_metadata = self.has_metadata_ingested(ftype, fname)
+            if not has_metadata:
                 self.save_file_info([fileinfo], 
                                     {'file_1': metadata},
                                     {provdefs.PROV_WGB:{'exec_1': basename}},
                                     {'exec_1': wgb_task_id})
+            elif miscutils.fwdebug_check(0, 'FILEMGMT_DEBUG'):
+                miscutils.fwdebug_print("INFO: %s already has metadata ingested" % fname)
 
-            if not self.ftmgmt.has_contents_ingested(fname):
-                self.ftmgmt.ingest_contents(fname)
+            has_contents = self.ftmgmt.has_contents_ingested([fname])
+            if not has_contents[fname]:
+                self.ftmgmt.ingest_contents([fname])
+            elif miscutils.fwdebug_check(0, 'FILEMGMT_DEBUG'):
+                miscutils.fwdebug_print("INFO: %s already has contents ingested" % fname)
             results[fname] = { 'diskinfo': fileinfo, 'metadata': metadata } 
         return results
 
@@ -743,22 +755,30 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         if provdefs.PROV_WDF in prov:
             for tuples in prov[provdefs.PROV_WDF].values():
-                for parentfile in tuples[provdefs.PROV_PARENTS].split(provdefs.PROV_DELIM):
-                    for childfile in tuples[provdefs.PROV_CHILDREN].split(provdefs.PROV_DELIM):
-                        rowdata = []
-                        rowdata.append(filemap[parentfile.strip()])
-                        rowdata.append(filemap[childfile.strip()])
-                        rowdata.append(filemap[parentfile.strip()])
-                        rowdata.append(filemap[childfile.strip()])
-                        data.append(rowdata)
+                if provdefs.PROV_PARENTS not in tuples:
+                    miscutils.fwdie("Error: missing %s in one of %s" % (provdefs.PROV_PARENTS, provdefs.PROV_WDF), fmdefs.FM_EXIT_FAILURE)
+                elif provdefs.PROV_CHILDREN not in tuples:
+                    miscutils.fwdie("Error: missing %s in one of %s" % (provdefs.PROV_CHILDREN, provdefs.PROV_WDF), fmdefs.FM_EXIT_FAILURE)
+                else:
+                    for parentfile in tuples[provdefs.PROV_PARENTS].split(provdefs.PROV_DELIM):
+                        for childfile in tuples[provdefs.PROV_CHILDREN].split(provdefs.PROV_DELIM):
+                            rowdata = []
+                            rowdata.append(filemap[parentfile.strip()])
+                            rowdata.append(filemap[childfile.strip()])
+                            rowdata.append(filemap[parentfile.strip()])
+                            rowdata.append(filemap[childfile.strip()])
+                            data.append(rowdata)
+
             exec_sql = insert_sql % (fmdefs.PROV_WDF_TABLE,
                                      fmdefs.PARENT_OPM_ARTIFACT_ID + "," + fmdefs.CHILD_OPM_ARTIFACT_ID,
                                      bind_str, bind_str, self.from_dual(),
                                      fmdefs.PROV_WDF_TABLE, fmdefs.PARENT_OPM_ARTIFACT_ID,
                                      bind_str, fmdefs.CHILD_OPM_ARTIFACT_ID,
                                      bind_str)
-            cursor.executemany(exec_sql, data)
+            if len(data) > 0:
+                cursor.executemany(exec_sql, data)
+            else:
+                miscutils.fwdebug_print("Warn: %s section given but had 0 valid entries" % (provdefs.PROV_WDF))
+                
     #        self.commit()
     #end_ingest_provenance
-
-

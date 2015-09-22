@@ -29,7 +29,7 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
                 'transfer_stats_per_file':'opt'}
 
 
-    def __init__(self, config):
+    def __init__(self, config, fullcfg=None):
         if not miscutils.use_db(config):
             miscutils.fwdie("Error:  TransferStatsDB class requires DB "\
                             " but was told not to use DB", 1)
@@ -166,7 +166,8 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
     def stat_end_file(self, status, nbytes=0, task_id=None):
         """ Update rows for end of file transfer and commit """
 
-        self.currvals['totbytes'] += nbytes
+        if nbytes is not None:
+            self.currvals['totbytes'] += nbytes
 
         if self.transfer_stats_per_file:
             if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
@@ -180,5 +181,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
 
             self.basic_update_row('transfer_file', updatevals, wherevals)
             self.commit()
+
             if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
                 miscutils.fwdebug_print("end")

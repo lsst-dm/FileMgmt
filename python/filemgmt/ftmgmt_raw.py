@@ -32,12 +32,10 @@ class FtMgmtRaw(FtMgmtGenFits):
 
 
     ######################################################################
-    def has_contents_ingested(self, fullnames):
+    def has_contents_ingested(self, listfullnames):
         """ Check if exposure has row in rasicam_decam table """
 
-        listfullnames = fullnames
-        if isinstance(fullnames, str):
-            listfullnames = [fullnames]
+        assert isinstance(listfullnames, list)
 
         # assume uncompressed and compressed files have same metadata
         # choosing either doesn't matter
@@ -63,9 +61,6 @@ class FtMgmtRaw(FtMgmtGenFits):
 
         self.dbh.empty_gtt(dmdbdefs.DB_GTT_FILENAME)
 
-        if isinstance(fullnames, str):
-            results = results[fullnames]
-
         return results
 
     ######################################################################
@@ -83,7 +78,7 @@ class FtMgmtRaw(FtMgmtGenFits):
 
 
         # read metadata and call any special calc functions
-        metadata = self._gather_metadata_file(fullname, hdulist=hdulist)
+        metadata, _ = self._gather_metadata_file(fullname, hdulist=hdulist)
         if miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: file=%s" % (fullname))
 
@@ -100,40 +95,44 @@ class FtMgmtRaw(FtMgmtGenFits):
 
 
     ######################################################################
-    def ingest_contents(self, fullname, **kwargs):
+    def ingest_contents(self, listfullnames, **kwargs):
         """ Ingest data into non-metadata table - rasicam_decam"""
+
+        assert isinstance(listfullnames, list)
 
         dbtable = 'rasicam_decam'
 
-        if not os.path.isfile(fullname):
-            raise Exception("Exposure not found: '%s'" % fullname)
+        for fullname in listfullnames:
+            if not os.path.isfile(fullname):
+                raise OSError("Exposure file not found: '%s'" % fullname)
 
-        filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
+            filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
 
-        primary_hdr = None
-        if 'prihdr' in kwargs:
-            primary_hdr = kwargs['prihdr']
-        elif 'hdulist' in kwargs:
-            hdulist = kwargs['hdulist']
-            primary_hdr = hdulist[0].header
-        else:
-            primary_hdr = pyfits.getheader(fullname, 0)
+            primary_hdr = None
+            if 'prihdr' in kwargs:
+                primary_hdr = kwargs['prihdr']
+            elif 'hdulist' in kwargs:
+                hdulist = kwargs['hdulist']
+                primary_hdr = hdulist[0].header
+            else:
+                primary_hdr = pyfits.getheader(fullname, 0)
 
-        row = get_vals_from_header(primary_hdr)
-        row['filename'] = filename
-        row['source'] = 'HEADER'
-        row['analyst'] = 'DTS.ingest'
+            row = get_vals_from_header(primary_hdr)
+            row['filename'] = filename
+            row['source'] = 'HEADER'
+            row['analyst'] = 'DTS.ingest'
 
-
-        if len(row) > 0:
-            self.dbh.basic_insert_row(dbtable, row)
-        else:
-            raise Exception("No RASICAM header keywords identified for %s" % filename)
+            if len(row) > 0:
+                self.dbh.basic_insert_row(dbtable, row)
+            else:
+                raise Exception("No RASICAM header keywords identified for %s" % filename)
 
 
     ######################################################################
     def check_valid(self, listfullnames):
         """ Check whether the given files are valid raw files """
+
+        assert isinstance(listfullnames, list)
 
         results = {}
         for fname in listfullnames:
