@@ -611,7 +611,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             has_contents = self.ftmgmt.has_contents_ingested([fname])
             if not has_contents[fname]:
                 self.ftmgmt.ingest_contents([fname])
-            elif miscutils.fwdebug_check(0, 'FILEMGMT_DEBUG'):
+            elif miscutils.fwdebug_check(3, 'FILEMGMT_DEBUG'):
                 miscutils.fwdebug_print("INFO: %s already has contents ingested" % fname)
             results[fname] = { 'diskinfo': fileinfo, 'metadata': metadata } 
         return results
