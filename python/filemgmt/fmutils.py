@@ -113,8 +113,8 @@ def read_json_single(json_file, allMandatoryExposureKeys):
 
 
                         except KeyError:
-                            miscutils.fwdebug_print("Error: missing key %s in json entity: %s " % \
-                                                    (mandatoryExposureKey, line))
+                            miscutils.fwdebug_print("Error: missing key '%s' in json entity: %s " % \
+                                                    (mandatoryExposureKey, my_header[i]))
                             raise
 
                     if len(all_exposures) == 0:
