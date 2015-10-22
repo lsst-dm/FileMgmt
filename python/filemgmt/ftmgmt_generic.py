@@ -176,7 +176,9 @@ class FtMgmtGeneric(object):
             else:
                 if miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
                     miscutils.fwdebug_print("INFO: wclkey=%s" % (wclkey))
-                metadata[metakey] = self.config.getfull(wclkey)
+                (exists, val) = self.config.search(wclkey)
+                if exists:
+                    metadata[metakey] = val
 
         return metadata
 
