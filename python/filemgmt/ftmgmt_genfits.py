@@ -127,27 +127,29 @@ class FtMgmtGenFits(FtMgmtGeneric):
 
         metadefs = self.config['filetype_metadata'][self.filetype]
         update_info = OrderedDict()
-        update_info[0] = OrderedDict()
+        update_info[0] = OrderedDict()   # update primary header
 
         for hdname, hddict in metadefs['hdus'].items():
             update_info[hdname] = OrderedDict()
             for stdict in hddict.values():
                 # include values created by metadata functions and those copied from other hdu
-                for derived in ['c', 'p']:
+                for derived in ['c', 'p', 'w']:
                     if derived in stdict:
                         #print "stdict[derived] = ", stdict[derived]
                         for key in stdict[derived]:
                             uvalue = ucomment = udatatype = None
-                            if key in metadata:
+                            # we don't write filename, filetype nor pfw_attempt_id to headers
+                            if key in metadata and key != 'filename' and key != 'filetype' \
+                                    and key != 'pfw_attempt_id':
                                 uvalue = metadata[key]
+                                if key in datadefs:
+                                    ucomment = datadefs[key][0]
+                                    udatatype = datadefs[key][1]
+                                else:
+                                    miscutils.fwdebug_print("WARN: could not find comment for key=%s" % (key))
+                                update_info[0][key] = (uvalue, ucomment, udatatype)
                             else:
                                 miscutils.fwdebug_print("WARN: could not find metadata for key=%s" % (key))
-                            if key in datadefs:
-                                ucomment = datadefs[key][0]
-                                udatatype = datadefs[key][1]
-                            else:
-                                miscutils.fwdebug_print("WARN: could not find comment for key=%s" % (key))
-                            update_info[0][key] = (uvalue, ucomment, udatatype)
         return update_info
 
     ######################################################################
