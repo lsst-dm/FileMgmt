@@ -661,7 +661,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         if prov is not None and len(prov) > 0:
             self.ingest_provenance(prov, execids)
 
-        self.save_desfile(artifacts)
+        ###self.save_desfile(artifacts)
 
 
     def save_desfile(self, artifacts):
