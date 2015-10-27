@@ -26,6 +26,7 @@ import filemgmt.disk_utils_local as diskutils
 import despymisc.provdefs as provdefs
 import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.errors as fmerrs
+import traceback
 
 class FileMgmtDB(desdmdbi.DesDmDbi):
     """
@@ -613,12 +614,19 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             metadata = {}
             fileinfo = {}
 
-            metadata = self.ftmgmt.perform_metadata_tasks(fname, do_update, update_info)
-            if miscutils.fwdebug_check(6, 'FILEMGMT_DEBUG'):
-                miscutils.fwdebug_print("INFO: metadata to ingest" % metadata)
-            fileinfo = diskutils.get_single_file_disk_info(fname,
-                                                           save_md5sum=True,
-                                                           archive_root=None)
+            try:
+                metadata = self.ftmgmt.perform_metadata_tasks(fname, do_update, update_info)
+                if miscutils.fwdebug_check(6, 'FILEMGMT_DEBUG'):
+                    miscutils.fwdebug_print("INFO: metadata to ingest" % metadata)
+                fileinfo = diskutils.get_single_file_disk_info(fname,
+                                                               save_md5sum=True,
+                                                               archive_root=None)
+            except IOError:
+                miscutils.fwdebug_print("\n\nError: Problem gathering data for file %s" % fname)
+                traceback.print_exc(1, sys.stdout)
+                print "\n\n"
+                raise
+
             basename = fileinfo['filename']
             if fileinfo['compression'] is not None:
                 basename += fileinfo['compression']
