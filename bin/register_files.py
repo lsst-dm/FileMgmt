@@ -60,7 +60,7 @@ def parse_provided_list(listname):
     try:
         with open(listname, "r") as listfh:
             for line in listfh:
-                (fullname, filetype) = miscutils.fwsplit(line, ',')[0:1]
+                (fullname, filetype) = miscutils.fwsplit(line, ',')
                 if fullname[0] != '/':
                     fullname = cwd + '/' + fullname
 
