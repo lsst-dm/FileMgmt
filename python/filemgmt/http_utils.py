@@ -222,18 +222,23 @@ class HttpUtils():
 
             print "\nDiagnostics:"
             print "Directory info"
+            sys.stdout.flush()
+            
             os.system("pwd; find . -exec ls -ld {} \;")
             print "\nFile system disk space usage"
+            sys.stdout.flush()
             os.system("df -h .")
 
-            hostm = re.search(r"https?://([^/]+)/", cmd)
+            hostm = re.search(r"https?://([^/:]+)[:/]", cmd)
             if hostm:
                 hname = hostm.group(1)
                 try:   # don't let exception here halt
                     print "Running commands to %s for diagnostics" % hname
                     print "\nPinging %s" % hname
+                    sys.stdout.flush()
                     os.system("ping -c 4 %s" % hname)
                     print "\nRunning traceroute to %s" % hname
+                    sys.stdout.flush()
                     os.system("traceroute %s" % hname)
                 except:   # print exception but continue
                     (type, value, trback) = sys.exc_info()
