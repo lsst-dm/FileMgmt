@@ -16,8 +16,8 @@ import pyfits
 import despymisc.miscutils as miscutils
 import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.metadefs as metadefs
-import despyfits.fitsutils as fitsutils
-import despyfits.fits_special_metadata as spmeta
+import despyfitsutils.fitsutils as fitsutils
+import despyfitsutils.fits_special_metadata as spmeta
 
 
 

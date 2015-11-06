@@ -17,8 +17,8 @@ import pyfits
 
 from filemgmt.ftmgmt_generic import FtMgmtGeneric
 import despymisc.miscutils as miscutils
-import despyfits.fits_special_metadata as spmeta
-import despyfits.fitsutils as fitsutils
+import despyfitsutils.fits_special_metadata as spmeta
+import despyfitsutils.fitsutils as fitsutils
 
 class FtMgmtGenFits(FtMgmtGeneric):
     """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
