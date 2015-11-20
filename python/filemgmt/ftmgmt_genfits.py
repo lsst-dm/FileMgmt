@@ -135,21 +135,20 @@ class FtMgmtGenFits(FtMgmtGeneric):
                 # include values created by metadata functions and those copied from other hdu
                 for derived in ['c', 'p', 'w']:
                     if derived in stdict:
-                        #print "stdict[derived] = ", stdict[derived]
                         for key in stdict[derived]:
                             uvalue = ucomment = udatatype = None
                             # we don't write filename, filetype nor pfw_attempt_id to headers
-                            if key in metadata and key != 'filename' and key != 'filetype' \
-                                    and key != 'pfw_attempt_id':
-                                uvalue = metadata[key]
-                                if key in datadefs:
-                                    ucomment = datadefs[key][0]
-                                    udatatype = datadefs[key][1]
+                            if key != 'filename' and key != 'filetype' and key != 'pfw_attempt_id':
+                                if key in metadata:
+                                    uvalue = metadata[key]
+                                    if key in datadefs:
+                                        ucomment = datadefs[key][0]
+                                        udatatype = datadefs[key][1]
+                                    elif miscutils.fwdebug_check(3, "PFWRUNJOB_DEBUG"):
+                                        miscutils.fwdebug_print("WARN: could not find comment for key=%s" % (key))
+                                    update_info[0][key] = (uvalue, ucomment, udatatype)
                                 else:
-                                    miscutils.fwdebug_print("WARN: could not find comment for key=%s" % (key))
-                                update_info[0][key] = (uvalue, ucomment, udatatype)
-                            else:
-                                miscutils.fwdebug_print("WARN: could not find metadata for key=%s" % (key))
+                                    miscutils.fwdebug_print("WARN: could not find metadata for key=%s" % (key))
         return update_info
 
     ######################################################################
@@ -239,12 +238,8 @@ class FtMgmtGenFits(FtMgmtGeneric):
         #</hdrupd>
 
         all_update_info = self._get_update_values_metadata(metadata, datadefs)
-        #print "update_info_metadata = ", all_update_info
         wcl_update_info = self._get_update_values_explicit(update_info)
-        #print "wcl_update_info = ", wcl_update_info
         all_update_info.update(wcl_update_info)
-
-        print "\n\nall_update_info = ", all_update_info
 
         # update values in file
         for hdname in all_update_info:
@@ -256,7 +251,6 @@ class FtMgmtGenFits(FtMgmtGeneric):
 
             hdr = hdulist[newhdname].header
             for key, info in all_update_info[hdname].items():
-                #print "key = ", key, "info = ", info
                 uval = info[0]
                 ucomment = info[1]
                 udatatype = info[2]
@@ -278,7 +272,6 @@ class FtMgmtGenFits(FtMgmtGeneric):
                         uval = bool(uval)
 
                 if ucomment is not None:
-                    #print "ucomment = '", ucomment, "'"
                     hdr[key.upper()] = (uval, ucomment)
                 else:
                     hdr[key.upper()] = uval

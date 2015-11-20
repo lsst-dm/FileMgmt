@@ -48,10 +48,9 @@ class FtMgmtFitsDatafile(FtMgmtGenFits):
         assert(isinstance(listfullnames, list))
 
         for fname in listfullnames:
-            miscutils.fwdebug_print("********************* %s" % fname)
             numrows = dfiutils.datafile_ingest_main(self.dbh, self.filetype, fname,
                                                     self.tablename, self.didatadefs)
             if numrows == None or numrows == 0:
                 miscutils.fwdebug_print("WARN: 0 rows ingested from %s" % fname)
-            elif miscutils.fwdebug_check(0, 'FTMGMT_DEBUG'):
+            elif miscutils.fwdebug_check(1, 'FTMGMT_DEBUG'):
                 miscutils.fwdebug_print("INFO: %s rows ingested from %s" % (numrows, fname))
