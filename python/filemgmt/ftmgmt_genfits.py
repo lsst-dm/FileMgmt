@@ -137,8 +137,17 @@ class FtMgmtGenFits(FtMgmtGeneric):
                     if derived in stdict:
                         for key in stdict[derived]:
                             uvalue = ucomment = udatatype = None
-                            # we don't write filename, filetype nor pfw_attempt_id to headers
-                            if key != 'filename' and key != 'filetype' and key != 'pfw_attempt_id':
+                            # we don't write filetype nor pfw_attempt_id to headers
+                            if key == 'filename':
+                                # write filename to header as DESFNAME
+                                update_info[0]['DESFNAME'] = (metadata['filename'], 
+                                                              'DES production filename', 'str')
+                                if len(metadata['filename']) + \
+                                        len('\' / DES production filename') + \
+                                        len('DESFNAME= \'') > 80:
+                                    miscutils.fwdebug_print("WARN: %s's filename too long for DESFNAME: %s" % \
+                                        (metadata['filename'], len(metadata['filename'])))
+                            elif key != 'filetype' and key != 'pfw_attempt_id':
                                 if key in metadata:
                                     uvalue = metadata[key]
                                     if key in datadefs:
