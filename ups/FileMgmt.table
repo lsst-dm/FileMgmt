@@ -3,7 +3,8 @@ envPrepend(PATH, ${PRODUCT_DIR}/tools)
 envPrepend(PATH, ${PRODUCT_DIR}/bin)
 
 #setupRequired(despyDMdb)
-#setupRequired(despyfits)
+#setupRequired(DatabaseApps)
+#setupRequired(despyfitsutils)
 #setupRequired(despymisc)
 #setupRequired(IntegrationUtils)
 
