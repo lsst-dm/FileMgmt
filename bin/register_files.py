@@ -6,30 +6,45 @@
 
 """ Program to ingest data files that were created external to framework """
 
-import tempfile
 import argparse
-import subprocess
 import os
 import re
 import sys
 import time
-from collections import OrderedDict
 
-import wrappers.WrapperUtils as wraputils    # read metadata from fits file
-import filemgmt.disk_utils_local as diskutils
-import filemgmt.filemgmt_defs as fmdefs
 import despymisc.miscutils as miscutils
-import intgutils.metautils as metautils
-import intgutils.metadefs as imetadefs
+import filemgmt.filemgmt_defs as fmdefs
+import filemgmt.errors as fmerrors
 
-VERSION = '$Rev$'
+__version__ = '$Rev$'
 
 
 ###########################################################################
-def save_register_info(filemgmt, task_id, provmsg, commit):
+def create_list_of_files(filemgmt, args):
+    """ Create list of files to register """
+
+    filelist = None
+    starttime = time.time()
+    if args['filetype'] is not None:
+        if not filemgmt.is_valid_filetype(args['filetype']):
+            miscutils.fwdie("Error:  Invalid filetype (%s)" % args['filetype'], 1)
+        filelist = get_list_filenames(args['path'], args['filetype'])
+    elif args['list'] is not None:
+        filelist = parse_provided_list(args['list'])
+    endtime = time.time()
+    print "DONE (%0.2f secs)" % (endtime - starttime)
+    print "\t%s files in list" % sum([len(x) for x in filelist.values()])
+    if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
+        miscutils.fwdebug_print("filelist=%s" % (filelist))
+    return filelist
+
+
+###########################################################################
+def save_register_info(filemgmt, task_id, provmsg, do_commit):
+    """ Save information into the FILE_REGISTRATION table """
     row = {'task_id': task_id, 'prov_msg': provmsg}
     filemgmt.basic_insert_row('FILE_REGISTRATION', row)
-    if commit:
+    if do_commit:
         filemgmt.commit()
 
 ###########################################################################
@@ -40,25 +55,27 @@ def parse_provided_list(listname):
     cwd = os.getenv('PWD')  # don't use getcwd as it canonicallizes path
                             # which is not what we want for links internal to archive
 
+    uniqfiles = {}
     filelist = {}
     try:
-        with open(listname, "r") as fh:
-            for line in fh:
+        with open(listname, "r") as listfh:
+            for line in listfh:
                 (fullname, filetype) = miscutils.fwsplit(line, ',')
                 if fullname[0] != '/':
                     fullname = cwd + '/' + fullname
 
                 if not os.path.exists(fullname):
-                    miscutils.fwdie("Error:   could not find file to register:  %s" % fullname, 1)
+                    miscutils.fwdie("Error:   could not find file on disk:  %s" % fullname, 1)
 
-                (path, fname) = os.path.split(fullname)
-                if fname in filelist:
-                    print "Error:   Found duplicate filenames in list:  %s"
-                    print "\t%s" % fullname
-                    print "\t%s" % filelist[fname]['fullname']
+                (_, fname) = os.path.split(fullname)
+                if fname in uniqfiles:
                     miscutils.fwdie("Error:   Found duplicate filenames in list:  %s" % fname, 1)
-                filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname, 'fname':fname}
-    except Exception as err:
+
+                uniqfiles[fname] = True
+                if filetype not in filelist:
+                    filelist[filetype] = []
+                filelist[filetype].append(fullname)
+    except IOError as err:
         miscutils.fwdie("Error: Problems reading file '%s': %s" % (listname, err), 1)
 
     return filelist
@@ -66,7 +83,7 @@ def parse_provided_list(listname):
 
 ###########################################################################
 def get_list_filenames(ingestpath, filetype):
-    """ create a dictionary of files in given path """
+    """ create a dictionary by filetype of files in given path """
 
     if ingestpath[0] != '/':
         cwd = os.getenv('PWD')  # don't use getcwd as it canonicallizes path
@@ -76,63 +93,71 @@ def get_list_filenames(ingestpath, filetype):
     if not os.path.exists(ingestpath):
         miscutils.fwdie("Error:   could not find ingestpath:  %s" % ingestpath, 1)
 
-    filelist = {}
-    for (dirpath, dirnames, filenames) in os.walk(ingestpath):
+    filelist = []
+    for (dirpath, _, filenames) in os.walk(ingestpath):
         for fname in filenames:
-            filelist[fname] = {'path': dirpath, 'filetype': filetype, 'fullname': dirpath+'/'+fname, 'fname': fname}
+            filelist.append(dirpath+'/'+fname)
 
-    return filelist
+    return {filetype: filelist}
 
-
-
-###########################################################################
-def add_basenames_list(filelist):
-    #input: filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname}
-    #modified: filelist[fname] = {'path': path, 'filetype': filetype, 'fullname':fullname,
-    #                             'filename', 'compression'}
-
-    parsemask = miscutils.CU_PARSE_FILENAME | miscutils.CU_PARSE_COMPRESSION
-
-    for fname in filelist:
-        (filename, compress_ext) = miscutils.parse_fullname(fname, parsemask)
-        filelist[fname]['filename'] = filename
-        filelist[fname]['compression'] = compress_ext
 
 
 ###########################################################################
-def list_missing_metadata(filemgmt, filelist):
+def list_missing_metadata(filemgmt, ftype, filelist):
     """ Return list of files from given set which are missing metadata """
     # filelist = list of file dicts
 
-    miscutils.fwdebug(6, "REGISTER_FILES_DEBUG", "filelist=%s" % (filelist))
-
-    origcount = len(filelist)
-
-    # assume uncompressed and compressed files have same metadata
-    # choosing either doesn't matter
-    byfilename =  {}
-    for fdict in filelist:
-        byfilename[fdict['filename']] = fdict
+    if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
+        miscutils.fwdebug_print("filelist=%s" % (filelist))
 
     print "\tChecking which files already have metadata registered",
     starttime = time.time()
-    havelist = filemgmt.file_has_metadata(byfilename.keys())
+    results = filemgmt.has_metadata_ingested(ftype, filelist)
     endtime = time.time()
     print "(%0.2f secs)" % (endtime - starttime)
 
-    missingfilenames = set(byfilename.keys()) - set(havelist)
+    # no metadata if results[name] == False
+    havelist = [fname for fname in results if results[fname]]
+    misslist = [fname for fname in results if not results[fname]]
 
-    print "\t\t%0d file(s) already have metadata ingested" % len(havelist)
-    print "\t\t%0d file(s) still to have metadata ingested" % len(missingfilenames)
+    print "\t\t%0d file(s) already have metadata ingested" % (len(havelist))
+    print "\t\t%0d file(s) still to have metadata ingested" % (len(misslist))
 
-    misslist = [ byfilename[f] for f in missingfilenames ]
-    miscutils.fwdebug(6, "REGISTER_FILES_DEBUG", "misslist=%s" % (misslist))
+    if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
+        miscutils.fwdebug_print("misslist=%s" % (misslist))
+
+    return misslist
+
+
+
+###########################################################################
+def list_missing_contents(filemgmt, ftype, filelist):
+    """ Return list of files from given set which still need contents ingested """
+    # filelist = list of file dicts
+
+    if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
+        miscutils.fwdebug_print("filelist=%s" % (filelist))
+
+    print "\tChecking which files still need contents ingested",
+    starttime = time.time()
+    results = filemgmt.has_contents_ingested(ftype, filelist)
+    endtime = time.time()
+    print "(%0.2f secs)" % (endtime - starttime)
+
+    # no metadata if results[name] == False
+    misslist = [fname for fname in results if not results[fname]]
+
+    print "\t\t%0d file(s) already have content ingested" % (len(filelist) - len(misslist))
+    print "\t\t%0d file(s) still to have content ingested" % len(misslist)
+
+    if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
+        miscutils.fwdebug_print("misslist=%s" % (misslist))
 
     return misslist
 
 
 ###########################################################################
-def list_missing_archive(filemgmt, filelist, archive_name, verbose):
+def list_missing_archive(filemgmt, filelist, archive_name):
     """ Return list of files from given list which are not listed in archive """
 
     print "\tChecking which files are already registered in archive",
@@ -141,168 +166,56 @@ def list_missing_archive(filemgmt, filelist, archive_name, verbose):
     endtime = time.time()
     print "(%0.2f secs)" % (endtime - starttime)
 
-    missing_files = []
-    for fdict in filelist:
-        if (fdict['filename'], fdict['compression']) not in existing:
-            missing_files.append(fdict)
-            
+    filenames = {}
+    for fullname in filelist:
+        fname = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_BASENAME)
+        filenames[fname] = fullname
+
+    missing_basenames = set(filenames.keys()) - set(existing)
+    misslist = [filenames[f] for f in missing_basenames]
+
     print "\t\t%0d file(s) already in archive" % len(existing)
-    print "\t\t%0d file(s) still to be registered to archive" % len(missing_files)
-    return missing_files
-
-
-
-###########################################################################
-def get_register_metadata_specs(ftype, filemgmt, verbose):
-    """ Return dict/wcl describing metadata to gather for given filetype """
-
-    metaspecs = OrderedDict()
-
-    filetype_metadata = None
-    file_header = None
-    if (filemgmt.config is not None and
-        'filetype_metadata' in filemgmt.config):
-        filetype_metadata = filemgmt.config['filetype_metadata']
-    else:
-        print "Warning: no filetype_metadata"
-
-
-    if (filetype_metadata is not None):
-         # note:  When manually ingesting files generated externally to the framework, we do not want to modify the files (i.e., no updating/inserting headers
-        #(reqmeta, optmeta, updatemeta) = metautils.create_file_metadata_dict(ftype, filetype_metadata, None, None)
-        metaspecs = metautils.get_metadata_specs(ftype, filetype_metadata, None, None, False)
-
-        #print 'keys = ', metaspecs.keys()
-        #if updatemeta is not None:
-        #    print "WARNING:  create_file_metadata_dict incorrectly returned values to update."
-        #    print "\tContinuing but not updating these values."
-        #    print "\tReport this to code developer."
-        #    print "\t\t", updatemeta
-        #    updatemeta = None
-
-        if metaspecs is None:
-            msg = "Error: Could not find metadata specs for filetype '%s'" % filetype
-            print msg
-            print "Minimum metadata specs for a filetype are defs for filetype and filename"
-            miscutils.fwdie("Aborting", fmdefs.FM_EXIT_FAILURE)
-
-        for key in metaspecs:
-            #print "metaspecs key = ", key
-            if type(metaspecs[key]) == dict or type(metaspecs[key]) == OrderedDict:
-                if imetadefs.WCL_META_WCL in metaspecs[key]:
-                    #print "deleting wcl from", key
-                    del metaspecs[key][imetadefs.WCL_META_WCL]   # remove wcl requirements for manual file ingestion
-                elif len(metaspecs[key]) == 0:
-                    #print "deleting", key
-                    del metaspecs[key]
-        metaspecs['filetype'] = ftype
-        #print metaspecs['fullname']
-
-        if verbose >= 3:
-            # print metaspecs to stdout
-            print "\n\nmetaspecs = "
-            import intgutils.wclutils as wclutils
-            wclutils.write_wcl(metaspecs)
-            print "\n\n"
-
-
-    return metaspecs
-
+    print "\t\t%0d file(s) still to be registered to archive" % len(misslist)
+    return misslist
 
 
 ###########################################################################
-def save_file_info(filemgmt, task_id, ftype, metaspecs, filelist, save_md5sum, verbose):
+def save_file_info(filemgmt, task_id, ftype, filelist):
+    """ Save file metadata and contents """
     # filelist = list of file dicts
 
     # check which files already have metadata in database
     #     don't bother with updating existing data, as files should be immutable
-    misslist = list_missing_metadata(filemgmt, filelist)
-
-    #print "misslist = ", misslist
-    if verbose >= 3:
-        print "filenames for files which do not already have metadata registered:"
-        for fdict in misslist:
-            print "\t%s" % fdict['filename']
+    misslist = list_missing_metadata(filemgmt, ftype, filelist)
 
     if len(misslist) != 0:
-        metaspecs['fullname'] = ','.join(sorted(afile['fullname'] for afile in misslist))
-
-        print "\tGathering file metadata on %0d files...." % len(misslist),
-        starttime = time.time()
-
-        # call the function to get metadata from the fits files
-        filemeta = {}
-        filemeta = wraputils.get_file_metadata(metaspecs)   # get the metadata from the fits files
-        if verbose >= 3:
-            print "\n\noutput wcl"
-            if filemeta is not None:
-                import intgutils.wclutils as wclutils
-                wclutils.write_wcl(filemeta)
-            else:
-                print "None"
-
-        if filemeta is not None:
-            # add filenames and filetypes to metadata
-            for fdict in filemeta.values():
-                fdict['filename'] = miscutils.parse_fullname(fdict['fullname'], miscutils.CU_PARSE_FILENAME)
-                fdict['filetype'] = ftype
-        else:
-            print "Creating filename/filetype metadata info"
-            filemeta = {}
-            fcnt = 0
-            for fdict in misslist:
-                miscutils.fwdebug(6, "REGISTER_FILES_DEBUG", "file=%s" % (fdict))
-                filemeta['file_%s' % fcnt] = {'filename': miscutils.parse_fullname(fdict['fullname'], miscutils.CU_PARSE_FILENAME),
-                                              'filetype': ftype}
-                fcnt += 1
-        endtime = time.time()
-        print "DONE (%0.2f secs)" % (endtime-starttime)
-
-        # get disk information for artifacts
-        print "\tGetting disk information on %s files..." % len(filemeta),
-        starttime = time.time()
-        artifacts = []
-        for fdict in filemeta.values():
-            artifacts.append(diskutils.get_single_file_disk_info(fdict['fullname'],
-                                                                 save_md5sum=save_md5sum,
-                                                                 archive_root=None))
-        endtime = time.time()
-        print "DONE (%0.2f secs)" % (endtime-starttime)
-
-        # create provenance showing was registered by this program
-        wgblist = []
-        for fdict in artifacts:
-            filename = fdict['filename']
-            if fdict['compression'] is not None:
-                 filename += fdict['compression']
-            wgblist.append(filename)
-        file_prov = {'was_generated_by': {'exec_1': ','.join(sorted(wgblist))}}
-        prov_task_ids = {'exec_1': task_id}
-
-        print "\tCalling ingest_file_metadata on %s files..." % len(filemeta),
+        print "\tSaving file metadata/contents on %0d files...." % len(misslist),
         starttime = time.time()
         try:
-            filemgmt.save_file_info(artifacts, filemeta, file_prov, prov_task_ids)
-            endtime=time.time()
-        except Exception as err:
-            endtime=time.time()
-            print "ERROR (%0.2f secs)" % (endtime-starttime)
-            print "\n\n\nError: %s" % err
-            print "Rerun using --outcfg <outfile> to see config from DB, esp filetype_metadata"
-            print "---------- filemeta to ingest:"
-            import intgutils.wclutils as wclutils
-            wclutils.write_wcl(filemeta)
-            print "----------"
-            raise
-        print "DONE (%0.2f secs)" % (endtime-starttime)
+            filemgmt.register_file_data(ftype, misslist, task_id, False, None)
+        except fmerrors.RequiredMetadataMissingError as err:
+            miscutils.fwdie("Error: %s" % err, 1)
 
+        endtime = time.time()
+        print "DONE (%0.2f secs)" % (endtime - starttime)
+
+    # check which files already have contents in database
+    #     don't bother with updating existing data, as files should be immutable
+    misslist = list_missing_contents(filemgmt, ftype, filelist)
+
+    if len(misslist) != 0:
+        print "\tSaving file contents on %0d files...." % len(misslist),
+        starttime = time.time()
+        filemgmt.ingest_contents(ftype, misslist)
+        endtime = time.time()
+        print "DONE (%0.2f secs)" % (endtime - starttime)
 
 ###########################################################################
-def save_archive_location(filemgmt, filelist, archive_name, verbose):
+def save_archive_location(filemgmt, filelist, archive_name):
     """ save location in archive """
 
     # check which files already are in archive
-    missing_files = list_missing_archive(filemgmt, filelist, archive_name, verbose)
+    missing_files = list_missing_archive(filemgmt, filelist, archive_name)
 
     # create input list of files that need to be registered in archive
     if len(missing_files) > 0:
@@ -311,91 +224,63 @@ def save_archive_location(filemgmt, filelist, archive_name, verbose):
         problemfiles = filemgmt.register_file_in_archive(missing_files, archive_name)
         endtime = time.time()
         if problemfiles is not None and len(problemfiles) > 0:
-            print "ERROR (%0.2f secs)" % (endtime-starttime)
+            print "ERROR (%0.2f secs)" % (endtime - starttime)
             print "\n\n\nError: putting %0d files into archive" % len(problemfiles)
-            for file in problemfiles:
-                print file, problemfiles[file]
+            for pfile in problemfiles:
+                print pfile, problemfiles[pfile]
                 sys.exit(1)
-        print "DONE (%0.2f secs)" % (endtime-starttime)
+        print "DONE (%0.2f secs)" % (endtime - starttime)
 
 
 
 ###########################################################################
-def process_files(filelist, filemgmt, task_id, archive_name, save_md5sum, commit, verbose):
+def process_files(filelist, filemgmt, task_id, archive_name, do_commit):
     """ Ingests file metadata for all files in filelist """
     # filelist[fullname] = {'path': path, 'filetype': filetype, 'fullname':fullname,
     #                       'filename', 'compression'}
 
-    print "\nProcessing %0d files" % (len(filelist))
-    miscutils.fwdebug(6, "REGISTER_FILES_DEBUG", "filelist=%s" % (filelist))
-
-    # group by filetype
-    byfiletype = {}
-    for fdict in filelist.values():
-        filetype = fdict['filetype']
-        if filetype not in byfiletype:
-            byfiletype[filetype] = []
-        byfiletype[filetype].append(fdict)
-    #print byfiletype
-    miscutils.fwdebug(6, "REGISTER_FILES_DEBUG", "byfiletype=%s" % (byfiletype))
+    totfilecnt = sum([len(x) for x in filelist.values()])
+    print "\nProcessing %0d files" % (totfilecnt)
+    if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
+        miscutils.fwdebug_print("filelist=%s" % (filelist))
 
     # work in sets defined by filetype
-    for ftype in sorted(byfiletype.keys()):
+    for ftype in sorted(filelist.keys()):
         print "\n%s:" % ftype
-        print "\tTotal: %s file(s) of this type" % len(byfiletype[ftype])
-        if verbose >= 3:
-            print "filenames for files for filetype %s:" % ftype
-            for f in byfiletype[ftype]:
-                print "\t%s" % f
+        print "\tTotal: %s file(s) of this type" % len(filelist[ftype])
 
-        metaspecs = get_register_metadata_specs(ftype, filemgmt, verbose)
-        save_file_info(filemgmt, task_id, ftype, metaspecs, byfiletype[ftype], save_md5sum, verbose)
-        save_archive_location(filemgmt, byfiletype[ftype], archive_name, verbose)
+        save_file_info(filemgmt, task_id, ftype, filelist[ftype])
+        save_archive_location(filemgmt, filelist[ftype], archive_name)
 
-        if commit:
+        if do_commit:
             filemgmt.commit()
-            
-
-
-
 
 ###########################################################################
-def main(args):
-    starttime = time.time()
+def parse_cmdline(argv):
+    """ Parse the command line """
 
-    parser = argparse.ArgumentParser(description='Ingest metadata for files generated outside DESDM framework')
+    parser = argparse.ArgumentParser(description=\
+                'Ingest metadata for files generated outside DESDM framework')
     parser.add_argument('--des_services', action='store', help='')
-    parser.add_argument('--section', action='store', help='Must be specified if not set in environment')
+    parser.add_argument('--section', action='store',
+                        help='Must be specified if not set in environment')
     parser.add_argument('--provmsg', action='store', required=True)
-    parser.add_argument('--config', action='store')
+    parser.add_argument('--wclfile', action='store')
     parser.add_argument('--outcfg', action='store')
     parser.add_argument('--classmgmt', action='store')
     parser.add_argument('--classutils', action='store')
 
     parser.add_argument('--no-commit', action='store_true', default=False)
     parser.add_argument('--list', action='store', help='format:  fullname, filetype')
-    parser.add_argument('--archive', action='store', help='single value')
-    parser.add_argument('--filetype', action='store', help='single value, must also specify search path')
-    parser.add_argument('--path', action='store', help='single value, must also specify filetype')
-    parser.add_argument('--skip-md5sum', action='store_true', default=False)
-    parser.add_argument('--verbose', action='store', default=1)
+    parser.add_argument('--archive', action='store', dest='archive_name',
+                        help='archive name, single value', required=True)
+    parser.add_argument('--filetype', action='store',
+                        help='single value, must also specify search path')
+    parser.add_argument('--path', action='store',
+                        help='single value, must also specify filetype')
     parser.add_argument('--version', action='store_true', default=False)
 
-    args = vars(parser.parse_args())   # convert to dict
-
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout
-
-    m = re.search('\$Rev:\s+(\d+)\s+\$', VERSION)
-    print '\nUsing revision %s of %s\n' % (m.group(1), os.path.basename(sys.argv[0]))
-
-    if args['version']:
-        return 0
-
-    if not args['archive']:
-        print "Error: must specify archive\n"
-        parser.print_help()
-        return 1
-    archive = args['archive']
+    args = vars(parser.parse_args(argv))   # convert to dict
 
     if args['filetype'] and ',' in args['filetype']:
         print "Error: filetype must be single value\n"
@@ -422,23 +307,23 @@ def main(args):
         parser.print_help()
         return 1
 
-    save_md5sum = not args['skip_md5sum']
-    commit = not args['no_commit']
+    return args
 
-    verbose = 1
-    if 'verbose' in args:
-        verbose = args['verbose']
-
-
-    # figure out which python class to use for filemgmt
+###########################################################################
+def get_filemgmt_class(args):
+    """ Figure out which filemgmt class to use """
     filemgmt_class = None
+
+    archive = args['archive_name']
+
     if args['classmgmt']:
         filemgmt_class = args['classmgmt']
-    elif args['config']:
-        if args['config'] is not None:
-            import intgutils.wclutils as wclutils
-            with open(args['config'], 'r') as fh:
-                config = wclutils.read_wcl(fh)
+    elif args['wclfile']:
+        if args['wclfile'] is not None:
+            from intgutils.wcl import WCL
+            config = WCL()
+            with open(args['wclfile'], 'r') as configfh:
+                config.read(configfh)
         if archive in config['archive']:
             filemgmt_class = config['archive'][archive]['filemgmt']
         else:
@@ -460,50 +345,60 @@ def main(args):
         print "\tMake sure it contains at least 1 period."
         miscutils.fwdie("Invalid filemgmt class name", 1)
 
+    return filemgmt_class
+
+###########################################################################
+def main(argv):
+    """ Program entry point """
+    starttime = time.time()
+
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout
+    revmatch = re.search(r'\$Rev:\s+(\d+)\s+\$', __version__)
+    print '\nUsing revision %s of %s\n' % (revmatch.group(1), os.path.basename(sys.argv[0]))
+
+    args = parse_cmdline(argv)
+
+    if args['version']:
+        return 0
+
+    do_commit = not args['no_commit']
+
+    # tell filemgmt class to get config from DB
+    args['get_db_config'] = True
+
+
+    # figure out which python class to use for filemgmt
+    filemgmt_class = get_filemgmt_class(args)
 
     # dynamically load class for filemgmt
     filemgmt = None
     filemgmt_class = miscutils.dynamically_load_class(filemgmt_class)
     try:
-        filemgmt = filemgmt_class(argv=args)
+        filemgmt = filemgmt_class(args)
     except Exception as err:
         print "ERROR\nError: creating filemgmt object\n%s" % err
         raise
 
+    archive = args['archive_name']
     if not filemgmt.is_valid_archive(archive):
         miscutils.fwdie("Invalid archive name (%s)" % archive, 1)
 
-
-
     if args['outcfg'] is not None:
-        import intgutils.wclutils as wclutils
-        with open(args['outcfg'], 'w') as fh:
-           wclutils.write_wcl(filemgmt.config, fh)
+        with open(args['outcfg'], 'w') as outcfgfh:
+            filemgmt.config.write_wcl(outcfgfh)
 
     print "Creating list of files to register...",
-    starttime = time.time()
-    if args['filetype'] is not None:
-        if not filemgmt.is_valid_filetype(args['filetype']):
-            miscutils.fwdie("Error:  Invalid filetype (%s)" % args['filetype'], 1)
-        filelist = get_list_filenames(args['path'], args['filetype'])
-        miscutils.fwdebug(6, "REGISTER_FILES_DEBUG", "after get_list_filenames:  filelist=%s" % (filelist))
-    elif args['list'] is not None:
-        filelist = parse_provided_list(args['list'])
-    add_basenames_list(filelist)
-    endtime = time.time()
-    miscutils.fwdebug(3, "REGISTER_FILES_DEBUG", "after add_basenames_list:  filelist=%s" % (filelist))
-    print "DONE (%0.2f secs)" % (endtime - starttime)
-    print "\t%s files in list" % len(filelist)
-    
+    filelist = create_list_of_files(filemgmt, args)
+
     ###
     print "Creating task and entry in file_registration...",
     starttime = time.time()
     task_id = filemgmt.create_task(name='register_files', info_table='file_registration',
-                    parent_task_id = None, root_task_id = None, i_am_root = True,
-                    label = None, do_begin = True, do_commit = commit)
+                                   parent_task_id=None, root_task_id=None, i_am_root=True,
+                                   label=None, do_begin=True, do_commit=do_commit)
 
     # save provenance message
-    save_register_info(filemgmt, task_id, args['provmsg'], commit)
+    save_register_info(filemgmt, task_id, args['provmsg'], do_commit)
     endtime = time.time()
     print "DONE (%0.2f secs)" % (endtime - starttime)
 
@@ -511,21 +406,21 @@ def main(args):
     print """\nReminder:
 \tFor purposes of file metadata, uncompressed and compressed
 \tfiles are treated as same file (no checking is done).
-\tBut when tracking file locations within archive, 
+\tBut when tracking file locations within archive,
 \tthey are tracked as 2 independent files.\n"""
     try:
-        process_files(filelist, filemgmt, task_id, archive, save_md5sum, commit, verbose)
-        filemgmt.end_task(task_id, fmdefs.FM_EXIT_SUCCESS, commit)
-        if not commit:
+        process_files(filelist, filemgmt, task_id, archive, do_commit)
+        filemgmt.end_task(task_id, fmdefs.FM_EXIT_SUCCESS, do_commit)
+        if not do_commit:
             print "Skipping commit"
     except:
-        filemgmt.end_task(task_id, fmdefs.FM_EXIT_FAILURE, commit)
+        filemgmt.end_task(task_id, fmdefs.FM_EXIT_FAILURE, do_commit)
         raise
 
     endtime = time.time()
-    print "\n\nTotal time with %s files: %0.2f secs" % (len(filelist), endtime-starttime)
-
+    totfilecnt = sum([len(x) for x in filelist.values()])
+    print "\n\nTotal time with %s files: %0.2f secs" % (totfilecnt, (endtime - starttime))
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    sys.exit(main(sys.argv[1:]))
 

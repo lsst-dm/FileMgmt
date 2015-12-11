@@ -44,7 +44,7 @@ class FileMgmtNoDB ():
 
     def register_file_in_archive(self, filelist, args):
         # with no db, don't need to register
-        miscutils.fwdebug(0, "FILEMGMT_NODB_DEBUG", "Nothing to do")
+        miscutils.fwdebug_print("Nothing to do")
         return {}
 
 
@@ -62,6 +62,8 @@ class FileMgmtNoDB ():
                 in_archive.append(f)
         return in_archive
                 
+    def save_file_info(self, artifacts, metadata, prov, execids):
+        pass
 
     def ingest_file_metadata(self, filemeta):
         pass
@@ -198,5 +200,5 @@ class FileMgmtNoDB ():
         return archiveinfo
 
     def commit(self):
-        miscutils.fwdebug(0, "FILEMGMT_NODB_DEBUG", "Nothing to do")
+        miscutils.fwdebug_print("Nothing to do")
         

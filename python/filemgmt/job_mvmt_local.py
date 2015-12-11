@@ -33,8 +33,10 @@ class JobArchiveLocal():
 
 
     def home2job(self, filelist):
-        miscutils.fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
-        miscutils.fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
+        if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
+        if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("filelist=%s" % filelist)
 
         # if staging outside job, this function shouldn't be called
         if self.home is None:
@@ -53,8 +55,10 @@ class JobArchiveLocal():
 
 
     def target2job(self, filelist):
-        miscutils.fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
-        miscutils.fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
+        if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
+        if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("filelist=%s" % filelist)
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
         absfilelist = copy.deepcopy(filelist)
@@ -69,8 +73,10 @@ class JobArchiveLocal():
 
 
     def job2target(self, filelist):
-        miscutils.fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
-        miscutils.fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
+        if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
+        if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("filelist=%s" % filelist)
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
         absfilelist = copy.deepcopy(filelist)
@@ -85,8 +91,10 @@ class JobArchiveLocal():
 
 
     def job2home(self, filelist):
-        miscutils.fwdebug(0, "JOBFILEMVMT_DEBUG", "len(filelist)=%s" % len(filelist))
-        miscutils.fwdebug(4, "JOBFILEMVMT_DEBUG", "filelist=%s" % filelist)
+        if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
+        if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
+            miscutils.fwdebug_print("filelist=%s" % filelist)
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
