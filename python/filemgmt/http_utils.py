@@ -22,23 +22,34 @@ import despymisc.miscutils as miscutils
 import filemgmt.filemgmt_defs as fmdefs
 
 
-def http_errorcode_str(errorcode):
-    errstr = "Unmapped errorcode (%s)" % errorcode
-    code2str = {'400': 'Bad Request (check command syntax)',
+def http_code_str(hcode):
+    codestr = "Unmapped http_code (%s)" % hcode
+    code2str = {'200': 'Success/Ok',
+                '201': 'Success/Created',
+                '204': 'No content (unknown status)',
+                '301': 'Directory already existed',
+                '304': 'Not modified',
+                '400': 'Bad Request (check command syntax)',
                 '401': 'Unauthorized (check username/password)',
                 '403': 'Forbidden (check url, check perms)',
                 '404': 'Not Found (check url exists and is readable)',
+                '405': 'Method not allowed',
                 '429': 'Too Many Requests (check transfer throttling)',
+                '500': 'Internal Server Error', 
+                '501': 'Not implemented/understood',
                 '507': 'Insufficient storage (check disk space)'}
-    # convert given errorcode to str (converting to int can fail)
-    if str(errorcode) in code2str:
-        errstr = code2str[str(errorcode)]
-    return errstr
 
-def curl_errorcode_str(errorcode):
+
+    # convert given code to str (converting to int can fail)
+    if str(hcode) in code2str:
+        codestr = code2str[str(hcode)]
+    return codestr
+
+def curl_exitcode_str(errorcode):
     errorcode = int(errorcode)
     errstr = "Unmapped errorcode (%s)" % errorcode
-    code2str = {1: "Unsupported protocol. This build of curl has no support for this protocol.",
+    code2str = {0: "Successful",
+                1: "Unsupported protocol. This build of curl has no support for this protocol.",
                 2: "Failed to initialize.",
                 3: "URL malformed. The syntax was not correct.",
                 5: "Couldn't resolve proxy. The given proxy host could not be resolved.",
@@ -107,9 +118,9 @@ def curl_errorcode_str(errorcode):
                 80: "Failed to shut down the SSL connection.",
                 82: "Could not load CRL file, missing or wrong format (added in 7.19.0).",
                 83: "Issuer check failed (added in 7.19.0)."}
-    # convert given errorcode to str (converting to int can fail)
-    if str(errorcode) in code2str:
-        errstr = code2str[str(errorcode)]
+
+    if errorcode in code2str:
+        errstr = code2str[errorcode]
     return errstr
 
 class HttpUtils():
@@ -147,7 +158,7 @@ class HttpUtils():
 
 
     def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt',
-                         secondsBetweenRetries=15, numTries=3):
+                         secondsBetweenRetries=30, numTries=5):
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
@@ -179,7 +190,9 @@ class HttpUtils():
         cmd = re.sub("^curl ", "curl -o %s " % curlConsoleOutputFile, cmd)
         process = 0
         exitcode = 0
+        httpcode = None
         starttime = time.time()
+        success = False
         for x in range(0, numTries):
             if not isTest:
                 if x == 0:
@@ -199,26 +212,38 @@ class HttpUtils():
             curl_stdout = process.communicate(self.curl_password)[0]
 
             exitcode = process.returncode
+            http_match = re.search('http_code: ?(\d+)', curl_stdout)
+            httpcode = None
+            if http_match:
+                httpcode = http_match.group(1)
+
+            if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
+                miscutils.fwdebug_print("curl command: %s" % cmd)
+                miscutils.fwdebug_print("curl exitcode: %s (%s)" % (exitcode, curl_exitcode_str(exitcode)))
+                if httpcode is not None:
+                    miscutils.fwdebug_print("curl http status: %s (%s)" % (httpcode, http_code_str(httpcode)))
+                else:
+                    miscutils.fwdebug_print("curl http status: unknown")
+                miscutils.fwdebug_print("curl stdout: %s" % curl_stdout.strip())
 
             if not isTest and x > 0:
                 print "output:", curl_stdout
 
             sys.stdout.flush()
-            if exitcode == 0:
+            if exitcode == 0 and httpcode in ['200', '201', '301']:
+                success = True
                 break
 
             # run some diagnostics
-            print "*" * 75
-            print "Curl exited with non-zero exit code"
-            print "curl cmd: %s" % cmd
-            print "curl exitcode: %s (%s)" % (exitcode, curl_errorcode_str(exitcode))
-            print "curl stdout: %s" % curl_stdout.strip()
-            http_match = re.search('http_code: ?(\d+)', curl_stdout)
-            if http_match:
-                errcode = http_match.group(1)
-                print "http status: %s (%s)" % (errcode, http_errorcode_str(errcode))
+            miscutils.fwdebug_print("*" * 75)
+            miscutils.fwdebug_print("CURL FAILURE")
+            miscutils.fwdebug_print("curl command: %s" % cmd)
+            miscutils.fwdebug_print("curl exitcode: %s (%s)" % (exitcode, curl_exitcode_str(exitcode)))
+            if httpcode is not None:
+                miscutils.fwdebug_print("curl http status: %s (%s)" % (httpcode, http_code_str(httpcode)))
             else:
-                print "http status: unknown (%s)" % curl_stdout
+                miscutils.fwdebug_print("curl http status: unknown")
+            miscutils.fwdebug_print("curl stdout: %s" % curl_stdout.strip())
 
             print "\nDiagnostics:"
             print "Directory info"
@@ -252,11 +277,10 @@ class HttpUtils():
             sys.stdout.flush()
 
             if x < numTries-1:    # not the last time in the loop
-                print "Sleeping %s secs" % secondsBetweenRetries
+                miscutils.fwdebug_print("Sleeping %s secs" % secondsBetweenRetries)
                 time.sleep(secondsBetweenRetries)
 
-
-        if exitcode != 0:
+        if not success:
             if os.path.isfile(curlConsoleOutputFile):
                 print "Last 50 lines of curlConsoleOutputFile:"
                 with open(curlConsoleOutputFile, 'r') as f:
@@ -266,15 +290,11 @@ class HttpUtils():
                     else:
                         print '\n'.join(lines)
 
-            msg = "File copy failed with return code %d (%s), " % (exitcode, curl_errorcode_str(errorcode))
-            http_match = re.search('http_code: ?(\d+)', curl_stdout)
-            if http_match:
-                errcode = http_match.group(1)
-                msg += " http status %s (%s)" % (errcode, http_errorcode_str(errcode))
-
+            msg = "File copy failed with return code %d (%s), " % (exitcode, curl_exitcode_str(exitcode))
+            if httpcode is not None:
+                msg += " http status %s (%s)" % (httpcode, http_code_str(httpcode))
             else:
-                msg += " http status unknown (%s)" % curl_stdout
-
+                msg += " http status unknown (%s)" % curl_stdout.strip()
 
             raise Exception(msg)
 
@@ -297,7 +317,7 @@ class HttpUtils():
                 self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
                 self.existing_directories.add(x)
 
-    def copyfiles(self, filelist, tstats, secondsBetweenRetriesC=15, numTriesC=3):
+    def copyfiles(self, filelist, tstats, secondsBetweenRetriesC=30, numTriesC=5):
         """ Copies files in given src,dst in filelist """
         num_copies_from_archive = 0
         num_copies_to_archive = 0
@@ -350,20 +370,20 @@ class HttpUtils():
                         tstats.stat_end_file(0, fsize)
 
                 # Print some debugging info:
-                if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
+                if miscutils.fwdebug_check(9, "HTTP_UTILS_DEBUG"):
                     miscutils.fwdebug_print("\n")
                     for lines in traceback.format_stack():
                         for L in lines.split('\n'):
                             if L.strip() != '':
                                 miscutils.fwdebug_print("call stack: %s" % L)
 
-                    if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
-                        miscutils.fwdebug_print("Copy info: %s %s %s %s %s %s" % (HttpUtils.copyfiles_called,
-                                                                                  fdict['filename'],
-                                                                                  fsize,
-                                                                                  copy_time,
-                                                                                  time.time(),
-                                                                                  'toarchive' if isurl_dst else 'fromarchive'))
+                if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
+                    miscutils.fwdebug_print("Copy info: %s %s %s %s %s %s" % (HttpUtils.copyfiles_called,
+                                                                              fdict['filename'],
+                                                                              fsize,
+                                                                              copy_time,
+                                                                              time.time(),
+                                                                              'toarchive' if isurl_dst else 'fromarchive'))
 
                 if copy_time is None:
                     copy_time = 0
@@ -426,16 +446,16 @@ class HttpUtils():
         shutil.rmtree('test_dh', True)
         with open("testfile_dh.txt", "w") as f: f.write("hello, world")
 
-        self.copyfiles(test_filelist1)
-        self.copyfiles(test_filelist2)
+        self.copyfiles(test_filelist1, None)
+        self.copyfiles(test_filelist2, None)
         if os.path.isfile('test_dh/testfile_dh2.txt') and os.path.getsize('test_dh/testfile_dh2.txt') == 12:
             print "Transfer of test_dh2.txt seems ok"
         else:
             miscutils.fwdie("Transfer of test_dh2.txt failed", fmdefs.FM_EXIT_FAILURE)
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
 
-        self.copyfiles(test_filelist3)
-        self.copyfiles(test_filelist4)
+        self.copyfiles(test_filelist3, None)
+        self.copyfiles(test_filelist4, None)
         if os.path.isfile('test_dh/testfile_dh3.txt') and os.path.getsize('test_dh/testfile_dh3.txt') == 12:
             print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
         else:
@@ -443,7 +463,7 @@ class HttpUtils():
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
         self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
-        (status, filelist5_out) = self.copyfiles(test_filelist5, secondsBetweenRetriesC=1, numTriesC=2)
+        (status, filelist5_out) = self.copyfiles(test_filelist5, None, secondsBetweenRetriesC=1, numTriesC=2)
         if filelist5_out['testfile_dh5.txt'].has_key('err') and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':
             print "Test of failed GET seems ok."
         else:
