@@ -7,7 +7,7 @@ etc_files = glob.glob("etc/*")
 
 # The main call
 setup(name='FileMgmt',
-      version ='2.0.2',
+      version ='2.0.3',
       license = "GPL",
       description = "DESDM's file management framework",
       author = "Michelle Gower",
