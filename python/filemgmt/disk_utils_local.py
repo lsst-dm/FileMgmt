@@ -174,3 +174,115 @@ def remove_file_if_exists(filename):
         if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
             raise
 # end remove_file_if_exists
+
+######################################################################
+def get_files_from_disk(relpath, archive_root, check_md5sum=False, debug=False):
+    """ Check disk to get list of files within that path inside the archive 
+
+        Parameters
+        ----------
+        archive_root : str
+            The base root of the relpath entry
+
+        check_md5sum : bool
+            Whether or not to compare md5sums
+
+        debug : bool
+            Whether or not to report debugging info
+
+        Returns
+        -------
+        A dictionary contianing the info about the files on disk (filesize, md5sum, compression, filename, path)
+
+    """
+
+    start_time = time.time()
+    if debug:
+        print "Getting file information from disk: BEG"
+
+    files_from_disk = {}
+    for (dirpath, dirnames, filenames) in os.walk(os.path.join(archive_root,relpath)):
+        for filename in filenames:
+            fullname = '%s/%s' % (dirpath, filename)
+            files_from_disk[filename] = get_single_file_disk_info(fullname, check_md5sum, archive_root)
+
+    end_time = time.time()
+    if debug:
+        print "Getting file information from disk: END (%s secs)" % (end_time - start_time)
+    return files_from_disk
+
+####################################################################
+def compare_db_disk(files_from_db, files_from_disk, check_md5sum, check_filesize, debug=False,archive_root=""):
+    """ Compare file info from DB to info from disk 
+
+        Parameters
+        ----------
+        file_from_db : dict
+            Dicitonary containing the file info from the database
+
+        files_from_disk : dict
+            Dictionary containing the file info from disk
+
+        check_md5sum : bool
+            Whether or not to report the md5sum comparision
+
+        check_filesize : bool
+            Whether or not to report the filesize comparison
+
+        debug : bool
+            Whenther or not to report debugging info
+            Default: False
+
+        archive_root : str
+            The archive root path
+            Default : False
+
+        Returns
+        -------
+        None
+    """
+
+    start_time = time.time()
+    if debug:
+        print "Comparing file information: BEG"
+    comparison_info = { 
+                        'equal': [],
+                        'dbonly': [],
+                        'diskonly': [],
+                        'path': [],
+                        'filesize': []
+                      }
+    if check_md5sum:
+        comparison_info['md5sum'] = []
+
+    if check_filesize:
+        comparison_info['filesize'] = []
+
+    allfiles = Set(files_from_db).union(Set(files_from_disk))
+    for fname in allfiles:
+        if fname in files_from_db:
+            if fname in files_from_disk:
+                fdisk = files_from_disk[fname]
+                fdb = files_from_db[fname]
+                if fdisk['relpath'] == fdb['path']:
+                    if fdisk['filesize'] == fdb['filesize']:
+                        if check_md5sum:
+                            if fdisk['md5sum'] == fdb['md5sum']:
+                                comparison_info['equal'].append(fname)
+                            else:
+                                comparison_info['md5sum'].append(fname)
+                        else:
+                            comparison_info['equal'].append(fname)
+                    else:
+                        comparison_info['filesize'].append(fname)
+                else:
+                    comparison_info['path'].append(fname)
+            else:
+                comparison_info['dbonly'].append(fname)
+        else:
+            comparison_info['diskonly'].append(fname)
+
+    end_time = time.time()
+    if debug:
+        print "Comparing file information: END (%s secs)" % (end_time - start_time)
+    return comparison_info
