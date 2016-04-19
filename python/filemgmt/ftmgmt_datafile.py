@@ -21,10 +21,10 @@ class FtMgmtDatafile(FtMgmtGeneric):
     """  Class for managing a filetype whose contents can be read by datafile_ingest """
 
     ######################################################################
-    def __init__(self, filetype, dbh, config):
+    def __init__(self, filetype, dbh, config, filepat=None):
         """ Initialize object """
         # config must have filetype_metadata and file_header_info
-        FtMgmtGeneric.__init__(self, filetype, dbh, config)
+        FtMgmtGeneric.__init__(self, filetype, dbh, config, filepat=None)
 
         [self.tablename, self.didatadefs] = self.dbh.get_datafile_metadata(filetype)
 

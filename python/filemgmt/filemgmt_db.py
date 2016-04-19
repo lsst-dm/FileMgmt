@@ -82,6 +82,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         self.filetype = None
         self.ftmgmt = None
+        self.filepat = None
 
 
     ###########################################################################
@@ -595,7 +596,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         return archiveinfo
 
     ######################################################################
-    def dynam_load_ftmgmt(self, filetype):
+    def dynam_load_ftmgmt(self, filetype, filepat=None):
         """ Dynamically load a filetype mgmt class """
 
         if miscutils.fwdebug_check(3, 'FILEMGMT_DEBUG'):
@@ -615,21 +616,22 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             filetype_mgmt = None
             filetype_mgmt_class = miscutils.dynamically_load_class(classname)
             try:
-                filetype_mgmt = filetype_mgmt_class(filetype, self, self.config)
+                filetype_mgmt = filetype_mgmt_class(filetype, self, self.config, filepat)
             except Exception as err:
                 print "ERROR\nError: creating filemgmt object\n%s" % err
                 raise
 
             self.filetype = filetype
+            self.filepat = filepat
             self.ftmgmt = filetype_mgmt
 
 
     ######################################################################
     def register_file_data(self, ftype, fullnames, wgb_task_id,
-                           do_update, update_info=None):
+                           do_update, update_info=None, filepat=None):
         """ Save artifact, metadata, wgb provenance, and simple contents for given files """
 
-        self.dynam_load_ftmgmt(ftype)
+        self.dynam_load_ftmgmt(ftype, filepat)
 
         results = {}
         for fname in fullnames:

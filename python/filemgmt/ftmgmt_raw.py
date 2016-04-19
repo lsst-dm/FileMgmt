@@ -25,10 +25,10 @@ class FtMgmtRaw(FtMgmtGenFits):
     """  Class for managing a raw filetype (get metadata, update metadata, etc) """
 
     ######################################################################
-    def __init__(self, filetype, dbh, config):
+    def __init__(self, filetype, dbh, config, filepat=None):
         """ Initialize object """
         # config must have filetype_metadata, file_header_info, keywords_file (OPT)
-        FtMgmtGenFits.__init__(self, filetype, dbh, config)
+        FtMgmtGenFits.__init__(self, filetype, dbh, config, filepat)
 
 
     ######################################################################

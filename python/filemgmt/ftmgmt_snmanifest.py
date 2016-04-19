@@ -25,10 +25,10 @@ class FtMgmtSNManifest(FtMgmtGeneric):
     """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
 
     ######################################################################
-    def __init__(self, filetype, dbh, config):
+    def __init__(self, filetype, dbh, config, filepat=None):
         """ Initialize object """
         # config must have filetype_metadata and file_header_info
-        FtMgmtGeneric.__init__(self, filetype, dbh, config)
+        FtMgmtGeneric.__init__(self, filetype, dbh, config, filepat)
 
     ######################################################################
     def has_contents_ingested(self, listfullnames):
