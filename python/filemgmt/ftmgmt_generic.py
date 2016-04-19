@@ -31,7 +31,7 @@ class FtMgmtGeneric(object):
 
     ######################################################################
     def has_metadata_ingested(self, listfullnames):
-        """ Check if file has row in genfile table """
+        """ Check if file has row in metadata table """
 
         assert isinstance(listfullnames, list)
 
@@ -48,6 +48,10 @@ class FtMgmtGeneric(object):
         self.dbh.load_filename_gtt(byfilename.keys())
 
         metadata_table = self.config['filetype_metadata'][self.filetype]['metadata_table']
+
+        if metadata_table.lower() == 'genfile':
+            metadata_table = 'desfile'
+
         dbq = "select m.filename from %s m, %s g where m.filename=g.filename" % \
                  (metadata_table, dmdbdefs.DB_GTT_FILENAME)
         curs = self.dbh.cursor()
