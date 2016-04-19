@@ -13,20 +13,26 @@ Generic filetype management class used to do filetype specific tasks
 __version__ = "$Rev$"
 
 from collections import OrderedDict
+import copy
+import re
+
 
 import despymisc.miscutils as miscutils
 import despydmdb.dmdb_defs as dmdbdefs
+
 
 class FtMgmtGeneric(object):
     """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
 
     ######################################################################
-    def __init__(self, filetype, dbh, config):
+    def __init__(self, filetype, dbh, config, filepat=None):
         """ Initialize object """
         # config must have filetype_metadata and file_header_info
         self.filetype = filetype
         self.dbh = dbh
         self.config = config
+        self.filepat = filepat
+    
 
 
     ######################################################################
@@ -132,6 +138,12 @@ class FtMgmtGeneric(object):
             miscutils.fwdebug_print("INFO: metadefs=%s" % (metadefs))
         for hdname, hddict in metadefs['hdus'].items():
             for status_sect in hddict:  # don't worry about missing here, ingest catches
+                # get value from filename
+                if 'f' in hddict[status_sect]:
+                    metakeys = hddict[status_sect]['f'].keys()
+                    mdata2 = self._gather_metadata_from_filename(fullname, metakeys)
+                    metadata.update(mdata2)
+
                 # get value from wcl/config
                 if 'w' in hddict[status_sect]:
                     metakeys = hddict[status_sect]['w'].keys()
@@ -182,3 +194,61 @@ class FtMgmtGeneric(object):
 
         return metadata
 
+
+    ######################################################################
+    def _gather_metadata_from_filename(self, fullname, metakeys):
+        """ Parse filename using given filepat """ 
+
+        if self.filepat is None:
+            raise TypeError("None filepat for filetype %s" % self.filetype)
+
+        # change wcl file pattern into a pattern usable by re
+        newfilepat = copy.deepcopy(self.filepat)
+        varpat = r"\$\{([^$}]+:\d+)\}|\$\{([^$}]+)\}"
+        listvar = []
+        m = re.search(varpat, newfilepat)
+        while m:
+            #print m.group(1), m.group(2)
+            if m.group(1) is not None:
+                m2 = re.search('([^:]+):(\d+)', m.group(1))
+                #print m2.group(1), m2.group(2)
+                listvar.append(m2.group(1))
+
+                # create a pattern that will remove the 0-padding
+                newfilepat = re.sub(r"\${%s}" % (m.group(1)), '(\d{%s})' % m2.group(2), newfilepat)
+            else:
+                newfilepat = re.sub(r"\${%s}" % (m.group(2)), '(\S+)', newfilepat)
+                listvar.append(m.group(2))
+
+            m = re.search(varpat, newfilepat)
+
+
+        # now that have re pattern, parse the filename for values
+        filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
+
+        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
+            miscutils.fwdebug_print("INFO: newfilepat = %s" % newfilepat)
+            miscutils.fwdebug_print("INFO: filename = %s" % filename)
+
+        m = re.search(newfilepat, filename)
+
+        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
+            miscutils.fwdebug_print("INFO: m.group() = %s" %  m.group())
+            miscutils.fwdebug_print("INFO: listvar = %s" % listvar)
+
+        # only save values parsed from filename that were requested per metakeys
+        mddict = {}
+        for cnt in range(0, len(listvar)):
+            key = listvar[cnt]
+            if key in metakeys:
+                if miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
+                    miscutils.fwdebug_print("INFO: saving as metadata key = %s, cnt = %s" % (key, cnt))
+                mddict[key] = m.group(cnt+1)
+            elif miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
+                miscutils.fwdebug_print("INFO: skipping key = %s because not in metakeys" % key)
+    
+
+        if miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
+            miscutils.fwdebug_print("INFO: mddict = %s" % mddict)
+
+        return mddict

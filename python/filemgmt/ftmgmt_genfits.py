@@ -24,10 +24,10 @@ class FtMgmtGenFits(FtMgmtGeneric):
     """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
 
     ######################################################################
-    def __init__(self, filetype, dbh, config):
+    def __init__(self, filetype, dbh, config, filepat=None):
         """ Initialize object """
         # config must have filetype_metadata and file_header_info
-        FtMgmtGeneric.__init__(self, filetype, dbh, config)
+        FtMgmtGeneric.__init__(self, filetype, dbh, config, filepat)
 
     ######################################################################
     def perform_metadata_tasks(self, fullname, do_update, update_info):
@@ -73,6 +73,12 @@ class FtMgmtGenFits(FtMgmtGeneric):
         metadefs = self.config['filetype_metadata'][self.filetype]
         for hdname, hddict in metadefs['hdus'].items():
             for status_sect in hddict:  # don't worry about missing here, ingest catches
+                # get value from filename
+                if 'f' in hddict[status_sect]:
+                    metakeys = hddict[status_sect]['f'].keys()
+                    mdata2 = self._gather_metadata_from_filename(fullname, metakeys)
+                    metadata.update(mdata2)
+
                 # get value from wcl/config
                 if 'w' in hddict[status_sect]:
                     metakeys = hddict[status_sect]['w'].keys()
