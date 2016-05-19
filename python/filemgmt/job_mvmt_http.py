@@ -11,6 +11,7 @@ __version__ = "$Rev: 18938 $"
 import os
 import shutil
 import copy
+import re
 
 import despymisc.miscutils as miscutils
 import filemgmt.http_utils as http_utils
@@ -33,19 +34,22 @@ class JobArchiveHttp():
         self.mvmt = mvmtinfo
         self.config = config
         self.tstats = tstats
-        
+
+        m = re.match("(http://[^/]+)(/.*)", homeinfo['root_http'])        
+        dest = m.group(1)
         for x in (DES_SERVICES, DES_HTTP_SECTION):
             if x not in self.config:
                 miscutils.fwdie('Error:  Missing %s in config' % x, 1)
         self.HU = http_utils.HttpUtils(self.config[DES_SERVICES],
-                                       self.config[DES_HTTP_SECTION])
+                                       self.config[DES_HTTP_SECTION],
+                                       dest.replace('http://',''))
 
 
     def home2job(self, filelist):
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
-        
+
         absfilelist = copy.deepcopy(filelist)
         for finfo in absfilelist.values():
             finfo['src'] = self.home['root_http'] + '/' + finfo['src']
