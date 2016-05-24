@@ -115,19 +115,15 @@ def del_files_from_disk(path):
     """ Delete files from disk """
 
     shutil.rmtree(path,ignore_errors=True)
-    print "REMOVE   " +  path
 
 def del_files_from_db(dbh, relpath, archive):
     """ delete files from file_archive_info table """
-    print "X3", archive, relpath
     cur = dbh.cursor()
     cur.execute("delete from prodalpha.file_archive_info where archive_name='%s' and path like '%s%%'" % (archive, relpath))
-    print"ROWS", cur.rowcount
     dbh.commit()
     #dbh.rollback()
 
 def del_part_files_from_db_by_name(dbh, relpath, archive, delfiles):
-    print "X2"
     cur = dbh.cursor()
     cur.prepare("delete from prodalpha.file_archive_info where archive_name='%s' and path like '%s%%' and filename=:1" % (archive, relpath))
     cur.executemany(None, delfiles)
@@ -138,7 +134,6 @@ def del_part_files_from_db_by_name(dbh, relpath, archive, delfiles):
     #dbh.rollback()
 
 def del_part_files_from_db(dbh, archive, delfileid):
-    print "X1",len(delfileid)
     df = ""
     for f in delfileid:
         df += str(f) + ","
@@ -147,7 +142,6 @@ def del_part_files_from_db(dbh, archive, delfileid):
     cur.execute("delete from prodalpha.file_archive_info where archive_name='%s' and desfile_id in (%s)" % (archive, df))
     if len(delfileid) != cur.rowcount:
         print "Inconsistency detected: %i rows removed from db and %i files deleted, these should match." % (cur.rowcount, len(delfileid))
-    print "ROWS",cur.rowcount
     dbh.commit() 
     #dbh.rollback()
 
@@ -194,7 +188,7 @@ def main():
     print "Number of files from db   = %s" % (len(files_from_db))
     print "Total file size on disk = %.3f %s" % (filesize,fend)
 
-    if state != "JUNK":
+    if state != "JUNK" and args.filetype is None:
         print "\n  Data state is not JUNK and cannot be deleted."
         sys.exit(1)
 
