@@ -114,18 +114,20 @@ def diff_files(comparison_info):
 def del_files_from_disk(path):
     """ Delete files from disk """
 
-    shutil.rmtree(path,ignore_errors=True)
+    shutil.rmtree(path) #,ignore_errors=True)
 
 def del_files_from_db(dbh, relpath, archive):
     """ delete files from file_archive_info table """
     cur = dbh.cursor()
-    cur.execute("delete from prodalpha.file_archive_info where archive_name='%s' and path like '%s%%'" % (archive, relpath))
+    cur.execute("delete from file_archive_info where archive_name='%s' and path like '%s%%'" % (archive, relpath))
     dbh.commit()
     #dbh.rollback()
 
 def del_part_files_from_db_by_name(dbh, relpath, archive, delfiles):
     cur = dbh.cursor()
-    cur.prepare("delete from prodalpha.file_archive_info where archive_name='%s' and path like '%s%%' and filename=:1" % (archive, relpath))
+    cur.prepare("delete from file_archive_info where archive_name='%s' and path like '%s%%' and filename=:1" % (archive, relpath))
+    print "delete from file_archive_info where archive_name='%s' and path like '%s%%' and filename=:1" % (archive, relpath)
+    print delfiles
     cur.executemany(None, delfiles)
     print "ROWS",cur.rowcount
     if cur.rowcount != len(delfiles):
@@ -139,7 +141,7 @@ def del_part_files_from_db(dbh, archive, delfileid):
         df += str(f) + ","
     df = df[:-1]
     cur = dbh.cursor()
-    cur.execute("delete from prodalpha.file_archive_info where archive_name='%s' and desfile_id in (%s)" % (archive, df))
+    cur.execute("delete from file_archive_info where archive_name='%s' and desfile_id in (%s)" % (archive, df))
     if len(delfileid) != cur.rowcount:
         print "Inconsistency detected: %i rows removed from db and %i files deleted, these should match." % (cur.rowcount, len(delfileid))
     dbh.commit() 
@@ -218,7 +220,12 @@ def main():
                     #del_files_from_db(dbh, args.relpath, args.archive, len(files.from_db))####NEED TO ADD FILETYPE
                     del_part_files_from_db(dbh, args.archive, good)                    
             else:
-                del_files_from_disk(archive_path)
+                try:
+                    del_files_from_disk(archive_path)
+                except Exception as e:
+                    print "Error encountered when deleting files: ",str(e)
+                    print "Aborting"
+                    return
                 ffd = {}
                 for (dirpath, dirnames, filenames) in os.walk(os.path.join(archive_root,relpath)):
                     for filename in filenames:
@@ -228,7 +235,6 @@ def main():
                     for fn, val in files_from_disk.iteritems():
                         if fn not in ffd:
                             delfiles.append((fn))
-                    print delfiles
                     del_part_files_from_db_by_name(dbh,relpath,args.archive,delfiles)
                 else:
                     del_files_from_db(dbh, relpath, args.archive)
