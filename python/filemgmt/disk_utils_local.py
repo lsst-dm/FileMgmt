@@ -259,7 +259,7 @@ def compare_db_disk(files_from_db, files_from_disk, check_md5sum, check_filesize
     if check_filesize:
         comparison_info['filesize'] = []
 
-    allfiles = Set(files_from_db).union(Set(files_from_disk))
+    allfiles = set(files_from_db).union(set(files_from_disk))
     for fname in allfiles:
         if fname in files_from_db:
             if fname in files_from_disk:
