@@ -5,6 +5,7 @@ envPrepend(PATH, ${PRODUCT_DIR}/bin)
 setupRequired(despyDMdb)
 setupRequired(IntegrationUtils)
 setupRequired(DatabaseApps)
+setupRequired(deswebdav)
 
 # only if using globus online transfers
 #setupRequired(globusonline)
