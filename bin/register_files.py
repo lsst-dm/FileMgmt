@@ -192,7 +192,7 @@ def save_file_info(filemgmt, task_id, ftype, filelist):
         print "\tSaving file metadata/contents on %0d files...." % len(misslist),
         starttime = time.time()
         try:
-            filemgmt.register_file_data(ftype, misslist, task_id, False, None)
+            filemgmt.register_file_data(ftype, misslist, None, task_id, False, None, None)
         except fmerrors.RequiredMetadataMissingError as err:
             miscutils.fwdie("Error: %s" % err, 1)
 

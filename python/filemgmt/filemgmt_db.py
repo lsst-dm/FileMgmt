@@ -654,7 +654,11 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
             fileinfo['filetype'] = ftype
             fileinfo['wgb_task_id'] = int(wgb_task_id)
-            fileinfo['pfw_attempt_id'] = int(pfw_attempt_id)
+            if pfw_attempt_id is None:
+                fileinfo['pfw_attempt_id'] = None
+            else:
+                fileinfo['pfw_attempt_id'] = int(pfw_attempt_id)
+
             del fileinfo['path']
 
             has_metadata = self.has_metadata_ingested(ftype, fname)
