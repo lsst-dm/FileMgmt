@@ -20,7 +20,7 @@ import time
 import despyserviceaccess.serviceaccess as serviceaccess
 import despymisc.miscutils as miscutils
 import filemgmt.filemgmt_defs as fmdefs
-import filemgmt.easywebdav as webdav
+import deswebdav as webdav
 import filemgmt.disk_utils_local as dul
 
 def http_code_str(hcode):
