@@ -235,6 +235,10 @@ class FtMgmtGeneric(object):
             miscutils.fwdebug_print("INFO: filename = %s" % filename)
 
         m = re.search(newfilepat, filename)
+        if m is None:
+            miscutils.fwdebug_print("INFO: newfilepat = %s" % newfilepat)
+            miscutils.fwdebug_print("INFO: filename = %s" % filename)
+            raise ValueError("Pattern (%s) did not match filename (%s)" % (newfilepat, filename))
 
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: m.group() = %s" %  m.group())
