@@ -14,12 +14,14 @@ __version__ = "$Rev$"
 
 import cx_Oracle
 from collections import defaultdict
-
+import json
 
 from filemgmt.ftmgmt_generic import FtMgmtGeneric
 import despydmdb.dmdb_defs as dmdbdefs
 import despymisc.miscutils as miscutils
 import filemgmt.fmutils as fmutils
+import despymisc.misctime as misctime
+
 
 class FtMgmtSNManifest(FtMgmtGeneric):
     """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
@@ -62,6 +64,32 @@ class FtMgmtSNManifest(FtMgmtGeneric):
         self.dbh.empty_gtt(dmdbdefs.DB_GTT_FILENAME)
 
         return results
+
+    ######################################################################
+    def _gather_metadata_file(self, fullname, **kwargs):
+        """ Gather metadata for a single file """
+
+        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
+            miscutils.fwdebug_print("INFO: beg  file=%s" % (fullname))
+
+        metadata = FtMgmtGeneric._gather_metadata_file(self, fullname, **kwargs)
+        
+        # need nite for the archive path
+        with open(fullname, 'r') as jsonfh:
+            line = jsonfh.readline()
+            linedata = json.loads(line)
+            expcnt = 0
+            while expcnt < len(linedata['exposures']) and \
+                  'date' not in linedata['exposures'][expcnt]:
+                expcnt += 1
+            if expcnt >= len(linedata['exposures']):
+                raise KeyError('Could not find date value for any exposure in manifest')
+            datestr = linedata['exposures'][expcnt]['date']
+            metadata['nite'] = misctime.convert_utc_str_to_nite(datestr)
+
+        if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
+            miscutils.fwdebug_print("INFO: end")
+        return metadata
 
 
     ######################################################################
