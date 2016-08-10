@@ -43,9 +43,7 @@ def get_paths_by_id(dbh, args):
                        'unitname' : args.unitname,
                        'attnum' : args.attnum})
     rows = curs.fetchall()
-    print len(rows)
-    for r in rows:
-        print r
+    
     relpath = rows[0][0]
     state = rows[0][1]
     operator = rows[0][2]
@@ -135,16 +133,15 @@ def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False):
         print "Getting file information from db: BEG"
     
     if filetype is not None:
-        sql = "select fai.path, art.filename, art.compression, art.id, art.md5sum, NVL(art.filesize,fai.filesize) as filesize from desfile art, file_archive_info fai where art.pfw_attempt_id=%i and fai.desfile_id=art.id and art.filetype='%s' and fai.archive_name='%s'" % (pfwid,filetype, archive)
+        sql = "select fai.path, art.filename, art.compression, art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai where art.pfw_attempt_id=%i and fai.desfile_id=art.id and art.filetype='%s' and fai.archive_name='%s'" % (pfwid,filetype, archive)
     else:
         if pfwid is not None:
             # when remove filesize from fai, need to change NVL(art.filesize,fai.filesize) as filesize to art.filesize
-            sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, NVL(art.filesize,fai.filesize) as filesize from desfile art, file_archive_info fai where art.pfw_attempt_id=%i and fai.desfile_id=art.id and fai.archive_name='%s'" % (pfwid,archive)
+            sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai where art.pfw_attempt_id=%i and fai.desfile_id=art.id and fai.archive_name='%s'" % (pfwid,archive)
         else:
-             sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, NVL(art.filesize,fai.filesize) as filesize from desfile art, file_archive_info fai where fai.desfile_id=art.id and fai.archive_name='%s' and fai.path like '%s%%'" % (archive, relpath)
+             sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai where fai.desfile_id=art.id and fai.archive_name='%s' and fai.path like '%s%%'" % (archive, relpath)
 
 
-    print sql
     if debug:
         print "\nsql = %s\n" % sql
     

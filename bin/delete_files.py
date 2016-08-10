@@ -168,7 +168,15 @@ def main():
     archive_root, archive_path, relpath, state, operator, pfwid = validate_args(dbh, args)
     files_from_disk = diskutils.get_files_from_disk(relpath, archive_root)
     files_from_db = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, args.filetype)
-    comparison_info = diskutils.compare_db_disk(files_from_db, files_from_disk, False, True, archive_root)
+    # if filetype is set then trim down the disk results                                                                                                                                                                                                            
+    if args.filetype is not None:
+        newfiles = {}
+        for fl, val in files_from_db.iteritems():
+            if fl in files_from_disk:
+                newfiles[fl] = files_from_disk[fl]
+        files_from_disk = newfiles
+
+    comparison_info = diskutils.compare_db_disk(files_from_db, files_from_disk, False, True, archive_root=archive_root)
 
     filesize = 0.0
     for fl, val in files_from_disk.iteritems():
@@ -183,7 +191,7 @@ def main():
         filesize /= 1024
         fend = "kb"
 
-    print "Operator = %s" % operator
+    print "\nOperator = %s" % operator
     print "Path = %s" % archive_path
     print "Archive name = %s" % args.archive
     print "Number of files from disk = %s" % (len(files_from_disk))
@@ -204,6 +212,7 @@ def main():
     shdelchar = 'x'
     while shdelchar != 'n' and shdelchar != 'y':
         print ""
+
         should_delete = raw_input("Do you wish to continue with deletion [yes/no/diff/print]?  ")
         shdelchar = should_delete[0].lower()
 
