@@ -480,7 +480,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         #           ORA-01795: maximum number of expressions in a list is 1000
 
         # insert filenames into filename global temp table to use in join for query
-        print filelist
         gtt_name = self.load_filename_gtt(filelist)
 
         # join to GTT_FILENAME for query
@@ -489,7 +488,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                "%(gtt)s g where fai.archive_name=%(ar)s and fai.desfile_id=d.id and "
                "d.filename=g.filename") % \
               ({'ar':self.get_named_bind_string('archive_name'), 'gtt':gtt_name})
-        print sql
         curs = self.cursor()
         curs.execute(sql, {'archive_name': arname})
         desc = [d[0].lower() for d in curs.description]
@@ -554,7 +552,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         sql = ("select filetype,file_archive_info.* from desfile, file_archive_info "
                "where archive_name='%s' and desfile.id=file_archive_info.desfile_id "
                "and %s") % (arname, likestr)
-        print "sql>", sql
         curs = self.cursor()
         curs.execute(sql)
         desc = [d[0].lower() for d in curs.description]
@@ -733,7 +730,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         result = []
         if len(allfiles) > 0:
             # build a map between filenames (with compression extension) and desfile ID
-            print "allfiles = ", allfiles
             gtt_name = self.load_filename_gtt(allfiles)
             sqlstr = """SELECT f.filename || f.compression, d.ID
                 FROM DESFILE d, %s f
@@ -745,7 +741,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             cursor.close()
             self.empty_gtt(gtt_name)
 
-            print "map of filenames =", dict(result)
             return dict(result)
         else:
             return result
