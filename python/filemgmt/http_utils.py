@@ -158,7 +158,7 @@ class HttpUtils():
 
 
     def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt',
-                         secondsBetweenRetries=30, numTries=5):
+                         secondsBetweenRetries=30, numTries=5, fsize=0, src=None, dst=None):
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
@@ -230,9 +230,27 @@ class HttpUtils():
                 print "output:", curl_stdout
 
             sys.stdout.flush()
-            if exitcode == 0 and httpcode in ['200', '201', '301']:
-                success = True
-                break
+            if exitcode == 0:
+                if httpcode in ['200', '201', '301']:
+                    success = True
+                    break
+                if httpcode == '204' and dst is not None:
+                    # check file size
+                    cmd2 = "curl -s -I -f -K - %s" % (dst)
+                    if not useShell:
+                        process = subprocess.Popen(cmd2.split(), shell=False, stdin=subprocess.PIPE,
+                                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    else:
+                        process = subprocess.Popen(cmd2, shell=True, stdin=subprocess.PIPE,
+                                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    curl_stdout = process.communicate(self.curl_password)[0]
+                    rtemp = re.search('Content-Length: ?(\d+)', curl_stdout)
+                    rfsize = int(rtemp.group(1))
+                    if fsize == 0:
+                        fsize = os.path.getsize(src)
+                    if fsize == rfsize:
+                        success = True
+                        break
 
             # run some diagnostics
             miscutils.fwdebug_print("*" * 75)
@@ -364,7 +382,7 @@ class HttpUtils():
                     self.create_http_intermediate_dirs(dst)
 
                     copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches, src, dst), useShell=True,
-                                                      secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
+                                                      secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, fsize=fsize, src=src, dst=dst)
 
                     if tstats is not None:
                         tstats.stat_end_file(0, fsize)
