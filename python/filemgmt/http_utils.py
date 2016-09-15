@@ -234,6 +234,7 @@ class HttpUtils():
                 if httpcode in ['200', '201', '301']:
                     success = True
                     break
+                # if we get code 204 check to see if it has been transferred by getting file size
                 if httpcode == '204' and dst is not None:
                     # check file size
                     cmd2 = "curl -s -I -f -K - %s" % (dst)
@@ -342,85 +343,85 @@ class HttpUtils():
         total_copy_time_from_archive = 0.0
         total_copy_time_to_archive = 0.0
         status = 0
+        try:
+            for filename, fdict in filelist.items():
+                fsize = 0
+                if 'filesize' in fdict and fdict['filesize'] is not None:
+                    fsize = fdict['filesize']
+                try:
+                    (src, isurl_src) = self.check_url(fdict['src'])
+                    (dst,isurl_dst) = self.check_url(fdict['dst'])
+                    if (isurl_src and isurl_dst) or (not isurl_src and not isurl_dst):
+                        miscutils.fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
+                              % (isurl_src, src, isurl_dst, dst), fmdefs.FM_EXIT_FAILURE)
+                    common_switches = "-f -S -s -K - -w \'http_code:%{http_code}\\n\'"
+                    copy_time = None
 
-        for filename, fdict in filelist.items():
-            fsize = 0
-            if 'filesize' in fdict and fdict['filesize'] is not None:
-                fsize = fdict['filesize']
-            try:
-                (src, isurl_src) = self.check_url(fdict['src'])
-                (dst,isurl_dst) = self.check_url(fdict['dst'])
-                if (isurl_src and isurl_dst) or (not isurl_src and not isurl_dst):
-                    miscutils.fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
-                          % (isurl_src, src, isurl_dst, dst), fmdefs.FM_EXIT_FAILURE)
-                common_switches = "-f -S -s -K - -w \'http_code:%{http_code}\\n\'"
-                copy_time = None
+                    # if local file and file doesn't already exist
+                    if not isurl_dst and not os.path.exists(dst):
+                        if tstats is not None:
+                            tstats.stat_beg_file(filename)
 
-                # if local file and file doesn't already exist
-                if not isurl_dst and not os.path.exists(dst):
-                    if tstats is not None:
-                        tstats.stat_beg_file(filename)
+                        # make the path
+                        path = os.path.dirname(dst)
+                        if len(path) > 0 and not os.path.exists(path):
+                            miscutils.coremakedirs(path)
 
-                    # make the path
-                    path = os.path.dirname(dst)
-                    if len(path) > 0 and not os.path.exists(path):
-                        miscutils.coremakedirs(path)
+                        # getting some non-zero curl exit codes, double check path exists
+                        if len(path) > 0 and not os.path.exists(path):
+                            raise Exception("Error: path still missing after coremakedirs (%s)" % path)
 
-                    # getting some non-zero curl exit codes, double check path exists
-                    if len(path) > 0 and not os.path.exists(path):
-                        raise Exception("Error: path still missing after coremakedirs (%s)" % path)
+                        copy_time = self.run_curl_command("curl %s %s" % (common_switches, src), curlConsoleOutputFile=dst,
+                                                          useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
+                        if tstats is not None:
+                            tstats.stat_end_file(0, fsize)
+                    elif isurl_dst:   # if remote file
+                        if tstats is not None:
+                            tstats.stat_beg_file(filename)
 
-                    copy_time = self.run_curl_command("curl %s %s" % (common_switches, src), curlConsoleOutputFile=dst,
-                                                      useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
-                    if tstats is not None:
-                        tstats.stat_end_file(0, fsize)
-                elif isurl_dst:   # if remote file
-                    if tstats is not None:
-                        tstats.stat_beg_file(filename)
+                        # create remote paths
+                        self.create_http_intermediate_dirs(dst)
 
-                    # create remote paths
-                    self.create_http_intermediate_dirs(dst)
-
-                    copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches, src, dst), useShell=True,
+                        copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches, src, dst), useShell=True,
                                                       secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, fsize=fsize, src=src, dst=dst)
 
+                        if tstats is not None:
+                            tstats.stat_end_file(0, fsize)
+
+                    # Print some debugging info:
+                    if miscutils.fwdebug_check(9, "HTTP_UTILS_DEBUG"):
+                        miscutils.fwdebug_print("\n")
+                        for lines in traceback.format_stack():
+                            for L in lines.split('\n'):
+                                if L.strip() != '':
+                                    miscutils.fwdebug_print("call stack: %s" % L)
+
+                    if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
+                        miscutils.fwdebug_print("Copy info: %s %s %s %s %s %s" % (HttpUtils.copyfiles_called,
+                                                                                  fdict['filename'],
+                                                                                  fsize,
+                                                                                  copy_time,
+                                                                                  time.time(),
+                                                                                  'toarchive' if isurl_dst else 'fromarchive'))
+
+                    if copy_time is None:
+                        copy_time = 0
+
+                    if isurl_dst:
+                        num_copies_to_archive += 1
+                        total_copy_time_to_archive += copy_time
+                    else:
+                        num_copies_from_archive += 1
+                        total_copy_time_from_archive += copy_time
+
+                except Exception as err:
+                    status = 1
                     if tstats is not None:
-                        tstats.stat_end_file(0, fsize)
+                        tstats.stat_end_file(1, fsize)
+                    filelist[filename]['err'] = str(err)
+                    miscutils.fwdebug_print(str(err))
 
-                # Print some debugging info:
-                if miscutils.fwdebug_check(9, "HTTP_UTILS_DEBUG"):
-                    miscutils.fwdebug_print("\n")
-                    for lines in traceback.format_stack():
-                        for L in lines.split('\n'):
-                            if L.strip() != '':
-                                miscutils.fwdebug_print("call stack: %s" % L)
-
-                if miscutils.fwdebug_check(3, "HTTP_UTILS_DEBUG"):
-                    miscutils.fwdebug_print("Copy info: %s %s %s %s %s %s" % (HttpUtils.copyfiles_called,
-                                                                              fdict['filename'],
-                                                                              fsize,
-                                                                              copy_time,
-                                                                              time.time(),
-                                                                              'toarchive' if isurl_dst else 'fromarchive'))
-
-                if copy_time is None:
-                    copy_time = 0
-
-                if isurl_dst:
-                    num_copies_to_archive += 1
-                    total_copy_time_to_archive += copy_time
-                else:
-                    num_copies_from_archive += 1
-                    total_copy_time_from_archive += copy_time
-
-            except Exception as err:
-                status = 1
-                if tstats is not None:
-                    tstats.stat_end_file(1, fsize)
-                filelist[filename]['err'] = str(err)
-                miscutils.fwdebug_print(str(err))
-
-        if tstats is None:
+        finally:
             print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
             (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive, num_copies_from_archive, total_copy_time_from_archive, time.time())
 
