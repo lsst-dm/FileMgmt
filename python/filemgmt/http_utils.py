@@ -264,14 +264,33 @@ class HttpUtils():
                 miscutils.fwdebug_print("curl http status: unknown")
             miscutils.fwdebug_print("curl stdout: %s" % curl_stdout.strip())
 
+            if x < numTries-1:    # not the last time in the loop
+                miscutils.fwdebug_print("Sleeping %s secs" % secondsBetweenRetries)
+                time.sleep(secondsBetweenRetries)
+        else:
             print "\nDiagnostics:"
             print "Directory info"
             sys.stdout.flush()
-            
-            os.system("pwd; find . -exec ls -ld {} \;")
+            if miscutils.fwdebug_check(10, "HTTP_UTILS_DEBUG"):
+                stat = subprocess.Popen("pwd; find . -exec ls -ld {} \;", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                curl_stdout = stat.communicate()[0]
+                print curl_stdout
+            elif src is not None:
+                stat = subprocess.Popen('pwd; ls -ld %s' % (src), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                curl_stdout = stat.communicate()[0]
+                print curl_stdout
+            else:
+                stat = subprocess.Popen('pwd', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                curl_stdout = stat.communicate()[0]
+                print curl_stdout
+                print "Source file is not local"
             print "\nFile system disk space usage"
             sys.stdout.flush()
-            os.system("df -h .")
+            stat = subprocess.Popen("df -h .", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            curl_stdout = stat.communicate()[0]
+            print curl_stdout
+
+            sys.stdout.flush()
 
             hostm = re.search(r"https?://([^/:]+)[:/]", cmd)
             if hostm:
@@ -280,10 +299,14 @@ class HttpUtils():
                     print "Running commands to %s for diagnostics" % hname
                     print "\nPinging %s" % hname
                     sys.stdout.flush()
-                    os.system("ping -c 4 %s" % hname)
+                    stat = subprocess.Popen("ping -c 4 %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    curl_stdout = stat.communicate()[0]
+                    print curl_stdout
                     print "\nRunning traceroute to %s" % hname
                     sys.stdout.flush()
-                    os.system("traceroute %s" % hname)
+                    stat = subprocess.Popen("traceroute %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    curl_stdout = stat.communicate()[0]
+                    print curl_stdout
                 except:   # print exception but continue
                     (type, value, trback) = sys.exc_info()
                     traceback.print_exception(type, value, trback, file=sys.stdout)
@@ -294,10 +317,6 @@ class HttpUtils():
 
             print "*" * 75
             sys.stdout.flush()
-
-            if x < numTries-1:    # not the last time in the loop
-                miscutils.fwdebug_print("Sleeping %s secs" % secondsBetweenRetries)
-                time.sleep(secondsBetweenRetries)
 
         if not success:
             if os.path.isfile(curlConsoleOutputFile):
