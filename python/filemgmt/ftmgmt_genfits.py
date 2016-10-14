@@ -146,13 +146,19 @@ class FtMgmtGenFits(FtMgmtGeneric):
                             # we don't write filetype nor pfw_attempt_id to headers
                             if key == 'filename':
                                 # write filename to header as DESFNAME
-                                update_info[0]['DESFNAME'] = (metadata['filename'], 
-                                                              'DES production filename', 'str')
+                                fitscomment = 'DES production filename'
+
+                                # shorten comment if file name is so long the comment won't fit
                                 if len(metadata['filename']) + \
-                                        len('\' / DES production filename') + \
+                                        len('\' / %s' % fitscomment) + \
                                         len('DESFNAME= \'') > 80:
-                                    miscutils.fwdebug_print("WARN: %s's filename too long for DESFNAME: %s" % \
-                                        (metadata['filename'], len(metadata['filename'])))
+                                    if miscutils.fwdebug_check(3, "PFWRUNJOB_DEBUG"):
+                                        miscutils.fwdebug_print("WARN: %s's filename too long for DESFNAME: %s" % \
+                                            (metadata['filename'], len(metadata['filename'])))
+                                        fitscomment = fitscomment[:min(len(fitscomment), 80 - len(metadata['filename']) - 16)]
+                                     
+                                update_info[0]['DESFNAME'] = (metadata['filename'], fitscomment, 'str')
+                                     
                             elif key != 'filetype' and key != 'pfw_attempt_id':
                                 if key in metadata:
                                     uvalue = metadata[key]
