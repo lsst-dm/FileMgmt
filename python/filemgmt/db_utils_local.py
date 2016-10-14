@@ -2,6 +2,39 @@ import sys
 import os
 import time
 
+def check_db_duplicates(dbh, filelist, archive):  #including compression
+    table = dbh.load_filename_gtt(filelist)
+    sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai, %s gtt where fai.desfile_id=art.id and fai.archive_name='%s' and gtt.filename=art.filename and coalesce(fai.compression,'x') = coalesce(gtt.compression,'x')" % (table, archive)
+
+    curs = dbh.cursor()
+    curs.execute(sql)
+    results = curs.fetchall()
+
+    if len(results) == len(filelist):
+        return {}
+    duplicates = {}
+    templist = []
+    desc = [d[0].lower() for d in curs.description]
+
+    for row in results:
+        fdict = dict(zip(desc, row))
+        fname = fdict['filename']
+        if fdict['compression'] is not None:
+            fname += fdict['compression']
+
+        if fname not in templist:
+            templist.append(fname)
+        else:
+            if fname not in duplicates:
+                duplicates[fname] = []
+            duplicates[fname].append(fdict)
+        if "path" in fdict:
+            if fdict["path"][-1] == '/':
+                fdict['path'] = fdict['path'][:-1]
+
+    return duplicates
+
+
 def get_paths_by_id(dbh, args):
     """ Make sure command line arguments have valid values 
 
@@ -137,7 +170,7 @@ def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False):
     else:
         if pfwid is not None:
             # when remove filesize from fai, need to change NVL(art.filesize,fai.filesize) as filesize to art.filesize
-            sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai where art.pfw_attempt_id=%i and fai.desfile_id=art.id and fai.archive_name='%s'" % (pfwid,archive)
+            sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai where (art.pfw_attempt_id=%i or fai.path like '%s%%') and fai.desfile_id=art.id and fai.archive_name='%s'" % (pfwid, relpath, archive)
         else:
              sql = "select fai.path, art.filename, art.compression,art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai where fai.desfile_id=art.id and fai.archive_name='%s' and fai.path like '%s%%'" % (archive, relpath)
 
@@ -150,12 +183,15 @@ def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False):
     
     desc = [d[0].lower() for d in curs.description]
     
+    filelist = []
+
     files_from_db = {}
     for row in curs:
         fdict = dict(zip(desc, row))
         fname = fdict['filename']
         if fdict['compression'] is not None:
             fname += fdict['compression']
+        filelist.append(fname)
         files_from_db[fname] = fdict
         if "path" in fdict:
             if fdict["path"][-1] == '/':
@@ -163,7 +199,8 @@ def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False):
         #    m = re.search("/p(\d\d)",fdict["path"])
         #    if m:
         #        fdict["path"] = fdict["path"][:m.end()]
+    duplicates = check_db_duplicates(dbh, filelist, archive)
     end_time = time.time()
     if debug:
         print "Getting file information from db: END (%s secs)" % (end_time - start_time)
-    return files_from_db
+    return files_from_db, duplicates

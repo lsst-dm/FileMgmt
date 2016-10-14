@@ -15,6 +15,7 @@ import shutil
 import hashlib
 import errno
 import time
+import copy
 
 import despymisc.miscutils as miscutils
 
@@ -202,18 +203,26 @@ def get_files_from_disk(relpath, archive_root, check_md5sum=False, debug=False):
         print "Getting file information from disk: BEG"
 
     files_from_disk = {}
+    duplicates = {}
     for (dirpath, dirnames, filenames) in os.walk(os.path.join(archive_root,relpath)):
         for filename in filenames:
             fullname = '%s/%s' % (dirpath, filename)
-            files_from_disk[filename] = get_single_file_disk_info(fullname, check_md5sum, archive_root)
+            data = get_single_file_disk_info(fullname, check_md5sum, archive_root)
+            if filename in files_from_disk:
+                if filename not in duplicates:
+                    duplicates[filename] = [copy.deepcopy(files_from_disk[filename])]
+                duplicates[filename].append(data)
+                #print "DUP",filename,files_from_disk[filename]['path'],data['path']
+            else:
+                files_from_disk[filename] = data
 
     end_time = time.time()
     if debug:
         print "Getting file information from disk: END (%s secs)" % (end_time - start_time)
-    return files_from_disk
+    return files_from_disk, duplicates
 
 ####################################################################
-def compare_db_disk(files_from_db, files_from_disk, check_md5sum, check_filesize, debug=False,archive_root=""):
+def compare_db_disk(files_from_db, files_from_disk, duplicates, check_md5sum, check_filesize, debug=False,archive_root=""):
     """ Compare file info from DB to info from disk 
 
         Parameters
@@ -251,13 +260,15 @@ def compare_db_disk(files_from_db, files_from_disk, check_md5sum, check_filesize
                         'dbonly': [],
                         'diskonly': [],
                         'path': [],
-                        'filesize': []
+                        'filesize': [],
+                        'duplicates': [], # has db entry
+                        'pathdup' : []    # has no db entry
                       }
     if check_md5sum:
         comparison_info['md5sum'] = []
 
-    if check_filesize:
-        comparison_info['filesize'] = []
+    #if check_filesize:
+    #    comparison_info['filesize'] = []
 
     allfiles = set(files_from_db).union(set(files_from_disk))
     for fname in allfiles:
@@ -265,6 +276,8 @@ def compare_db_disk(files_from_db, files_from_disk, check_md5sum, check_filesize
             if fname in files_from_disk:
                 fdisk = files_from_disk[fname]
                 fdb = files_from_db[fname]
+                if fname in duplicates:
+                    comparison_info['duplicates'].append(fname)
                 if fdisk['relpath'] == fdb['path']:
                     if fdisk['filesize'] == fdb['filesize']:
                         if check_md5sum:
@@ -277,10 +290,20 @@ def compare_db_disk(files_from_db, files_from_disk, check_md5sum, check_filesize
                     else:
                         comparison_info['filesize'].append(fname)
                 else:
-                    comparison_info['path'].append(fname)
+                    try:
+                        data = get_single_file_disk_info(fdb['path'] + '/' + fname, check_md5sum, archive_root)
+                        if fname not in duplicates:
+                            duplicates[fname] = []
+                        duplicates[fname].append(copy.deepcopy(files_from_disk[fname]))
+                        files_from_disk[fname] = data
+                        comparison_info['duplicates'].append(fname)
+                    except:
+                        comparison_info['path'].append(fname)
             else:
                 comparison_info['dbonly'].append(fname)
         else:
+            if fname in duplicates:
+                comparison_info['pathdup'].append(fname)
             comparison_info['diskonly'].append(fname)
 
     end_time = time.time()

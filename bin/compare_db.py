@@ -7,7 +7,8 @@ import time
 from sets import Set
 import argparse
 import re
-import despydb.desdbi as desdbi
+#import despydb.desdbi as desdbi
+import despydmdb.desdmdbi as desdmdbi
 import filemgmt.disk_utils_local as diskutils
 import filemgmt.db_utils_local as dbutils
 
@@ -35,7 +36,10 @@ def parse_cmd_line(argv):
     parser.add_argument('--filesize', action='store_true', help='compare db vs disk file sizes')
     parser.add_argument('--verbose', action='store_true', help='print differences between db and disk')
     parser.add_argument('--debug', action='store_true', help='print all files, recommend >= 300 char wide terminal')
+    parser.add_argument('--script', action='store_true', help='Print only if there are errors, usefule for running in loops in scripts')
     args = parser.parse_args(argv)
+    if args.script:
+        args.verbose = False
     return args
 
 
@@ -130,7 +134,7 @@ def print_all_files(comparison_info, files_from_db, files_from_disk):
             
         print "%-140s %s %-140s" % (fdb_str, cmp, fdisk_str)
 
-def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, check_filesize):
+def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, check_filesize, duplicates, db_duplicates):
     """ Print only differences in file lists 
 
         Parameters
@@ -155,70 +159,169 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
         -------
         None
     """
+    pdup = []
 
     if len(comparison_info['dbonly']) > 0:
-        print "dbonly --------- "
+        print "Files only found in the database --------- "
         for fname in sorted(comparison_info['dbonly']):
             fdb = files_from_db[fname]
             print "\t%s/%s" % (fdb['path'], fname)
     
 
     if len(comparison_info['diskonly']) > 0:
-        print "diskonly --------- "
+        print "\nFiles only found on disk --------- "
         for fname in sorted(comparison_info['diskonly']):
+            addon = ""
+            if fname in duplicates:
+                addon = "  *"
             fdisk = files_from_disk[fname]
-            print "\t%s/%s" % (fdisk['relpath'], fname)
+            print "\t%s/%s%s" % (fdisk['relpath'], fname, addon)
+        if len(comparison_info['pathdup']) > 0:
+            print "\n The following files had multiple paths on disk (path  filesize):"
+            listing = {}
+            for fname in comparsion_info['pathdup']:
+                pdup.append(fname)
+                listing[comparsion_info['pathdup']['relpath']] = comparsion_info['pathdup']['filesize']
+            first = True
+            for pth in sorted(listing):
+                start = " "
+                if first:
+                    start = "*"
+                    first = False
+                addon = ""
+                if fname in files_from_db and files_from_db[fname]['path'] == pth:
+                    addon ="  (DB Match)"
+                print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
 
     if len(comparison_info['path']) > 0:
-        print "path mismatch (fname, db, disk) --------- "
+        print "\nPath mismatch (file name, db path, disk path) --------- "
         for fname in sorted(comparison_info['path']):
+            addon = ""
+            if fname in duplicates:
+                addon = " *"
             fdb = files_from_db[fname]
             fdisk = files_from_disk[fname]
-            print "\t%s %s %s" % (fname, fdb['path'],fdisk['relpath'])
+            print "\t%s\t%s\t%s%s" % (fname, fdb['path'],fdisk['relpath'], addon)
+        if len(comparison_info['duplicates']) > 0:
+            print "  The following files have multiple disk paths on disk (path  filesize):"
+            for fname in comparison_info['duplicates']:
+                pdup.append(fname)
+                listing[comparsion_info['duplicates']['relpath']] = comparsion_info['duplicates']['filesize']
+            first = True
+            for pth in sorted(listing):
+                start = " "
+                if first:
+                    start = "*"
+                    first = False
+                addon = ""
+                if fname in files_from_db and files_from_db[fname]['path'] == pth:
+                    addon ="  (DB Match)"
+                print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
 
-    
     if len(comparison_info['filesize']) > 0:
-        print "filesize mismatch (fname, db, disk) --------- "
+        print "\nFilesize mismatch (File name, size in DB, size on disk) --------- "
         for fname in sorted(comparison_info['filesize']):
             fdb = files_from_db[fname]
             fdisk = files_from_disk[fname]
             print "\t%s %s %s" % (fname, fdb['filesize'], fdisk['filesize'])
 
     if 'md5sum' in comparison_info and len(comparison_info['md5sum']) > 0:
-        print "md5sum mismatch (fname, db, disk) --------- "
+        print "\nmd5sum mismatch (File name, sum in DB, sum on disk) --------- "
         for fname in sorted(comparison_info['md5sum']):
             fdb = files_from_db[fname]
             fdisk = files_from_disk[fname]
             print "\t%s %s %s" % (fname, fdb['md5sum'], fdisk['md5sum'])
+
+    if len(duplicates) > len(pdup):
+        print "\nThe following files have multiple disk paths on disk (path  filesize):"
+    for d in sorted(duplicates):
+        if d not in pdup:
+            listing = {}
+            for f in duplicates[d]:
+                listing[f['relpath']] = f['filesize']
+            first = True
+            for pth in sorted(listing):
+                start = " "
+                if first:
+                    start = "*"
+                    first = False
+                addon = ""
+                if d in files_from_db and files_from_db[d]['path'] == pth:
+                    addon ="  (DB Match)"
+                print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
+
+    if len(db_duplicates) > 0:
+        print "\nThe following files have multiple entries in the database (path  filesize):"
+    for d in sorted(db_duplicates):
+        listing = {}
+        for f in db_duplicates[d]:
+            listing[f['relpath']] = f['filesize']
+        first = True
+        for pth in sorted(listing):
+            start = " "
+            if first:
+                start = "*"
+                first = False
+            addon = ""
+            if d in files_from_disk and files_from_disk[d]['path'] == pth:
+                addon ="  (Disk Match)"
+            print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
+
 
 def main():
     """ Main control """
 
     args = parse_cmd_line(sys.argv[1:])
 
-    dbh = desdbi.DesDbi(args.des_services, args.section)
+    dbh = desdmdbi.DesDmDbi(args.des_services, args.section)
     archive_root, archive_path, relpath, operator, pfwid = validate_args(dbh, args)
     #print archive_root
-    files_from_db = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, None)
-    files_from_disk = diskutils.get_files_from_disk(relpath, archive_root, args.md5sum, args.debug)
-    comparison_info = diskutils.compare_db_disk(files_from_db, files_from_disk, args.md5sum, args.filesize, args.debug,archive_root)
+    files_from_db, db_duplicates = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, None)
+    files_from_disk, duplicates = diskutils.get_files_from_disk(relpath, archive_root, args.md5sum, args.debug)
+    comparison_info = diskutils.compare_db_disk(files_from_db, files_from_disk, duplicates, args.md5sum, args.filesize, args.debug,archive_root)
 
-    print "\nPath = %s" % (archive_path)
-    print "Archive name = %s" % args.archive
-    print "Number of files from disk = %s" % (len(files_from_disk))
-    print "Number of files from db   = %s" % (len(files_from_db))
-
-    # print summary of comparison
-    print "Comparison Summary"
-    for compkey in comparison_info:
-        print "\t%s: %s" % (compkey, len(comparison_info[compkey]))
+    if not args.script:
+        print "\nPath = %s" % (archive_path)
+        print "Archive name = %s" % args.archive
+        addon = ""
+        dbaddon = ""
+        if len(duplicates) > 0:
+            addon += "(%i are distinct)" % len(files_from_disk)
+        if len(db_duplicates) > 0:
+            dbaddon += "(%i are distinct)" % len(files_from_db)
+        print "Number of files from db   = %i   %s" % (len(files_from_db) + len(db_duplicates), dbaddon)
+        print "Number of files from disk = %i   %s" % (len(files_from_disk) + len(duplicates), addon)
+        if len(duplicates) > 0:
+            print "Files with multiple paths on disk  = %i" % len(duplicates)
+        # print summary of comparison
+        print "Comparison Summary"
     
-    print ""
+        print "\tEqual:\t%i" % len(comparison_info['equal'])
+        print "\tDB only:\t%i" % len(comparison_info['dbonly'])
+        print "\tDisk only:\t%i" % len(comparison_info['diskonly'])
+        print "\tMismatched paths:\t%i" % len(comparison_info['path'])
+        print "\tMismatched filesize:\t%i" % len(comparison_info['filesize'])
+        if 'md5sum' in comparison_info:
+            print "\tMismatched md5sum:\t%i" % len(comparison_info['md5sum'])
+        print ""
 
-    if args.debug:
-        print_all_files(comparison_info, files_from_db, files_from_disk)
-    elif args.verbose:
-        diff_files(comparison_info, files_from_db, files_from_disk, args.md5sum, args.filesize)
+        if args.debug:
+            print_all_files(comparison_info, files_from_db, files_from_disk)
+        elif args.verbose:
+            diff_files(comparison_info, files_from_db, files_from_disk, args.md5sum, args.filesize, duplicates, db_duplicates)
+    else:
+        if args.relpath is None:
+            loc = "%s  %s  %s" % (args.reqnum, args.unitname, args.attnum)
+        else:
+            loc = args.relpath
+        if len(comparison_info['dbonly']) == len(comparison_info['diskonly']) == len(comparison_info['path']) == len(comparison_info['filesize']) == 0:
+            if 'md5sum' in comparison_info:
+                if len(comparison_info['md5sum']) != 0:
+                    print "%s  ERROR" % loc
+                    return
+            print "%s  OK" % loc
+            return
+        print "%s  ERROR" % loc
 
 if __name__ == "__main__":
     main()
