@@ -267,56 +267,56 @@ class HttpUtils():
             if x < numTries-1:    # not the last time in the loop
                 miscutils.fwdebug_print("Sleeping %s secs" % secondsBetweenRetries)
                 time.sleep(secondsBetweenRetries)
-        else:
-            print "\nDiagnostics:"
-            print "Directory info"
-            sys.stdout.flush()
-            if miscutils.fwdebug_check(10, "HTTP_UTILS_DEBUG"):
-                stat = subprocess.Popen("pwd; find . -exec ls -ld {} \;", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                curl_stdout = stat.communicate()[0]
-                print curl_stdout
-            elif src is not None:
-                stat = subprocess.Popen('pwd; ls -ld %s' % (src), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                curl_stdout = stat.communicate()[0]
-                print curl_stdout
             else:
-                stat = subprocess.Popen('pwd', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                curl_stdout = stat.communicate()[0]
-                print curl_stdout
-                print "Source file is not local"
-            print "\nFile system disk space usage"
-            sys.stdout.flush()
-            stat = subprocess.Popen("df -h .", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            curl_stdout = stat.communicate()[0]
-            print curl_stdout
-
-            sys.stdout.flush()
-
-            hostm = re.search(r"https?://([^/:]+)[:/]", cmd)
-            if hostm:
-                hname = hostm.group(1)
-                try:   # don't let exception here halt
-                    print "Running commands to %s for diagnostics" % hname
-                    print "\nPinging %s" % hname
-                    sys.stdout.flush()
-                    stat = subprocess.Popen("ping -c 4 %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                print "\nDiagnostics:"
+                print "Directory info"
+                sys.stdout.flush()
+                if miscutils.fwdebug_check(10, "HTTP_UTILS_DEBUG"):
+                    stat = subprocess.Popen("pwd; find . -exec ls -ld {} \;", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     curl_stdout = stat.communicate()[0]
                     print curl_stdout
-                    print "\nRunning traceroute to %s" % hname
-                    sys.stdout.flush()
-                    stat = subprocess.Popen("traceroute %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                elif src is not None:
+                    stat = subprocess.Popen('pwd; ls -ld %s' % (src), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     curl_stdout = stat.communicate()[0]
                     print curl_stdout
-                except:   # print exception but continue
-                    (type, value, trback) = sys.exc_info()
-                    traceback.print_exception(type, value, trback, file=sys.stdout)
-                    print "\n\nIgnoring remote diagnostics exception.   Continuing.\n"
-            else:
-                print "Couldn't find url in curl cmd:", cmd
-                print "Skipping remote diagnostics.\n"
+                else:
+                    stat = subprocess.Popen('pwd', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    curl_stdout = stat.communicate()[0]
+                    print curl_stdout
+                    print "Source file is not local"
+                print "\nFile system disk space usage"
+                sys.stdout.flush()
+                stat = subprocess.Popen("df -h .", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                curl_stdout = stat.communicate()[0]
+                print curl_stdout
 
-            print "*" * 75
-            sys.stdout.flush()
+                sys.stdout.flush()
+
+                hostm = re.search(r"https?://([^/:]+)[:/]", cmd)
+                if hostm:
+                    hname = hostm.group(1)
+                    try:   # don't let exception here halt
+                        print "Running commands to %s for diagnostics" % hname
+                        print "\nPinging %s" % hname
+                        sys.stdout.flush()
+                        stat = subprocess.Popen("ping -c 4 %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        curl_stdout = stat.communicate()[0]
+                        print curl_stdout
+                        print "\nRunning traceroute to %s" % hname
+                        sys.stdout.flush()
+                        stat = subprocess.Popen("traceroute %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        curl_stdout = stat.communicate()[0]
+                        print curl_stdout
+                    except:   # print exception but continue
+                        (type, value, trback) = sys.exc_info()
+                        traceback.print_exception(type, value, trback, file=sys.stdout)
+                        print "\n\nIgnoring remote diagnostics exception.   Continuing.\n"
+                else:
+                    print "Couldn't find url in curl cmd:", cmd
+                    print "Skipping remote diagnostics.\n"
+
+                print "*" * 75
+                sys.stdout.flush()
 
         if not success:
             if os.path.isfile(curlConsoleOutputFile):
