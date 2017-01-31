@@ -33,6 +33,10 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         if not miscutils.use_db(config):
             miscutils.fwdie("Error:  TransferStatsDB class requires DB "\
                             " but was told not to use DB", 1)
+
+        self.currvals = {}
+        self.__initialize_values__()
+
         self.desservices = None
         if config is not None and 'des_services' in config:
             self.desservices = config['des_services']
@@ -54,9 +58,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
             self.transfer_stats_per_file = miscutils.convertBool(config['transfer_stats_per_file'])
         else:
             self.transfer_stats_per_file = False
-
-        self.currvals = {}
-        self.__initialize_values__()
 
     def __initialize_values__(self):
         self.currvals = {}
