@@ -158,7 +158,7 @@ class HttpUtils():
 
 
     def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt',
-                         secondsBetweenRetries=30, numTries=5, fsize=0, src=None, dst=None):
+                         secondsBetweenRetries=30, numTries=5, fsize=0, src=None, dst=None, verify=False):
         """Run curl command with password given on stdin.
 
         >>> ignore = os.path.isfile('./hello.txt') and os.remove('./hello.txt')
@@ -231,11 +231,7 @@ class HttpUtils():
 
             sys.stdout.flush()
             if exitcode == 0:
-                if httpcode in ['200', '201', '301']:
-                    success = True
-                    break
-                # if we get code 204 check to see if it has been transferred by getting file size
-                if httpcode == '204' and dst is not None:
+                if ((httpcode in ['200', '201', '301'] and verify) or httpcode == '204') and dst is not None:
                     # check file size
                     cmd2 = "curl -s -I -f -K - %s" % (dst)
                     if not useShell:
@@ -250,8 +246,14 @@ class HttpUtils():
                     if fsize == 0:
                         fsize = os.path.getsize(src)
                     if fsize == rfsize:
+                        print "VERIFIED"
                         success = True
                         break
+
+                if httpcode in ['200', '201', '301']:
+                    success = True
+                    break
+                # if we get code 204 check to see if it has been transferred by getting file size
 
             # run some diagnostics
             miscutils.fwdebug_print("*" * 75)
@@ -355,7 +357,7 @@ class HttpUtils():
                 self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
                 self.existing_directories.add(x)
 
-    def copyfiles(self, filelist, tstats, secondsBetweenRetriesC=30, numTriesC=5):
+    def copyfiles(self, filelist, tstats, secondsBetweenRetriesC=30, numTriesC=5, verify=False):
         """ Copies files in given src,dst in filelist """
         num_copies_from_archive = 0
         num_copies_to_archive = 0
@@ -402,7 +404,7 @@ class HttpUtils():
                         self.create_http_intermediate_dirs(dst)
 
                         copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches, src, dst), useShell=True,
-                                                      secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, fsize=fsize, src=src, dst=dst)
+                                                      secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, fsize=fsize, src=src, dst=dst, verify=verify)
 
                         if tstats is not None:
                             tstats.stat_end_file(0, fsize)

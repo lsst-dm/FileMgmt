@@ -105,7 +105,7 @@ class JobArchiveHttpCp(object):
             self.tstats.stat_end_batch(status)
         return results
 
-    def job2home(self, filelist):
+    def job2home(self, filelist, verify=False):
         """ From inside job, push files to home archive from job scratch directory """
         # if staging outside job, this function shouldn't be called
         if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
@@ -120,7 +120,7 @@ class JobArchiveHttpCp(object):
         if self.tstats is not None:
             self.tstats.stat_beg_batch('job2home', 'job_scratch', self.home['name'],
                                        self.__module__ + '.' + self.__class__.__name__)
-        (status, results) = self.HU.copyfiles(absfilelist, self.tstats)
+        (status, results) = self.HU.copyfiles(absfilelist, self.tstats, verify)
         if self.tstats is not None:
             self.tstats.stat_end_batch(status)
         return results

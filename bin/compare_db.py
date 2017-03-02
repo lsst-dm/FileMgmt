@@ -37,6 +37,7 @@ def parse_cmd_line(argv):
     parser.add_argument('--verbose', action='store_true', help='print differences between db and disk')
     parser.add_argument('--debug', action='store_true', help='print all files, recommend >= 300 char wide terminal')
     parser.add_argument('--script', action='store_true', help='Print only if there are errors, usefule for running in loops in scripts')
+    parser.add_argument('--tag', action='store', help='Tag for checking all runs with this name, recommended to use --script=True also.')
     args = parser.parse_args(argv)
     if args.script:
         args.verbose = False
@@ -268,13 +269,7 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
             print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
 
 
-def main():
-    """ Main control """
-
-    args = parse_cmd_line(sys.argv[1:])
-
-    dbh = desdmdbi.DesDmDbi(args.des_services, args.section)
-    archive_root, archive_path, relpath, operator, pfwid = validate_args(dbh, args)
+def process(dbh, args):
     #print archive_root
     files_from_db, db_duplicates = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, None)
     files_from_disk, duplicates = diskutils.get_files_from_disk(relpath, archive_root, args.md5sum, args.debug)
@@ -322,6 +317,30 @@ def main():
             print "%s  OK" % loc
             return
         print "%s  ERROR" % loc
+
+
+def main():
+    """ Main control """
+
+    args = parse_cmd_line(sys.argv[1:])
+
+    dbh = desdmdbi.DesDmDbi(args.des_services, args.section)
+    archive_root, archive_path, relpath, operator, pfwid = validate_args(dbh, args)
+    if args.tag is not None:
+        curs = dbh.cursor()
+        curs.execute("select reqnum,unitname,attnum from pfw_attempt where id in (select pfw_attempt_id from proctag where tag='%s')" % args.tag)
+        data = curs.fetchall()
+        if len(data) == 0:
+            print "No tag found in proctag with name %s" % args.tag
+            return
+        for d in data:
+            args.reqnum = d[0]
+            args.unitname = d[1]
+            args.attnum = d[2]
+            process(dbh, args)
+    else:
+        process(dbh, args)
+
 
 if __name__ == "__main__":
     main()
