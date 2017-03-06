@@ -86,7 +86,7 @@ class JobArchiveHttp():
         return results
 
 
-    def job2home(self, filelist):
+    def job2home(self, filelist, verify=False):
         # if staging outside job, this function shouldn't be called
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
@@ -95,7 +95,7 @@ class JobArchiveHttp():
             finfo['dst'] = self.home['root_http'] + '/' + finfo['dst']
         if self.tstats is not None:
             self.tstats.stat_beg_batch('job2home', 'job_scratch', self.home['name'], self.__module__ + '.' + self.__class__.__name__)
-        (status, results) = self.HU.copyfiles(absfilelist, self.tstats)
+        (status, results) = self.HU.copyfiles(absfilelist, self.tstats, verify=verify)
         if self.tstats is not None:
             self.tstats.stat_end_batch(status)
         return results
