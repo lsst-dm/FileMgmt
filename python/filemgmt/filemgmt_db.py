@@ -624,10 +624,13 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
     def register_file_data(self, ftype, fullnames, pfw_attempt_id, wgb_task_id,
                            do_update, update_info=None, filepat=None):
         """ Save artifact, metadata, wgb provenance, and simple contents for given files """
-
         self.dynam_load_ftmgmt(ftype, filepat)
 
         results = {}
+        if len(fullnames) == 1:
+            single = True
+        else:
+            single = False
         for fname in fullnames:
             metadata = {}
             fileinfo = {}
@@ -643,7 +646,9 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                 miscutils.fwdebug_print("\n\nError: Problem gathering data for file %s" % fname)
                 traceback.print_exc(1, sys.stdout)
                 print "\n\n"
-                raise
+                if single:
+                    raise
+                results[fname] = None
 
             #basename = fileinfo['filename']
             #if fileinfo['compression'] is not None:
