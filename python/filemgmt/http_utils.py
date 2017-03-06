@@ -182,7 +182,6 @@ class HttpUtils():
         """
         assert '-K - ' in cmd    # required to be in command so can pass username/password as stdin
         assert '-o ' not in cmd
-
         # allow environment variable to override numTries
         if 'HTTP_NUM_TRIES' in os.environ:
             numTries = int(os.environ['HTTP_NUM_TRIES'])
@@ -232,6 +231,7 @@ class HttpUtils():
             sys.stdout.flush()
             if exitcode == 0:
                 if ((httpcode in ['200', '201', '301'] and verify) or httpcode == '204') and dst is not None:
+                    # if we get code 204 check to see if it has been transferred by getting file size
                     # check file size
                     cmd2 = "curl -s -I -f -K - %s" % (dst)
                     if not useShell:
@@ -246,14 +246,13 @@ class HttpUtils():
                     if fsize == 0:
                         fsize = os.path.getsize(src)
                     if fsize == rfsize:
-                        print "VERIFIED"
                         success = True
                         break
 
-                if httpcode in ['200', '201', '301']:
+                elif httpcode in ['200', '201', '301'] and not verify:
                     success = True
                     break
-                # if we get code 204 check to see if it has been transferred by getting file size
+
 
             # run some diagnostics
             miscutils.fwdebug_print("*" * 75)
@@ -391,9 +390,8 @@ class HttpUtils():
                         # getting some non-zero curl exit codes, double check path exists
                         if len(path) > 0 and not os.path.exists(path):
                             raise Exception("Error: path still missing after coremakedirs (%s)" % path)
-
                         copy_time = self.run_curl_command("curl %s %s" % (common_switches, src), curlConsoleOutputFile=dst,
-                                                          useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC)
+                                                          useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC,verify=verify)
                         if tstats is not None:
                             tstats.stat_end_file(0, fsize)
                     elif isurl_dst:   # if remote file
@@ -402,7 +400,6 @@ class HttpUtils():
 
                         # create remote paths
                         self.create_http_intermediate_dirs(dst)
-
                         copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches, src, dst), useShell=True,
                                                       secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, fsize=fsize, src=src, dst=dst, verify=verify)
 
