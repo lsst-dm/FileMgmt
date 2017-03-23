@@ -236,7 +236,10 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
             print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
 
 def run_compare(args):
-    dbh = desdmdbi.DesDmDbi(args.des_services, args.section)
+    if args.dbh is None:
+        dbh = desdmdbi.DesDmDbi(args.des_services, args.section)
+    else:
+        dbh = args.dbh
     if args.date_range:
         curs = dbh.cursor()
         dates = args.date_range.split(',')
@@ -332,6 +335,6 @@ def do_compare(dbh, args):
             print "%s  ERROR" % loc
         return 1
 
-def compare(des_services=None, section=None, archive='desar2home', reqnum=None, unitname=None, attnum=None, relpath=None,
+def compare(dbh=None, des_services=None, section=None, archive='desar2home', reqnum=None, unitname=None, attnum=None, relpath=None,
             pfwid=None, date_range=None, pipeline=None, filesize=True, md5sum=False, quick=False, debug=False, script=False, verbose=False, silent=True):
     return run_compare(Args(**locals()))
