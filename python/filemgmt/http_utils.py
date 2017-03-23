@@ -156,6 +156,27 @@ class HttpUtils():
             return (P, True)
         return (P, False)
 
+    def verify(self, src, dst, useShell, fsize):
+        """ Method to verify if a file was completely transferred
+
+        """
+        cmd2 = "curl -s -I -f -K - %s" % (dst)
+
+        if not useShell:
+            process = subprocess.Popen(cmd2.split(), shell=False, stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        else:
+            process = subprocess.Popen(cmd2, shell=True, stdin=subprocess.PIPE,
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        curl_stdout = process.communicate(self.curl_password)[0]
+        rtemp = re.search('Content-Length: ?(\d+)', curl_stdout)
+        rfsize = int(rtemp.group(1))
+        if fsize == 0:
+            fsize = os.path.getsize(src)
+        if fsize == rfsize:
+            return True
+        return False
+
 
     def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt',
                          secondsBetweenRetries=30, numTries=5, fsize=0, src=None, dst=None, verify=False):
@@ -187,6 +208,7 @@ class HttpUtils():
             numTries = int(os.environ['HTTP_NUM_TRIES'])
 
         cmd = re.sub("^curl ", "curl -o %s " % curlConsoleOutputFile, cmd)
+        print "CMD",cmd
         process = 0
         exitcode = 0
         httpcode = None
@@ -233,19 +255,7 @@ class HttpUtils():
                 if ((httpcode in ['200', '201', '301'] and verify) or httpcode == '204') and dst is not None:
                     # if we get code 204 check to see if it has been transferred by getting file size
                     # check file size
-                    cmd2 = "curl -s -I -f -K - %s" % (dst)
-                    if not useShell:
-                        process = subprocess.Popen(cmd2.split(), shell=False, stdin=subprocess.PIPE,
-                                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    else:
-                        process = subprocess.Popen(cmd2, shell=True, stdin=subprocess.PIPE,
-                                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                    curl_stdout = process.communicate(self.curl_password)[0]
-                    rtemp = re.search('Content-Length: ?(\d+)', curl_stdout)
-                    rfsize = int(rtemp.group(1))
-                    if fsize == 0:
-                        fsize = os.path.getsize(src)
-                    if fsize == rfsize:
+                    if self.verify(src, dst, useShell, fsize):
                         success = True
                         break
 
