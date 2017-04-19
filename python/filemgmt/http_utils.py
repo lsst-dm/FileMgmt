@@ -208,7 +208,7 @@ class HttpUtils():
             numTries = int(os.environ['HTTP_NUM_TRIES'])
 
         cmd = re.sub("^curl ", "curl -o %s " % curlConsoleOutputFile, cmd)
-        print "CMD",cmd
+
         process = 0
         exitcode = 0
         httpcode = None
