@@ -10,7 +10,7 @@ import filemgmt.disk_utils_local as diskutils
 import filemgmt.db_utils_local as dbutils
 
 import despydb.desdbi as desdbi
-
+import despydmdb.dmdb_defs as dmdbdefs
 
 def parse_cmd_line(argv):
     """ Parse command line """
@@ -27,6 +27,7 @@ def parse_cmd_line(argv):
     parser.add_argument('--band', action='store')
     parser.add_argument('--expnum', action='store')
     parser.add_argument('--nite', action='store')
+    parser.add_argument('--dryrun', action='store_true')
 
     args = parser.parse_args(argv)
     return args
@@ -136,12 +137,15 @@ def del_part_files_from_db_by_name(dbh, relpath, archive, delfiles):
     #dbh.rollback()
 
 def del_part_files_from_db(dbh, archive, delfileid):
-    df = ""
-    for f in delfileid:
-        df += str(f) + ","
-    df = df[:-1]
+    #df = ""
+    #for f in delfileid:
+    #    df += str(f) + ","
+    #df = df[:-1]delfileid
+    dbh.empty_gtt(dmdbdefs.DB_GTT_ID)
+    print "using gtt_id"
+    dbh.load_id_gtt(delfileid)
     cur = dbh.cursor()
-    cur.execute("delete from file_archive_info where archive_name='%s' and desfile_id in (%s)" % (archive, df))
+    cur.execute("delete from file_archive_info fai where archive_name='%s' and fai.desfile_id=%s.id" % (archive, dmdbdefs.DB_GTT_ID))
     if len(delfileid) != cur.rowcount:
         print "Inconsistency detected: %i rows removed from db and %i files deleted, these should match." % (cur.rowcount, len(delfileid))
     dbh.commit() 
@@ -209,6 +213,8 @@ def main():
         print "\nNo files on disk to delete."
         sys.exit(0)
 
+    if args.dryrun:
+        sys.exit(0)
     shdelchar = 'x'
     while shdelchar != 'n' and shdelchar != 'y':
         print ""

@@ -267,7 +267,6 @@ def do_compare(dbh, args):
     archive_root, archive_path, relpath, operator, pfwid = validate_args(dbh, args)
 
     #print archive_root
-    args.quick=True
     if args.debug:
         print "From DB"
     files_from_db, db_duplicates = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, None, debug=args.debug, quick=args.quick)

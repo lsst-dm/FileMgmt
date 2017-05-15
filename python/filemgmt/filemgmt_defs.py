@@ -17,8 +17,8 @@ FILE_HEADER_INFO = 'file_header'
 USE_HOME_ARCHIVE_INPUT = 'use_home_archive_input'
 USE_HOME_ARCHIVE_OUTPUT = 'use_home_archive_output'
 
-FM_PREFER_UNCOMPRESSED = [None, '.fz']
-FM_PREFER_COMPRESSED = ['.fz', None]
+FM_PREFER_UNCOMPRESSED = [None, '.fz', '.gz']
+FM_PREFER_COMPRESSED = ['.fz', '.gz', None]
 FM_UNCOMPRESSED_ONLY = [None]
 FM_COMPRESSED_ONLY = ['.fz']
 
