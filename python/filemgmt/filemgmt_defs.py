@@ -20,7 +20,7 @@ USE_HOME_ARCHIVE_OUTPUT = 'use_home_archive_output'
 FM_PREFER_UNCOMPRESSED = [None, '.fz', '.gz']
 FM_PREFER_COMPRESSED = ['.fz', '.gz', None]
 FM_UNCOMPRESSED_ONLY = [None]
-FM_COMPRESSED_ONLY = ['.fz']
+FM_COMPRESSED_ONLY = ['.fz', '.gz']
 
 FM_EXIT_SUCCESS = 0
 FM_EXIT_FAILURE = 1
