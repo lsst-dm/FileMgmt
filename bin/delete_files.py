@@ -9,7 +9,7 @@ import argparse
 import filemgmt.disk_utils_local as diskutils
 import filemgmt.db_utils_local as dbutils
 
-import despydb.desdbi as desdbi
+import despydmdb.desdmdbi as desdbi
 import despydmdb.dmdb_defs as dmdbdefs
 
 def parse_cmd_line(argv):
@@ -28,6 +28,7 @@ def parse_cmd_line(argv):
     parser.add_argument('--expnum', action='store')
     parser.add_argument('--nite', action='store')
     parser.add_argument('--dryrun', action='store_true')
+    parser.add_argument('--pfwid', action='store', help='pfw attempt id to search for')
 
     args = parser.parse_args(argv)
     return args
@@ -45,7 +46,7 @@ def validate_args(dbh, args):
             sys.exit(1)
 
         archive_root,archive_path,relpath,state,operator,pfwid = dbutils.get_paths_by_path(dbh, args)
-    elif args.reqnum and args.unitname and args.attnum:
+    elif (args.reqnum and args.unitname and args.attnum) or args.pfwid:
         archive_root, archive_path, relpath, state, operator, pfwid = dbutils.get_paths_by_id(dbh, args)
     else:
         print "Either relpath or a reqnum/unitname/attnum triplet must be specified."
@@ -137,19 +138,14 @@ def del_part_files_from_db_by_name(dbh, relpath, archive, delfiles):
     #dbh.rollback()
 
 def del_part_files_from_db(dbh, archive, delfileid):
-    #df = ""
-    #for f in delfileid:
-    #    df += str(f) + ","
-    #df = df[:-1]delfileid
     dbh.empty_gtt(dmdbdefs.DB_GTT_ID)
     print "using gtt_id"
-    dbh.load_id_gtt(delfileid)
+    tid = dbh.load_id_gtt(delfileid)
     cur = dbh.cursor()
-    cur.execute("delete from file_archive_info fai where archive_name='%s' and fai.desfile_id=%s.id" % (archive, dmdbdefs.DB_GTT_ID))
+    cur.execute("delete from file_archive_info fai where archive_name='%s' and fai.desfile_id in (select id from %s)" % (archive, tid))
     if len(delfileid) != cur.rowcount:
         print "Inconsistency detected: %i rows removed from db and %i files deleted, these should match." % (cur.rowcount, len(delfileid))
     dbh.commit() 
-    #dbh.rollback()
 
 def del_part_files_from_disk(files, archive_root):
     good = []
@@ -168,10 +164,10 @@ def main():
     dofiles = False
     if args.filetype is not None:
         dofiles = True
-    dbh = desdbi.DesDbi(args.des_services, args.section)
+    dbh = desdbi.DesDmDbi(args.des_services, args.section)
     archive_root, archive_path, relpath, state, operator, pfwid = validate_args(dbh, args)
-    files_from_disk = diskutils.get_files_from_disk(relpath, archive_root)
-    files_from_db = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, args.filetype)
+    files_from_disk, dup = diskutils.get_files_from_disk(relpath, archive_root)
+    files_from_db, dup = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, args.filetype)
     # if filetype is set then trim down the disk results                                                                                                                                                                                                            
     if args.filetype is not None:
         newfiles = {}
@@ -180,7 +176,7 @@ def main():
                 newfiles[fl] = files_from_disk[fl]
         files_from_disk = newfiles
 
-    comparison_info = diskutils.compare_db_disk(files_from_db, files_from_disk, False, True, archive_root=archive_root)
+    comparison_info = diskutils.compare_db_disk(files_from_db, files_from_disk, dup, False, True, archive_root=archive_root)
 
     filesize = 0.0
     for fl, val in files_from_disk.iteritems():
