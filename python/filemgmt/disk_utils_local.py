@@ -135,7 +135,7 @@ def del_file_disk_list(filelist):
 
 
 ######################################################################
-def copyfiles(filelist, tstats):
+def copyfiles(filelist, tstats, verify=False):
     """ Copies files in given src,dst in filelist """
 
     results = {}
@@ -160,6 +160,10 @@ def copyfiles(filelist, tstats):
                 shutil.copy(src, dst)
                 if tstats is not None:
                     tstats.stat_end_file(0, fsize)
+                if verify:
+                    newfsize = os.path.getsize(dst)
+                    if newfsize != fsize:
+                        raise Exception("Incorrect files size for file %s (%i vs %i)" % (filename, newfsize, fsize))
         except Exception:
             status = 1
             if tstats is not None:

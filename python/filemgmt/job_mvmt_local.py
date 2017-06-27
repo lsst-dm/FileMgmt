@@ -90,7 +90,7 @@ class JobArchiveLocal():
         return results
 
 
-    def job2home(self, filelist):
+    def job2home(self, filelist, verify=False):
         if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
             miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
         if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
@@ -103,7 +103,7 @@ class JobArchiveLocal():
             finfo['dst'] = self.home['root'] + '/' + finfo['dst']
         if self.tstats is not None:
             self.tstats.stat_beg_batch('job2home', 'job_scratch', self.home['name'], self.__module__ + '.' + self.__class__.__name__)
-        (status, results) = disk_utils_local.copyfiles(absfilelist, self.tstats)
+        (status, results) = disk_utils_local.copyfiles(absfilelist, self.tstats, verify)
         if self.tstats is not None:
             self.tstats.stat_end_batch(status)
         return results
