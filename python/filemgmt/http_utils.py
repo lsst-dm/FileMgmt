@@ -173,6 +173,8 @@ class HttpUtils():
                 curl_stdout = process.communicate(self.curl_password)[0]
                 rtemp = re.search('Content-Length: ?(\d+)', curl_stdout)
                 if rtemp is not None:
+                    if i > 0:
+                        print "Verify took %i tries to succeed" % (int(i) + 1)
                     break
                 time.sleep(5)
                 if i == numTries - 1:
@@ -270,12 +272,15 @@ class HttpUtils():
                     # check file size
                     if self.verify(src, dst, useShell, fsize, numTries):
                         success = True
+                        if x > 0:
+                            print "Transfer took %i tries to succeed" % (int(x) + 1)
                         break
 
                 elif httpcode in ['200', '201', '301'] and not verify:
                     success = True
+                    if x > 0:
+                        print "Transfer took %i tries to succeed" % (int(x) + 1)
                     break
-
 
             # run some diagnostics
             miscutils.fwdebug_print("*" * 75)
