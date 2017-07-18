@@ -156,26 +156,39 @@ class HttpUtils():
             return (P, True)
         return (P, False)
 
-    def verify(self, src, dst, useShell, fsize):
+    def verify(self, src, dst, useShell, fsize, numTries):
         """ Method to verify if a file was completely transferred
 
         """
-        cmd2 = "curl -s -I -f -K - %s" % (dst)
+        try:
+            cmd2 = "curl -s -I -f -K - %s" % (dst)
 
-        if not useShell:
-            process = subprocess.Popen(cmd2.split(), shell=False, stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        else:
-            process = subprocess.Popen(cmd2, shell=True, stdin=subprocess.PIPE,
-                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        curl_stdout = process.communicate(self.curl_password)[0]
-        rtemp = re.search('Content-Length: ?(\d+)', curl_stdout)
-        rfsize = int(rtemp.group(1))
-        if fsize == 0:
-            fsize = os.path.getsize(src)
-        if fsize == rfsize:
-            return True
-        return False
+            for i in range(numTries):
+                if not useShell:
+                    process = subprocess.Popen(cmd2.split(), shell=False, stdin=subprocess.PIPE,
+                                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                else:
+                    process = subprocess.Popen(cmd2, shell=True, stdin=subprocess.PIPE,
+                                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                curl_stdout = process.communicate(self.curl_password)[0]
+                rtemp = re.search('Content-Length: ?(\d+)', curl_stdout)
+                if rtemp is not None:
+                    break
+                time.sleep(5)
+                if i == numTries - 1:
+                    print "Failed to verify %s after %i tries." % (dst, numTries)
+                    return False
+            rfsize = int(rtemp.group(1))
+            if fsize == 0:
+                fsize = os.path.getsize(src)
+            if fsize == rfsize:
+                return True
+            return False
+        except:
+            (type, value, trback) = sys.exc_info()
+            traceback.print_exception(type, value, trback, file=sys.stdout)
+            return False
+
 
 
     def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt',
@@ -255,7 +268,7 @@ class HttpUtils():
                 if ((httpcode in ['200', '201', '301'] and verify) or httpcode == '204') and dst is not None:
                     # if we get code 204 check to see if it has been transferred by getting file size
                     # check file size
-                    if self.verify(src, dst, useShell, fsize):
+                    if self.verify(src, dst, useShell, fsize, numTries):
                         success = True
                         break
 
