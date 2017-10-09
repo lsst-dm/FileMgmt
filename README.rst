@@ -5,6 +5,11 @@ FileMgmt
 This package provides utilities for managing files in DESDM (registering,
 deleting, verifying, etc.)
 
+.. warning::
+
+   The package is a prototype and as such is subject to change and does not
+   meet LSST coding standards.
+
 ****
 
 This code is part of the Dark Energy Survey (DES) Data Management System
