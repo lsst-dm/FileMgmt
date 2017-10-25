@@ -1,9 +1,4 @@
 #!/usr/bin/env python
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 """ TODO docstring """
 
 # TODO postponing what if single site copy between two archives on single site?  We shouldn't have this use case.

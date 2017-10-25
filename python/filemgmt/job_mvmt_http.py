@@ -1,8 +1,3 @@
-# $Id: job_mvmt_local.py 18938 2014-02-04 19:09:06Z mgower $
-# $Rev:: 18938                            $:  # Revision of last commit.
-# $LastChangedBy:: mgower                 $:  # Author of last commit.
-# $LastChangedDate:: 2014-02-04 13:09:06 #$:  # Date of last commit.
-
 """
 """
 

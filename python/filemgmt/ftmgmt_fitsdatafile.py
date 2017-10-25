@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 """
 Generic filetype management class used to do filetype specific tasks
      such as metadata and content ingestion

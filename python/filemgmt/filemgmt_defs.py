@@ -1,8 +1,3 @@
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 # lower case because appears as wcl section and wcl sections are converted to lowercase
 META_HEADERS = 'h'
 META_COMPUTE = 'c'

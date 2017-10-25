@@ -1,8 +1,3 @@
-# $Id: disk_utils_local.py 18486 2014-01-29 15:58:12Z mgower $
-# $Rev:: 18486                            $:  # Revision of last commit.
-# $LastChangedBy:: mgower                 $:  # Author of last commit.
-# $LastChangedDate:: 2014-01-29 09:58:12 #$:  # Date of last commit.
-
 """
 Routines for performing tasks on files available through http.
 """
