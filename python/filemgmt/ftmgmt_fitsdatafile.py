@@ -17,6 +17,7 @@ from filemgmt.ftmgmt_genfits import FtMgmtGenFits
 import despymisc.miscutils as miscutils
 import databaseapps.datafile_ingest_utils as dfiutils
 
+
 class FtMgmtFitsDatafile(FtMgmtGenFits):
     """  Class for managing a filetype whose contents can be read by datafile_ingest """
 
@@ -37,7 +38,7 @@ class FtMgmtFitsDatafile(FtMgmtGenFits):
         results = {}
         for fname in listfullnames:
             filename = miscutils.parse_fullname(fname, miscutils.CU_PARSE_FILENAME)
-            results[fname] = dfiutils.is_ingested(filename, self.tablename, self.dbh) 
+            results[fname] = dfiutils.is_ingested(filename, self.tablename, self.dbh)
 
         return results
 

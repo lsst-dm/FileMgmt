@@ -20,6 +20,7 @@ import despymisc.miscutils as miscutils
 import despyfitsutils.fits_special_metadata as spmeta
 import despyfitsutils.fitsutils as fitsutils
 
+
 class FtMgmtGenFits(FtMgmtGeneric):
     """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
 
@@ -88,7 +89,7 @@ class FtMgmtGenFits(FtMgmtGeneric):
                 # get value directly from header
                 if 'h' in hddict[status_sect]:
                     if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-                        miscutils.fwdebug_print("INFO: headers=%s" % \
+                        miscutils.fwdebug_print("INFO: headers=%s" %
                                                 (hddict[status_sect]['h'].keys()))
                     metakeys = hddict[status_sect]['h'].keys()
                     mdata2, ddef2 = self._gather_metadata_from_header(fullname, hdulist,
@@ -102,14 +103,16 @@ class FtMgmtGenFits(FtMgmtGeneric):
                         try:
                             specmf = getattr(spmeta, 'func_%s' % funckey.lower())
                         except AttributeError:
-                            miscutils.fwdebug_print("WARN: Couldn't find func_%s in despyfits.fits_special_metadata" % (funckey))
+                            miscutils.fwdebug_print(
+                                "WARN: Couldn't find func_%s in despyfits.fits_special_metadata" % (funckey))
 
                         try:
                             val = specmf(fullname, hdulist, hdname)
                             metadata[funckey] = val
                         except KeyError:
                             if miscutils.fwdebug_check(1, 'FTMGMT_DEBUG'):
-                                miscutils.fwdebug_print("INFO: couldn't create value for key %s in %s header of file %s" % (funckey, hdname, fullname))
+                                miscutils.fwdebug_print(
+                                    "INFO: couldn't create value for key %s in %s header of file %s" % (funckey, hdname, fullname))
 
                 # copy value from 1 hdu to primary
                 if 'p' in hddict[status_sect]:
@@ -125,7 +128,6 @@ class FtMgmtGenFits(FtMgmtGeneric):
             miscutils.fwdebug_print("INFO: datadef = %s" % datadef)
             miscutils.fwdebug_print("INFO: end")
         return metadata, datadef
-
 
     ######################################################################
     def _get_update_values_metadata(self, metadata, datadefs):
@@ -153,12 +155,13 @@ class FtMgmtGenFits(FtMgmtGeneric):
                                         len('\' / %s' % fitscomment) + \
                                         len('DESFNAME= \'') > 80:
                                     if miscutils.fwdebug_check(3, "PFWRUNJOB_DEBUG"):
-                                        miscutils.fwdebug_print("WARN: %s's filename too long for DESFNAME: %s" % \
-                                            (metadata['filename'], len(metadata['filename'])))
-                                        fitscomment = fitscomment[:min(len(fitscomment), 80 - len(metadata['filename']) - 16)]
-                                     
+                                        miscutils.fwdebug_print("WARN: %s's filename too long for DESFNAME: %s" %
+                                                                (metadata['filename'], len(metadata['filename'])))
+                                        fitscomment = fitscomment[:min(
+                                            len(fitscomment), 80 - len(metadata['filename']) - 16)]
+
                                 update_info[0]['DESFNAME'] = (metadata['filename'], fitscomment, 'str')
-                                     
+
                             elif key != 'filetype' and key != 'pfw_attempt_id':
                                 if key in metadata:
                                     uvalue = metadata[key]
@@ -166,10 +169,12 @@ class FtMgmtGenFits(FtMgmtGeneric):
                                         ucomment = datadefs[key][0]
                                         udatatype = datadefs[key][1]
                                     elif miscutils.fwdebug_check(3, "PFWRUNJOB_DEBUG"):
-                                        miscutils.fwdebug_print("WARN: could not find comment for key=%s" % (key))
+                                        miscutils.fwdebug_print(
+                                            "WARN: could not find comment for key=%s" % (key))
                                     update_info[0][key] = (uvalue, ucomment, udatatype)
                                 else:
-                                    miscutils.fwdebug_print("WARN: could not find metadata for key=%s" % (key))
+                                    miscutils.fwdebug_print(
+                                        "WARN: could not find metadata for key=%s" % (key))
         return update_info
 
     ######################################################################
@@ -190,7 +195,6 @@ class FtMgmtGenFits(FtMgmtGeneric):
             else:
                 miscutils.fwdebug_print("WARN: could not find fits_data_type for key=%s" % (key))
         return ucomment, udatatype
-
 
     ######################################################################
     def _get_update_values_explicit(self, update_info):
@@ -223,8 +227,6 @@ class FtMgmtGenFits(FtMgmtGeneric):
 
         return upinfo2
 
-
-
     ######################################################################
     @classmethod
     def _gather_metadata_from_header(cls, fullname, hdulist, hdname, metakeys):
@@ -240,7 +242,7 @@ class FtMgmtGenFits(FtMgmtGeneric):
                 datadef[key] = fitsutils.get_hdr_extra(hdulist, key.upper(), hdname)
             except KeyError:
                 if miscutils.fwdebug_check(1, 'FTMGMT_DEBUG'):
-                    miscutils.fwdebug_print("INFO: didn't find key %s in %s header of file %s" %\
+                    miscutils.fwdebug_print("INFO: didn't find key %s in %s header of file %s" %
                                             (key, hdname, fullname))
 
         return metadata, datadef

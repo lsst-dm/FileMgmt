@@ -48,12 +48,14 @@ def save_register_info(filemgmt, task_id, provmsg, do_commit):
         filemgmt.commit()
 
 ###########################################################################
+
+
 def parse_provided_list(listname):
     """ create dictionary of files from list in file """
 
     #cwd = os.getcwd()
     cwd = os.getenv('PWD')  # don't use getcwd as it canonicallizes path
-                            # which is not what we want for links internal to archive
+    # which is not what we want for links internal to archive
 
     uniqfiles = {}
     filelist = {}
@@ -87,7 +89,7 @@ def get_list_filenames(ingestpath, filetype):
 
     if ingestpath[0] != '/':
         cwd = os.getenv('PWD')  # don't use getcwd as it canonicallizes path
-                                # which is not what we want for links internal to archive
+        # which is not what we want for links internal to archive
         ingestpath = cwd + '/' + ingestpath
 
     if not os.path.exists(ingestpath):
@@ -99,7 +101,6 @@ def get_list_filenames(ingestpath, filetype):
             filelist.append(dirpath+'/'+fname)
 
     return {filetype: filelist}
-
 
 
 ###########################################################################
@@ -127,7 +128,6 @@ def list_missing_metadata(filemgmt, ftype, filelist):
         miscutils.fwdebug_print("misslist=%s" % (misslist))
 
     return misslist
-
 
 
 ###########################################################################
@@ -211,6 +211,8 @@ def save_file_info(filemgmt, task_id, ftype, filelist):
         print "DONE (%0.2f secs)" % (endtime - starttime)
 
 ###########################################################################
+
+
 def save_archive_location(filemgmt, filelist, archive_name):
     """ save location in archive """
 
@@ -230,7 +232,6 @@ def save_archive_location(filemgmt, filelist, archive_name):
                 print pfile, problemfiles[pfile]
                 sys.exit(1)
         print "DONE (%0.2f secs)" % (endtime - starttime)
-
 
 
 ###########################################################################
@@ -256,11 +257,13 @@ def process_files(filelist, filemgmt, task_id, archive_name, do_commit):
             filemgmt.commit()
 
 ###########################################################################
+
+
 def parse_cmdline(argv):
     """ Parse the command line """
 
-    parser = argparse.ArgumentParser(description=\
-                'Ingest metadata for files generated outside DESDM framework')
+    parser = argparse.ArgumentParser(
+        description='Ingest metadata for files generated outside DESDM framework')
     parser.add_argument('--des_services', action='store', help='')
     parser.add_argument('--section', action='store',
                         help='Must be specified if not set in environment')
@@ -310,6 +313,8 @@ def parse_cmdline(argv):
     return args
 
 ###########################################################################
+
+
 def get_filemgmt_class(args):
     """ Figure out which filemgmt class to use """
     filemgmt_class = None
@@ -348,6 +353,8 @@ def get_filemgmt_class(args):
     return filemgmt_class
 
 ###########################################################################
+
+
 def main(argv):
     """ Program entry point """
     starttime = time.time()
@@ -365,7 +372,6 @@ def main(argv):
 
     # tell filemgmt class to get config from DB
     args['get_db_config'] = True
-
 
     # figure out which python class to use for filemgmt
     filemgmt_class = get_filemgmt_class(args)
@@ -402,7 +408,6 @@ def main(argv):
     endtime = time.time()
     print "DONE (%0.2f secs)" % (endtime - starttime)
 
-
     print """\nReminder:
 \tFor purposes of file metadata, uncompressed and compressed
 \tfiles are treated as same file (no checking is done).
@@ -421,6 +426,6 @@ def main(argv):
     totfilecnt = sum([len(x) for x in filelist.values()])
     print "\n\nTotal time with %s files: %0.2f secs" % (totfilecnt, (endtime - starttime))
 
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
-

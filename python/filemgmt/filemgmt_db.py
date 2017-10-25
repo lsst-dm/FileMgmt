@@ -27,6 +27,7 @@ import despymisc.provdefs as provdefs
 import filemgmt.filemgmt_defs as fmdefs
 import traceback
 
+
 class FileMgmtDB(desdmdbi.DesDmDbi):
     """
         Extend core DM db class with functionality for managing files
@@ -38,8 +39,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
     def requested_config_vals():
         """ return dictionary describing what values this class uses along with
             whether they are optional or required """
-        return {'use_db':'opt', 'archive':'req', fmdefs.FILE_HEADER_INFO:'opt',
-                'filetype_metadata':'req', 'des_services':'opt', 'des_db_section':'req'}
+        return {'use_db': 'opt', 'archive': 'req', fmdefs.FILE_HEADER_INFO: 'opt',
+                'filetype_metadata': 'req', 'des_services': 'opt', 'des_db_section': 'req'}
 
     ###########################################################################
     def __init__(self, initvals=None, fullconfig=None):
@@ -83,15 +84,14 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         self.ftmgmt = None
         self.filepat = None
 
-
     ###########################################################################
     def _get_config_from_db(self):
         """ reads some configuration values from the database """
         self.config = WCL()
         self.config['archive'] = self.get_archive_info()
         self.config['filetype_metadata'] = self.get_all_filetype_metadata()
-        self.config[fmdefs.FILE_HEADER_INFO] = self.query_results_dict('select * from OPS_FILE_HEADER', 'name')
-
+        self.config[fmdefs.FILE_HEADER_INFO] = self.query_results_dict(
+            'select * from OPS_FILE_HEADER', 'name')
 
     ###########################################################################
     def register_file_in_archive(self, filelist, archive_name):
@@ -104,7 +104,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         if miscutils.fwdebug_check(6, 'FILEMGMT_DEBUG'):
             miscutils.fwdebug_print("filelist = %s" % filelist)
-
 
         archivedict = self.config['archive'][archive_name]
         archiveroot = archivedict['root']
@@ -119,7 +118,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             idsql = """select d.filename, d.compression, d.id
                        from desfile d, %s g
                        where d.filename=g.filename and
-                       nullcmp(d.compression, g.compression) = 1""" %  (gtt_name)
+                       nullcmp(d.compression, g.compression) = 1""" % (gtt_name)
             ids = {}
             curs = self.cursor()
             curs.execute(idsql)
@@ -139,15 +138,17 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                         path = onefile['path']
                     elif 'fullname' in onefile:
                         parsemask = miscutils.CU_PARSE_PATH | \
-                                    miscutils.CU_PARSE_FILENAME | \
-                                    miscutils.CU_PARSE_COMPRESSION
-                        (path, nfiledict['filename'], nfiledict['compression']) = miscutils.parse_fullname(onefile['fullname'], parsemask)
+                            miscutils.CU_PARSE_FILENAME | \
+                            miscutils.CU_PARSE_COMPRESSION
+                        (path, nfiledict['filename'], nfiledict['compression']
+                         ) = miscutils.parse_fullname(onefile['fullname'], parsemask)
                     else:
-                        miscutils.fwdie("Error:   Incomplete info for a file to register.   Given %s" % onefile, 1)
+                        miscutils.fwdie(
+                            "Error:   Incomplete info for a file to register.   Given %s" % onefile, 1)
                 elif isinstance(onefile, str):  # fullname
                     parsemask = miscutils.CU_PARSE_PATH | miscutils.CU_PARSE_FILENAME | miscutils.CU_PARSE_COMPRESSION
-                    (path, nfiledict['filename'], nfiledict['compression']) = miscutils.parse_fullname(onefile, parsemask)
-
+                    (path, nfiledict['filename'], nfiledict['compression']
+                     ) = miscutils.parse_fullname(onefile, parsemask)
 
                 # make sure compression starts with .
                 if nfiledict['compression'] is not None and not re.match(r'^\.', nfiledict['compression']):
@@ -158,7 +159,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                     if nfiledict['compression'] in ids[nfiledict['filename']]:
                         nfiledict['desfile_id'] = int(ids[nfiledict['filename']][nfiledict['compression']])
                     else:
-                        raise ValueError('Missing desfile id for file - no matching compression (%s)' % onefile)
+                        raise ValueError(
+                            'Missing desfile id for file - no matching compression (%s)' % onefile)
                 else:
                     raise ValueError('Missing desfile id for file - no matching filename (%s)' % onefile)
 
@@ -179,7 +181,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                             nfiledict['path'] = canon_path[len(canon_archroot)+1:]
                         else:
                             miscutils.fwdie(("Error: file's absolute path (%s) does not "
-                                             "contain the archive root (%s) (filedict:%s)") % \
+                                             "contain the archive root (%s) (filedict:%s)") %
                                             (path, archiveroot, nfiledict), 1)
                 else:
                     if miscutils.fwdebug_check(3, 'FILEMGMT_DEBUG'):
@@ -273,7 +275,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         sql = ("select filename||compression from %(gtt)s g where exists "
                "(select filename from file_archive_info fai where "
                "fai.archive_name=%(ar)s and fai.filename=g.filename)") % \
-               ({'ar':self.get_named_bind_string('archive_name'), 'gtt':gtt_name})
+            ({'ar': self.get_named_bind_string('archive_name'), 'gtt': gtt_name})
         if miscutils.fwdebug_check(3, 'FILEMGMT_DEBUG'):
             miscutils.fwdebug_print("sql = %s" % sql)
 
@@ -283,7 +285,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         for row in curs:
             existslist.append(row[0])
         return existslist
-
 
     ###########################################################################
     @staticmethod
@@ -313,7 +314,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                     all_opt_meta = all_opt_meta.union(cat_dict.keys())
         return all_opt_meta
 
-
     ###########################################################################
     @staticmethod
     def _get_column_map(filetype_dict):
@@ -332,7 +332,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                             else:
                                 columnMap[column] = header
         return columnMap
-
 
     ###########################################################################
     def ingest_file_metadata(self, filemeta):
@@ -364,14 +363,15 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                 raise KeyError("File metadata missing FILETYPE (file: %s)" % filemeta[FILENAME])
 
             if filemeta[FILETYPE] not in dbdict:
-                raise ValueError("Unknown FILETYPE (file: %s, filetype: %s)" % (filemeta[FILENAME], filemeta[FILETYPE]))
+                raise ValueError("Unknown FILETYPE (file: %s, filetype: %s)" %
+                                 (filemeta[FILENAME], filemeta[FILETYPE]))
 
             # if debugging turned on, print message about missing optional metadata values
             if miscutils.fwdebug_check(1, "FILEMGMT_DEBUG"):
                 all_opt_meta = self._get_optional_metadata(dbdict[filemeta[FILETYPE]])
                 for dbkey in all_opt_meta:
                     if dbkey not in filemeta.keys() or filemeta[dbkey] == "":
-                        miscutils.fwdebug_print("WARN: %s missing optional metadata %s" % \
+                        miscutils.fwdebug_print("WARN: %s missing optional metadata %s" %
                                                 (filemeta[FILENAME], dbkey))
 
             # check that all required are present
@@ -427,7 +427,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             raise
     # end ingest_file_metadata
 
-
     ###########################################################################
     def is_valid_filetype(self, ftype):
         """ Checks filetype definitions to determine if given filetype exists """
@@ -444,7 +443,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         else:
             return False
 
-
     ###########################################################################
     def get_file_location(self, filelist, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
         """ Return relative archive paths and filename including any compression extenstion """
@@ -454,7 +452,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         for fname, finfo in fileinfo.items():
             rel_filenames[fname] = finfo['rel_filename']
         return rel_filenames
-
 
     ###########################################################################
     def get_file_archive_info(self, filelist, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
@@ -468,7 +465,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             miscutils.fwdie('Error: Invalid archive name (%s)' % arname, 1)
 
         if 'root' not in self.config['archive'][arname]:
-            miscutils.fwdie('Error: Missing root in archive def (%s)' % \
+            miscutils.fwdie('Error: Missing root in archive def (%s)' %
                             self.config['archive'][arname], 1)
 
         if not isinstance(compress_order, list):
@@ -487,7 +484,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                "d.filesize, d.md5sum from desfile d, file_archive_info fai, "
                "%(gtt)s g where fai.archive_name=%(ar)s and fai.desfile_id=d.id and "
                "d.filename=g.filename") % \
-              ({'ar':self.get_named_bind_string('archive_name'), 'gtt':gtt_name})
+              ({'ar': self.get_named_bind_string('archive_name'), 'gtt': gtt_name})
         curs = self.cursor()
         curs.execute(sql, {'archive_name': arname})
         desc = [d[0].lower() for d in curs.description]
@@ -525,7 +522,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         #print "archiveinfo = ", archiveinfo
         return archiveinfo
 
-
     ###########################################################################
     def get_file_archive_info_path(self, path, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
         """ Return information about file stored in archive
@@ -539,7 +535,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             miscutils.fwdie('Error: Invalid archive name (%s)' % arname, 1)
 
         if 'root' not in self.config['archive'][arname]:
-            miscutils.fwdie('Error: Missing root in archive def (%s)' % \
+            miscutils.fwdie('Error: Missing root in archive def (%s)' %
                             self.config['archive'][arname], 1)
 
         if not isinstance(compress_order, list):
@@ -601,7 +597,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             classname = 'filemgmt.ftmgmt_generic.FtMgmtGeneric'
             if filetype in self.config['filetype_metadata']:
                 if 'filetype_mgmt' in self.config['filetype_metadata'][filetype] and \
-                      self.config['filetype_metadata'][filetype]['filetype_mgmt'] is not None:
+                        self.config['filetype_metadata'][filetype]['filetype_mgmt'] is not None:
                     classname = self.config['filetype_metadata'][filetype]['filetype_mgmt']
                 else:
                     miscutils.fwdie('Error: Invalid filetype (%s)' % filetype, 1)
@@ -618,7 +614,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             self.filetype = filetype
             self.filepat = filepat
             self.ftmgmt = filetype_mgmt
-
 
     ######################################################################
     def register_file_data(self, ftype, fullnames, pfw_attempt_id, wgb_task_id,
@@ -677,8 +672,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             results[fname] = {'diskinfo': fileinfo, 'metadata': metadata}
         return results
 
-
-
     ######################################################################
     def save_file_info(self, fileinfo, metadata):
         """ save non-location information about file """
@@ -691,7 +684,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         if metadata is not None and len(metadata) > 0:
             self.ingest_file_metadata(metadata)
-
 
     ###########################################################################
     def save_desfile(self, fileinfo):
@@ -708,7 +700,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             print "colnames =", colnames
             print "fileinfo =", fileinfo
             raise
-
 
     ###########################################################################
     def get_filename_id_map(self, prov):
@@ -750,7 +741,6 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         else:
             return result
     # end get_filename_id_map
-
 
     ###########################################################################
     def ingest_provenance(self, prov, execids):
@@ -818,11 +808,11 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                     miscutils.fwdebug_print("tuples = %s" % tuples)
 
                 if provdefs.PROV_PARENTS not in tuples:
-                    miscutils.fwdie("Error: missing %s in one of %s" % \
+                    miscutils.fwdie("Error: missing %s in one of %s" %
                                     (provdefs.PROV_PARENTS, provdefs.PROV_WDF),
                                     fmdefs.FM_EXIT_FAILURE)
                 elif provdefs.PROV_CHILDREN not in tuples:
-                    miscutils.fwdie("Error: missing %s in one of %s" % \
+                    miscutils.fwdie("Error: missing %s in one of %s" %
                                     (provdefs.PROV_CHILDREN, provdefs.PROV_WDF),
                                     fmdefs.FM_EXIT_FAILURE)
                 else:
@@ -848,7 +838,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                 if miscutils.fwdebug_check(6, 'FILEMGMT_DEBUG'):
                     miscutils.fwdebug_print("Number of wdf rows inserted = %s" % cursor.rowcount)
             else:
-                miscutils.fwdebug_print("Warn: %s section given but had 0 valid entries" % \
+                miscutils.fwdebug_print("Warn: %s section given but had 0 valid entries" %
                                         (provdefs.PROV_WDF))
 
     #        self.commit()

@@ -20,7 +20,6 @@ import despyfitsutils.fitsutils as fitsutils
 import despyfitsutils.fits_special_metadata as spmeta
 
 
-
 ##################################################################################################
 def get_metadata_specs(ftype, filetype_metadata, file_header_info=None, sectlabel=None, updatefits=False):
     """ Return wcl describing metadata to gather for given filetype """
@@ -28,7 +27,8 @@ def get_metadata_specs(ftype, filetype_metadata, file_header_info=None, sectlabe
 
     metaspecs = OrderedDict()
 
-    (reqmeta, optmeta, updatemeta) = create_file_metadata_dict(ftype, filetype_metadata, sectlabel, file_header_info)
+    (reqmeta, optmeta, updatemeta) = create_file_metadata_dict(
+        ftype, filetype_metadata, sectlabel, file_header_info)
 
     if reqmeta:
         metaspecs[metadefs.WCL_META_REQ] = OrderedDict()
@@ -69,7 +69,9 @@ def get_metadata_specs(ftype, filetype_metadata, file_header_info=None, sectlabe
     return metaspecs
 
 ##################################################################################################
-def create_file_metadata_dict(filetype, filetype_metadata, sectlabel = None, file_header_info=None):
+
+
+def create_file_metadata_dict(filetype, filetype_metadata, sectlabel=None, file_header_info=None):
     reqmeta = {}
     optmeta = {}
     updatemeta = {}
@@ -78,12 +80,12 @@ def create_file_metadata_dict(filetype, filetype_metadata, sectlabel = None, fil
         for hdname in filetype_metadata[filetype]:
             if isinstance(filetype_metadata[filetype][hdname], dict):
                 #print "Working on metadata dict for hdname=%s" % hdname
-    
+
                 # required
                 if fmdefs.META_REQUIRED in filetype_metadata[filetype][hdname]:
-                    (treq, tupdate) = create_one_sect_metadata_info(hdname, fmdefs.META_REQUIRED, 
+                    (treq, tupdate) = create_one_sect_metadata_info(hdname, fmdefs.META_REQUIRED,
                                                                     filetype_metadata[filetype][hdname][fmdefs.META_REQUIRED],
-                                                                    sectlabel, file_header_info) 
+                                                                    sectlabel, file_header_info)
                     if treq is not None:
                         #print "found required"
                         for k in treq:
@@ -114,7 +116,7 @@ def create_file_metadata_dict(filetype, filetype_metadata, sectlabel = None, fil
                                 optmeta[k] += "," + topt[k]
                             else:
                                 optmeta[k] = topt[k]
-                            
+
                     if tupdate is not None:
                         #print "found optional update"
                         for k in tupdate:
@@ -133,7 +135,7 @@ def create_file_metadata_dict(filetype, filetype_metadata, sectlabel = None, fil
 
 
 #####################################################################################################
-def create_one_sect_metadata_info(whichhdu, derived_from, filetype_metadata, sectlabel = None, file_header_info=None):
+def create_one_sect_metadata_info(whichhdu, derived_from, filetype_metadata, sectlabel=None, file_header_info=None):
 
     metainfo = OrderedDict()
     updatemeta = OrderedDict()
@@ -141,28 +143,31 @@ def create_one_sect_metadata_info(whichhdu, derived_from, filetype_metadata, sec
     hdustr = ''
     if whichhdu.lower() != 'primary' and whichhdu != '0':
         hdustr = ':%s' % whichhdu
-    
 
     if fmdefs.META_HEADERS in filetype_metadata:
-        keylist = [ '%s%s' % (k,hdustr) for k in filetype_metadata[fmdefs.META_HEADERS].keys()]  # add which header to keys
+        keylist = ['%s%s' % (k, hdustr)
+                             for k in filetype_metadata[fmdefs.META_HEADERS].keys()]  # add which header to keys
         metainfo[fmdefs.META_HEADERS] = ','.join(keylist)
 
     if fmdefs.META_COMPUTE in filetype_metadata:
         if file_header_info is not None:   # if supposed to update headers and update DB
-            updatemeta.update(create_update_items(derived_from, filetype_metadata[fmdefs.META_COMPUTE].keys(), file_header_info))
+            updatemeta.update(create_update_items(
+                derived_from, filetype_metadata[fmdefs.META_COMPUTE].keys(), file_header_info))
 
             if fmdefs.META_HEADERS not in metainfo:
                 metainfo[fmdefs.META_HEADERS] = ""
             else:
                 metainfo[fmdefs.META_HEADERS] += ','
-            metainfo[fmdefs.META_HEADERS] += ','.join(filetype_metadata[fmdefs.META_COMPUTE].keys())  # after update, keys in primary
+            # after update, keys in primary
+            metainfo[fmdefs.META_HEADERS] += ','.join(filetype_metadata[fmdefs.META_COMPUTE].keys())
 
         else:  # just compute values for DB
             metainfo[fmdefs.META_COMPUTE] = ','.join(filetype_metadata[fmdefs.META_COMPUTE].keys())
 
     if fmdefs.META_COPY in filetype_metadata:
         if file_header_info is not None:   # if supposed to update headers and update DB
-            updatemeta.update(create_copy_items(whichhdu, derived_from, filetype_metadata[fmdefs.META_COPY].keys()))
+            updatemeta.update(create_copy_items(whichhdu, derived_from,
+                              filetype_metadata[fmdefs.META_COPY].keys()))
             if fmdefs.META_HEADERS not in metainfo:
                 metainfo[fmdefs.META_HEADERS] = ""
             else:
@@ -170,7 +175,8 @@ def create_one_sect_metadata_info(whichhdu, derived_from, filetype_metadata, sec
 
             metainfo[fmdefs.META_HEADERS] += ','.join(filetype_metadata[fmdefs.META_COPY].keys())
         else:  # just compute values for DB
-            keylist = [ '%s%s' % (k,hdustr) for k in filetype_metadata[fmdefs.META_COPY].keys()]  # add which header to keys
+            keylist = ['%s%s' % (k, hdustr)
+                                 for k in filetype_metadata[fmdefs.META_COPY].keys()]  # add which header to keys
             if fmdefs.META_HEADERS not in metainfo:
                 metainfo[fmdefs.META_HEADERS] = ""
             else:
@@ -194,7 +200,6 @@ def create_one_sect_metadata_info(whichhdu, derived_from, filetype_metadata, sec
     return (metainfo, updatemeta)
 
 
-
 #######################################################################
 def create_copy_items(srchdu, metastatus, file_header_names):
     """ Create the update wcl for headers that should be copied from another header """
@@ -206,10 +211,10 @@ def create_copy_items(srchdu, metastatus, file_header_names):
         elif metastatus == fmdefs.META_OPTIONAL:
             updateDict[name] = "$OPTCOPY{%s:%s}" % (name.upper(), srchdu)
         else:
-            miscutils.fwdie('Error:  Unknown metadata metastatus (%s)' % (metastatus), metadefs.MD_EXIT_FAILURE)
+            miscutils.fwdie('Error:  Unknown metadata metastatus (%s)' %
+                            (metastatus), metadefs.MD_EXIT_FAILURE)
 
     return updateDict
-
 
 
 ###########################################################################
@@ -221,7 +226,8 @@ def create_update_items(metastatus, file_header_names, file_header_info, header_
         #print "looking for %s in file_header_info" % name
         if name not in file_header_info:
             #print "file_header_info.keys() = ", file_header_info.keys()
-            miscutils.fwdie('Error: Missing entry in file_header_info for %s' % name, metadefs.MD_EXIT_FAILURE)
+            miscutils.fwdie('Error: Missing entry in file_header_info for %s' %
+                            name, metadefs.MD_EXIT_FAILURE)
 
         # Example: $HDRFNC{BAND}/Filter identifier/str
         if header_value is not None and name in header_value:
@@ -231,14 +237,17 @@ def create_update_items(metastatus, file_header_names, file_header_info, header_
         elif metastatus == fmdefs.META_OPTIONAL:
             updateDict[name] = "$OPTFNC{%s}" % (name.upper())
         else:
-            miscutils.fwdie('Error:  Unknown metadata metastatus (%s)' % (metastatus), metadefs.MD_EXIT_FAILURE)
+            miscutils.fwdie('Error:  Unknown metadata metastatus (%s)' %
+                            (metastatus), metadefs.MD_EXIT_FAILURE)
 
         if file_header_info[name]['fits_data_type'].lower() == 'none':
-            miscutils.fwdie('Error:  Missing fits_data_type for file header %s\nCheck entry in OPS_FILE_HEADER table' % name, metadefs.MD_EXIT_FAILURE)
+            miscutils.fwdie('Error:  Missing fits_data_type for file header %s\nCheck entry in OPS_FILE_HEADER table' %
+                            name, metadefs.MD_EXIT_FAILURE)
 
         # Requires 'none' to not be a valid description
         if file_header_info[name]['description'].lower() == 'none':
-            miscutils.fwdie('Error:  Missing description for file header %s\nCheck entry in OPS_FILE_HEADER table' % name, metadefs.MD_EXIT_FAILURE)
+            miscutils.fwdie('Error:  Missing description for file header %s\nCheck entry in OPS_FILE_HEADER table' %
+                            name, metadefs.MD_EXIT_FAILURE)
 
         updateDict[name] += "/%s/%s" % (file_header_info[name]['description'],
                                         file_header_info[name]['fits_data_type'])
@@ -286,7 +295,7 @@ def update_headers_file(hdulist, update_info):
                         specmf = getattr(spmeta, 'func_%s' % funckey.lower())
                         val = specmf(fullname, hdulist, whichhdu)
                         if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
-                            miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" % \
+                            miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" %
                                                     (key.upper(), val, data[1]))
                         hdr[key.upper()] = (val, data[1])
                 elif '$OPTFNC' in val:
@@ -300,15 +309,14 @@ def update_headers_file(hdulist, update_info):
                             miscutils.fwdebug_print("INFO: Optional value %s not found" % (key))
                         else:
                             if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
-                                miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" % 
+                                miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" %
                                                         (key.upper(), val, data[1]))
                             hdr[key.upper()] = (val, data[1])
                 else:
                     if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
-                        miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" % \
+                        miscutils.fwdebug_print("INFO: hdr.update(%s, %s, %s)" %
                                                 (key.upper(), val, data[1]))
                     hdr[key.upper()] = (val, data[1])
-
 
     if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
         miscutils.fwdebug_print("INFO: end")
@@ -341,7 +349,8 @@ def convert_metadata_specs(metadata_def, file_header_info):
                 metadata2['wcl'].extend(dict1['w'].keys())
             if 'c' in dict1:
                 metadata2['headers'][hdu].extend(dict1['c'].keys())
-                metadata2['update'][hdu].update(create_update_items(metastatus, dict1['c'].keys(), file_header_info, header_value=None))
+                metadata2['update'][hdu].update(create_update_items(
+                    metastatus, dict1['c'].keys(), file_header_info, header_value=None))
             if 'h' in dict1:
                 metadata2['headers'][hdu].extend(dict1['h'].keys())
 
@@ -367,7 +376,7 @@ def gather_metadata_file(hdulist, fullname, metadata_defs, extra_info):
         miscutils.fwdebug_print("INFO: metadata_defs=%s" % (metadata_defs))
         miscutils.fwdebug_print("INFO: extra_info=%s" % (extra_info))
 
-    metadata = { 'fullname': fullname }
+    metadata = {'fullname': fullname}
 
     if 'wcl' in metadata_defs:
         if miscutils.fwdebug_check(6, 'FM_METAUTILS_DEBUG'):
@@ -405,7 +414,8 @@ def gather_metadata_file(hdulist, fullname, metadata_defs, extra_info):
                     metadata[key] = fitsutils.get_hdr_value(hdulist, key.upper(), hdu)
                 except KeyError:
                     if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
-                        miscutils.fwdebug_print("INFO: didn't find key %s in %s header of file %s" % (key, hdu, fullname))
+                        miscutils.fwdebug_print(
+                            "INFO: didn't find key %s in %s header of file %s" % (key, hdu, fullname))
 
     if miscutils.fwdebug_check(3, 'FM_METAUTILS_DEBUG'):
         miscutils.fwdebug_print("INFO: end")

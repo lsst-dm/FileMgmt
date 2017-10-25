@@ -35,15 +35,15 @@ def http_code_str(hcode):
                 '404': 'Not Found (check url exists and is readable)',
                 '405': 'Method not allowed',
                 '429': 'Too Many Requests (check transfer throttling)',
-                '500': 'Internal Server Error', 
+                '500': 'Internal Server Error',
                 '501': 'Not implemented/understood',
                 '507': 'Insufficient storage (check disk space)'}
-
 
     # convert given code to str (converting to int can fail)
     if str(hcode) in code2str:
         codestr = code2str[str(hcode)]
     return codestr
+
 
 def curl_exitcode_str(errorcode):
     errorcode = int(errorcode)
@@ -123,6 +123,7 @@ def curl_exitcode_str(errorcode):
         errstr = code2str[errorcode]
     return errstr
 
+
 class HttpUtils():
     copyfiles_called = 0
 
@@ -142,7 +143,6 @@ class HttpUtils():
             miscutils.fwdie("Unable to get curl password (%s)" % err, fmdefs.FM_EXIT_FAILURE)
 
         self.existing_directories = set()
-
 
     def check_url(self, P):
         """See if P is a url.
@@ -190,8 +190,6 @@ class HttpUtils():
             (type, value, trback) = sys.exc_info()
             traceback.print_exception(type, value, trback, file=sys.stdout)
             return False
-
-
 
     def run_curl_command(self, cmd, isTest=False, useShell=False, curlConsoleOutputFile='curl_stdout.txt',
                          secondsBetweenRetries=30, numTries=5, fsize=0, src=None, dst=None, verify=False):
@@ -301,11 +299,13 @@ class HttpUtils():
                 print "Directory info"
                 sys.stdout.flush()
                 if miscutils.fwdebug_check(10, "HTTP_UTILS_DEBUG"):
-                    stat = subprocess.Popen("pwd; find . -exec ls -ld {} \;", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    stat = subprocess.Popen("pwd; find . -exec ls -ld {} \;", shell=True,
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     curl_stdout = stat.communicate()[0]
                     print curl_stdout
                 elif src is not None:
-                    stat = subprocess.Popen('pwd; ls -ld %s' % (src), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    stat = subprocess.Popen('pwd; ls -ld %s' % (src), shell=True,
+                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     curl_stdout = stat.communicate()[0]
                     print curl_stdout
                 else:
@@ -328,12 +328,14 @@ class HttpUtils():
                         print "Running commands to %s for diagnostics" % hname
                         print "\nPinging %s" % hname
                         sys.stdout.flush()
-                        stat = subprocess.Popen("ping -c 4 %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        stat = subprocess.Popen("ping -c 4 %s" % hname, shell=True,
+                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         curl_stdout = stat.communicate()[0]
                         print curl_stdout
                         print "\nRunning traceroute to %s" % hname
                         sys.stdout.flush()
-                        stat = subprocess.Popen("traceroute %s" % hname, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                        stat = subprocess.Popen("traceroute %s" % hname, shell=True,
+                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         curl_stdout = stat.communicate()[0]
                         print curl_stdout
                     except:   # print exception but continue
@@ -365,7 +367,8 @@ class HttpUtils():
 
             raise Exception(msg)
 
-        if os.path.isfile('curl_stdout.txt'):   # don't use curlConsoleOutputFile variable here.   That deletes file just copied
+        # don't use curlConsoleOutputFile variable here.   That deletes file just copied
+        if os.path.isfile('curl_stdout.txt'):
             os.remove('curl_stdout.txt')
         if not isTest:
             return time.time()-starttime
@@ -381,7 +384,8 @@ class HttpUtils():
         m = re.match("(http://[^/]+)(/.*)", f)
         for x in miscutils.get_list_directories([m.group(2)]):
             if x not in self.existing_directories:
-                self.run_curl_command("curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
+                self.run_curl_command(
+                    "curl -f -S -s -K - -w 'http_code: %%{http_code}\\n' -X MKCOL %s" % m.group(1)+x, useShell=True)
                 self.existing_directories.add(x)
 
     def copyfiles(self, filelist, tstats, secondsBetweenRetriesC=30, numTriesC=5, verify=False):
@@ -398,10 +402,10 @@ class HttpUtils():
                     fsize = fdict['filesize']
                 try:
                     (src, isurl_src) = self.check_url(fdict['src'])
-                    (dst,isurl_dst) = self.check_url(fdict['dst'])
+                    (dst, isurl_dst) = self.check_url(fdict['dst'])
                     if (isurl_src and isurl_dst) or (not isurl_src and not isurl_dst):
                         miscutils.fwdie("Exactly one of isurl_src and isurl_dst has to be true (values: %s %s %s %s)"
-                              % (isurl_src, src, isurl_dst, dst), fmdefs.FM_EXIT_FAILURE)
+                                        % (isurl_src, src, isurl_dst, dst), fmdefs.FM_EXIT_FAILURE)
                     common_switches = "-f -S -s -K - -w \'http_code:%{http_code}\\n\'"
                     copy_time = None
 
@@ -419,7 +423,7 @@ class HttpUtils():
                         if len(path) > 0 and not os.path.exists(path):
                             raise Exception("Error: path still missing after coremakedirs (%s)" % path)
                         copy_time = self.run_curl_command("curl %s %s" % (common_switches, src), curlConsoleOutputFile=dst,
-                                                          useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC,verify=verify)
+                                                          useShell=True, secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, verify=verify)
                         if tstats is not None:
                             tstats.stat_end_file(0, fsize)
                     elif isurl_dst:   # if remote file
@@ -429,7 +433,7 @@ class HttpUtils():
                         # create remote paths
                         self.create_http_intermediate_dirs(dst)
                         copy_time = self.run_curl_command("curl %s -T %s -X PUT %s" % (common_switches, src, dst), useShell=True,
-                                                      secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, fsize=fsize, src=src, dst=dst, verify=verify)
+                                                          secondsBetweenRetries=secondsBetweenRetriesC, numTries=numTriesC, fsize=fsize, src=src, dst=dst, verify=verify)
 
                         if tstats is not None:
                             tstats.stat_end_file(0, fsize)
@@ -469,7 +473,8 @@ class HttpUtils():
 
         finally:
             print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
-            (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive, num_copies_from_archive, total_copy_time_from_archive, time.time())
+                (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive,
+                 num_copies_from_archive, total_copy_time_from_archive, time.time())
 
         HttpUtils.copyfiles_called += 1
         return (status, filelist)
@@ -509,7 +514,8 @@ class HttpUtils():
                                                'src': 'http://desar2.cosmology.illinois.edu/DESTesting/bar/arggdfsbqwr.txt'}}
 
         shutil.rmtree('test_dh', True)
-        with open("testfile_dh.txt", "w") as f: f.write("hello, world")
+        with open("testfile_dh.txt", "w") as f:
+            f.write("hello, world")
 
         self.copyfiles(test_filelist1, None)
         self.copyfiles(test_filelist2, None)
@@ -517,16 +523,20 @@ class HttpUtils():
             print "Transfer of test_dh2.txt seems ok"
         else:
             miscutils.fwdie("Transfer of test_dh2.txt failed", fmdefs.FM_EXIT_FAILURE)
-        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
+        self.run_curl_command(
+            "curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/testfile_dh.txt")
 
         self.copyfiles(test_filelist3, None)
         self.copyfiles(test_filelist4, None)
         if os.path.isfile('test_dh/testfile_dh3.txt') and os.path.getsize('test_dh/testfile_dh3.txt') == 12:
             print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
         else:
-            miscutils.fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed", fmdefs.FM_EXIT_FAILURE)
-        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
-        self.run_curl_command("curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
+            miscutils.fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed",
+                            fmdefs.FM_EXIT_FAILURE)
+        self.run_curl_command(
+            "curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/testfile_dh3.txt")
+        self.run_curl_command(
+            "curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
         (status, filelist5_out) = self.copyfiles(test_filelist5, None, secondsBetweenRetriesC=1, numTriesC=2)
         if filelist5_out['testfile_dh5.txt'].has_key('err') and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':

@@ -49,7 +49,7 @@ class FtMgmtSNManifest(FtMgmtGeneric):
         self.dbh.load_filename_gtt(byfilename.keys())
 
         dbq = "select m.manifest_filename from %s m, %s g where m.manifest_filename=g.filename" % \
-                 ("MANIFEST_EXPOSURE", dmdbdefs.DB_GTT_FILENAME)
+            ("MANIFEST_EXPOSURE", dmdbdefs.DB_GTT_FILENAME)
         curs = self.dbh.cursor()
         curs.execute(dbq)
 
@@ -73,14 +73,14 @@ class FtMgmtSNManifest(FtMgmtGeneric):
             miscutils.fwdebug_print("INFO: beg  file=%s" % (fullname))
 
         metadata = FtMgmtGeneric._gather_metadata_file(self, fullname, **kwargs)
-        
+
         # need nite for the archive path
         with open(fullname, 'r') as jsonfh:
             line = jsonfh.readline()
             linedata = json.loads(line)
             expcnt = 0
             while expcnt < len(linedata['exposures']) and \
-                  'date' not in linedata['exposures'][expcnt]:
+                    'date' not in linedata['exposures'][expcnt]:
                 expcnt += 1
             if expcnt >= len(linedata['exposures']):
                 raise KeyError('Could not find date value for any exposure in manifest')
@@ -90,7 +90,6 @@ class FtMgmtSNManifest(FtMgmtGeneric):
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: end")
         return metadata
-
 
     ######################################################################
     def ingest_contents(self, listfullnames, **kwargs):
@@ -105,7 +104,6 @@ class FtMgmtSNManifest(FtMgmtGeneric):
         for fname in listfullnames:
             all_exposures = fmutils.read_json_single(fname, all_mandatory_exposure_keys)
             self.ingestall_exposures(all_exposures)
-
 
     ######################################################################
     def insert_dictionary_db(self, query, dictionary):
@@ -149,7 +147,6 @@ class FtMgmtSNManifest(FtMgmtGeneric):
 
         """
 
-
         newdicttionary = {}
         for key in ['CAMSYM', 'EXPNUM', 'MANIFEST_FILENAME', 'FIELD', 'BAND', 'EXPTIME', 'NITE']:
             newdicttionary[key] = all_exposures[key]
@@ -167,7 +164,6 @@ class FtMgmtSNManifest(FtMgmtGeneric):
                 sql = """insert into MANIFEST_EXPOSURE (CAMSYM,EXPNUM,MANIFEST_FILENAME,NITE,FIELD,BAND,EXPTIME) VALUES
                                     (:CAMSYM, :EXPNUM, :MANIFEST_FILENAME, :NITE, :FIELD, :BAND, :EXPTIME)"""
 
-
                 if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
                     miscutils.fwdebug_print("sql = %s " % (sql))
                 success = self.insert_dictionary_db(sql, dict2ingest)
@@ -178,7 +174,6 @@ class FtMgmtSNManifest(FtMgmtGeneric):
             except cx_Oracle.IntegrityError as exc:
                 print "error while inserting into EXPOSURES_IN_MANIFEST: ", exc
                 raise
-
 
         ########################################################################################
         #
@@ -266,4 +261,3 @@ class FtMgmtSNManifest(FtMgmtGeneric):
             except cx_Oracle.IntegrityError as exc:
                 print "error while inserting into SN_SUBMIT_REQUEST: ", exc
                 raise
-

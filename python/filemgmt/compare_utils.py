@@ -7,10 +7,12 @@ import despydmdb.desdmdbi as desdmdbi
 import disk_utils_local as diskutils
 import db_utils_local as dbutils
 
+
 class Args(object):
     def __init__(self, **kw):
         for item, val in kw.iteritems():
             setattr(self, item, val)
+
 
 def validate_args(dbh, args):
     """ Make sure command line arguments have valid values 
@@ -97,10 +99,11 @@ def print_all_files(comparison_info, files_from_db, files_from_disk):
             fdisk_str = ""
 
         cmp = 'X'
-        if fname in comparison_info['equal']: 
+        if fname in comparison_info['equal']:
             cmp = '='
-            
+
         print "%-140s %s %-140s" % (fdb_str, cmp, fdisk_str)
+
 
 def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, check_filesize, duplicates, db_duplicates):
     """ Print only differences in file lists 
@@ -134,7 +137,6 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
         for fname in sorted(comparison_info['dbonly']):
             fdb = files_from_db[fname]
             print "\t%s/%s" % (fdb['path'], fname)
-    
 
     if len(comparison_info['diskonly']) > 0:
         print "\nFiles only found on disk --------- "
@@ -158,8 +160,8 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
                     first = False
                 addon = ""
                 if fname in files_from_db and files_from_db[fname]['path'] == pth:
-                    addon ="  (DB Match)"
-                print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
+                    addon = "  (DB Match)"
+                print "      %s %s/%s   %i%s" % (start, pth, d, listing[pth], addon)
 
     if len(comparison_info['path']) > 0:
         print "\nPath mismatch (file name, db path, disk path) --------- "
@@ -169,7 +171,7 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
                 addon = " *"
             fdb = files_from_db[fname]
             fdisk = files_from_disk[fname]
-            print "\t%s\t%s\t%s%s" % (fname, fdb['path'],fdisk['relpath'], addon)
+            print "\t%s\t%s\t%s%s" % (fname, fdb['path'], fdisk['relpath'], addon)
         if len(comparison_info['duplicates']) > 0:
             print "  The following files have multiple disk paths on disk (path  filesize):"
             for fname in comparison_info['duplicates']:
@@ -183,8 +185,8 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
                     first = False
                 addon = ""
                 if fname in files_from_db and files_from_db[fname]['path'] == pth:
-                    addon ="  (DB Match)"
-                print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
+                    addon = "  (DB Match)"
+                print "      %s %s/%s   %i%s" % (start, pth, d, listing[pth], addon)
 
     if len(comparison_info['filesize']) > 0:
         print "\nFilesize mismatch (File name, size in DB, size on disk) --------- "
@@ -215,8 +217,8 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
                     first = False
                 addon = ""
                 if d in files_from_db and files_from_db[d]['path'] == pth:
-                    addon ="  (DB Match)"
-                print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
+                    addon = "  (DB Match)"
+                print "      %s %s/%s   %i%s" % (start, pth, d, listing[pth], addon)
 
     if len(db_duplicates) > 0:
         print "\nThe following files have multiple entries in the database (path  filesize):"
@@ -232,8 +234,9 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
                 first = False
             addon = ""
             if d in files_from_disk and files_from_disk[d]['path'] == pth:
-                addon ="  (Disk Match)"
-            print "      %s %s/%s   %i%s" % (start,pth,d, listing[pth],addon)
+                addon = "  (Disk Match)"
+            print "      %s %s/%s   %i%s" % (start, pth, d, listing[pth], addon)
+
 
 def run_compare(args):
     if args.dbh is None:
@@ -244,9 +247,11 @@ def run_compare(args):
         curs = dbh.cursor()
         dates = args.date_range.split(',')
         if len(dates) == 1:
-            dr = "submittime>=TO_DATE('%s 00:00:01', 'YYYY-MM-DD HH24:MI:SS') and submittime<=TO_DATE('%s 23:59:59', 'YYYY-MM-DD HH24:MI:SS')" % (dates[0], dates[0])
+            dr = "submittime>=TO_DATE('%s 00:00:01', 'YYYY-MM-DD HH24:MI:SS') and submittime<=TO_DATE('%s 23:59:59', 'YYYY-MM-DD HH24:MI:SS')" % (
+                dates[0], dates[0])
         else:
-            dr = "submittime>=TO_DATE('%s 00:00:01', 'YYYY-MM-DD HH24:MI:SS') and submittime<=TO_DATE('%s 23:59:59', 'YYYY-MM-DD HH24:MI:SS')" % (dates[0], dates[1])
+            dr = "submittime>=TO_DATE('%s 00:00:01', 'YYYY-MM-DD HH24:MI:SS') and submittime<=TO_DATE('%s 23:59:59', 'YYYY-MM-DD HH24:MI:SS')" % (
+                dates[0], dates[1])
         sql = "select id from pfw_attempt where %s" % dr
         if args.pipeline:
             sql += " and subpipeprod='%s'" % args.pipeline
@@ -262,6 +267,7 @@ def run_compare(args):
         return count
     return do_compare(dbh, args)
 
+
 def do_compare(dbh, args):
     """ Main control """
     archive_root, archive_path, relpath, operator, pfwid = validate_args(dbh, args)
@@ -269,13 +275,16 @@ def do_compare(dbh, args):
     #print archive_root
     if args.debug:
         print "From DB"
-    files_from_db, db_duplicates = dbutils.get_files_from_db(dbh, relpath, args.archive, pfwid, None, debug=args.debug, quick=args.quick)
+    files_from_db, db_duplicates = dbutils.get_files_from_db(
+        dbh, relpath, args.archive, pfwid, None, debug=args.debug, quick=args.quick)
     if args.debug:
         print "From disk"
-    files_from_disk, duplicates = diskutils.get_files_from_disk(relpath, archive_root, args.md5sum, args.debug)
+    files_from_disk, duplicates = diskutils.get_files_from_disk(
+        relpath, archive_root, args.md5sum, args.debug)
     if args.debug:
         print "Compare"
-    comparison_info = diskutils.compare_db_disk(files_from_db, files_from_disk, duplicates, args.md5sum, args.filesize, args.debug,archive_root)
+    comparison_info = diskutils.compare_db_disk(
+        files_from_db, files_from_disk, duplicates, args.md5sum, args.filesize, args.debug, archive_root)
 
     if not args.script and not args.silent:
         print "\nPath = %s" % (archive_path)
@@ -292,7 +301,7 @@ def do_compare(dbh, args):
             print "Files with multiple paths on disk  = %i" % len(duplicates)
         # print summary of comparison
         print "Comparison Summary"
-    
+
         print "\tEqual:\t%i" % len(comparison_info['equal'])
         print "\tDB only:\t%i" % len(comparison_info['dbonly'])
         print "\tDisk only:\t%i" % len(comparison_info['diskonly'])
@@ -305,7 +314,8 @@ def do_compare(dbh, args):
         if args.debug:
             print_all_files(comparison_info, files_from_db, files_from_disk)
         elif args.verbose:
-            diff_files(comparison_info, files_from_db, files_from_disk, args.md5sum, args.filesize, duplicates, db_duplicates)
+            diff_files(comparison_info, files_from_db, files_from_disk,
+                       args.md5sum, args.filesize, duplicates, db_duplicates)
         if len(comparison_info['dbonly']) == len(comparison_info['diskonly']) == len(comparison_info['path']) == len(comparison_info['filesize']) == 0:
             if 'md5sum' in comparison_info:
                 if len(comparison_info['md5sum']) != 0:
@@ -333,6 +343,7 @@ def do_compare(dbh, args):
         if not args.silent:
             print "%s  ERROR" % loc
         return 1
+
 
 def compare(dbh=None, des_services=None, section=None, archive='desar2home', reqnum=None, unitname=None, attnum=None, relpath=None,
             pfwid=None, date_range=None, pipeline=None, filesize=True, md5sum=False, quick=False, debug=False, script=False, verbose=False, silent=True):

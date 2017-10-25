@@ -15,6 +15,7 @@ import ConfigParser
 import despymisc.miscutils as miscutils
 import despydmdb.desdmdbi as desdmdbi
 
+
 class TransferStatsDB(desdmdbi.DesDmDbi):
     """
         Class with functionality for tracking transfer statistics in DB
@@ -24,14 +25,13 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
     def requested_config_vals():
         """ return dictionary describing what values this class uses along
             with whether they are optional or required """
-        return {'use_db':'opt', 'des_services':'opt', 'des_db_section':'req',
-                'parent_task_id':'req', 'root_task_id':'req',
-                'transfer_stats_per_file':'opt'}
-
+        return {'use_db': 'opt', 'des_services': 'opt', 'des_db_section': 'req',
+                'parent_task_id': 'req', 'root_task_id': 'req',
+                'transfer_stats_per_file': 'opt'}
 
     def __init__(self, config, fullcfg=None):
         if not miscutils.use_db(config):
-            miscutils.fwdie("Error:  TransferStatsDB class requires DB "\
+            miscutils.fwdie("Error:  TransferStatsDB class requires DB "
                             " but was told not to use DB", 1)
 
         self.currvals = {}
@@ -48,7 +48,7 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         try:
             desdmdbi.DesDmDbi.__init__(self, self.desservices, self.section)
         except (ConfigParser.NoSectionError, IOError) as err:
-            miscutils.fwdie("Error: problem connecting to database: %s\n" \
+            miscutils.fwdie("Error: problem connecting to database: %s\n"
                             "\tCheck desservices file and environment variables" % err, 1)
 
         self.parent_task_id = config['parent_task_id']
@@ -80,7 +80,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
 
         return str(mydict)
 
-
     def stat_beg_batch(self, transfer_name, src, dst, transclass=None):
         """ Starting a batch transfer between src and dst (archive or job scratch) """
 
@@ -106,7 +105,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
             miscutils.fwdebug_print("end")
         return self.currvals['batch_task_id']
-
 
     def stat_end_batch(self, status, totbytes=0, numfiles=0, task_id=None):
         """ Update rows for end of a batch transfer and commit """
@@ -161,8 +159,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
             if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
                 miscutils.fwdebug_print("end - file_task_id = %s" % self.currvals['file_task_id'])
         return self.currvals['file_task_id']
-
-
 
     def stat_end_file(self, status, nbytes=0, task_id=None):
         """ Update rows for end of file transfer and commit """

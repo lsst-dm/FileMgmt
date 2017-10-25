@@ -2,6 +2,7 @@
 
 # OSG/FNAL User Support, December 2013
 
+
 def Usage():
     sys.exit("""Summarize statistics from the output of the instrumented copyfiles()
    in eups/packages/Linux64/FileMgmt/python/filemgmt/http_utils.py
@@ -33,7 +34,7 @@ def summarize_copy_stats(fname):
     #  ('fromarchive') or from ('toarchive') the job, and whose second
     #  element is the total number of bytes spent copying that file in
     #  that direction.
-    
+
     for line in fileinput.input(fname):
         F = line.split()
         num_copies = max(num_copies, int(F[2])+1)
@@ -56,6 +57,7 @@ def summarize_copy_stats(fname):
         x[1] += int(F[4])
     return (num_copies, num_files, num_bytes_from, num_bytes_to, time_used, copy_stats)
 
+
 def record_repeated_copies(per_file_stats):
     """Return a dictionary of length-2 lists.
 The length-2 list whose key is i corresponds to the files that were copied i times.
@@ -68,12 +70,14 @@ need, the second element is the list of those file names.
 """
     R = {}
     for fname in per_file_stats.keys():
-        def safe_dereference(fname,direction,n):
+        def safe_dereference(fname, direction, n):
             if per_file_stats[fname].has_key(direction):
                 return per_file_stats[fname][direction][n]
             else:
                 return 0
-        def sum_stat(n): return safe_dereference(fname,'fromarchive',n) + safe_dereference(fname,'toarchive',n)
+
+        def sum_stat(n): return safe_dereference(fname, 'fromarchive', n) + \
+            safe_dereference(fname, 'toarchive', n)
         times_copied = sum_stat(0)
         bytes_copied = sum_stat(1)
         if not R.has_key(times_copied):
@@ -82,14 +86,15 @@ need, the second element is the list of those file names.
         R[times_copied][1].append(fname)
     return R
 
+
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'thL')
+        opts, args = getopt.getopt(sys.argv[1:], 'thL')
     except getopt.GetoptError, x:
         sys.exit('Error: ' + x.msg)
     optsd = dict(opts)
     if optsd.has_key('-h'):
-       Usage()
+        Usage()
     if optsd.has_key('-t'):
         import doctest
         doctest.testmod()   # verbose=True
@@ -102,7 +107,7 @@ if __name__ == "__main__":
             print "%d  %d  %s" % (times_copied, R[times_copied][0], len(R[times_copied][1]))
         print
         print "num_copies num_files bytes_from_archive  bytes_to_archive time_used(s)"
-        print " ".join(map(str,cs[0:5]))
+        print " ".join(map(str, cs[0:5]))
     else:
         for times_copied in R.keys():
             print "times_copied:%d" % times_copied

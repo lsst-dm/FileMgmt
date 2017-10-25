@@ -15,6 +15,7 @@ import ConfigParser
 import despymisc.miscutils as miscutils
 import despydmdb.desdmdbi as desdmdbi
 
+
 class TransferStatsDB(desdmdbi.DesDmDbi):
     """
         Class with functionality for tracking transfer statistics in DB
@@ -24,8 +25,7 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
     def requested_config_vals():
         """ return dictionary describing what values this class uses along
             with whether they are optional or required """
-        return {'transfer_stats_per_file':'opt'}
-
+        return {'transfer_stats_per_file': 'opt'}
 
     def __init__(self, config):
 
@@ -60,7 +60,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
     def __str__(self):
         return str(self.batchvals) + " ; " + str(self.filevals)
 
-
     ############################################################
     def print_batch_stats(self):
         """ Print stats for transfer batch """
@@ -71,7 +70,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
                self.batchvals['numfiles'], self.filevals['totbytes'],
                self.filevals['end_time'] - self.filesvals['start_time'],
                self.filevals['status'])
-
 
     ############################################################
     def print_file_stats(self):
@@ -89,7 +87,7 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         """ Starting a batch transfer between src and dst (archive or job scratch) """
 
         if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
-            miscutils.fwdebug_print("beg %s %s %s %s" % \
+            miscutils.fwdebug_print("beg %s %s %s %s" %
                                     (transfer_name, src, dst, transclass))
         self.batchvals['transfer_name'] = transfer_name
         self.batchvals['src'] = src
@@ -100,7 +98,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
             miscutils.fwdebug_print("end")
         return -1
-
 
     ############################################################
     def stat_end_batch(self, status, totbytes=0, numfiles=0, task_id=None):
@@ -122,7 +119,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
             miscutils.fwdebug_print("end")
 
-
     ############################################################
     def stat_beg_file(self, filename):
         """ save file transfer start info """
@@ -143,6 +139,6 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         if nbytes != 0:
             self.filevals['numbytes'] = nbytes
             self.batchvals['totbytes'] += nbytes
-            
+
         if self.transfer_stats_per_file:
             self.print_file_stats()

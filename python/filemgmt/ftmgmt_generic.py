@@ -32,8 +32,6 @@ class FtMgmtGeneric(object):
         self.dbh = dbh
         self.config = config
         self.filepat = filepat
-    
-
 
     ######################################################################
     def has_metadata_ingested(self, listfullnames):
@@ -59,7 +57,7 @@ class FtMgmtGeneric(object):
             metadata_table = 'desfile'
 
         dbq = "select m.filename from %s m, %s g where m.filename=g.filename" % \
-                 (metadata_table, dmdbdefs.DB_GTT_FILENAME)
+            (metadata_table, dmdbdefs.DB_GTT_FILENAME)
         curs = self.dbh.cursor()
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("Metadata check query: %s" % dbq)
@@ -120,13 +118,12 @@ class FtMgmtGeneric(object):
         metadata = self._gather_metadata_file(fullname)
 
         if do_update:
-            miscutils.fwdebug_print("WARN (%s): skipping file metadata update." % \
+            miscutils.fwdebug_print("WARN (%s): skipping file metadata update." %
                                     self.__class__.__name__)
 
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: end")
         return metadata
-
 
     ######################################################################
     def _gather_metadata_file(self, fullname, **kwargs):
@@ -156,24 +153,23 @@ class FtMgmtGeneric(object):
 
                 # get value directly from header
                 if 'h' in hddict[status_sect]:
-                    miscutils.fwdie("ERROR (%s): cannot read values from header %s = %s" % \
-                                    (self.__class__.__name__, hdname, 
+                    miscutils.fwdie("ERROR (%s): cannot read values from header %s = %s" %
+                                    (self.__class__.__name__, hdname,
                                      hddict[status_sect]['h'].keys()), 1)
 
                 # calculate value from different header values(s)
                 if 'c' in hddict[status_sect]:
-                    miscutils.fwdie("ERROR (%s): cannot calculate values = %s" % \
+                    miscutils.fwdie("ERROR (%s): cannot calculate values = %s" %
                                     (self.__class__.__name__, hddict[status_sect]['c'].keys()), 1)
 
                 # copy value from 1 hdu to primary
                 if 'p' in hddict[status_sect]:
-                    miscutils.fwdie("ERROR (%s): cannot copy values between headers = %s" % \
+                    miscutils.fwdie("ERROR (%s): cannot copy values between headers = %s" %
                                     (self.__class__.__name__, hddict[status_sect]['p'].keys()), 1)
 
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: end")
         return metadata
-
 
     ######################################################################
     def _gather_metadata_from_config(self, fullname, metakeys):
@@ -198,10 +194,9 @@ class FtMgmtGeneric(object):
 
         return metadata
 
-
     ######################################################################
     def _gather_metadata_from_filename(self, fullname, metakeys):
-        """ Parse filename using given filepat """ 
+        """ Parse filename using given filepat """
 
         if self.filepat is None:
             raise TypeError("None filepat for filetype %s" % self.filetype)
@@ -226,7 +221,6 @@ class FtMgmtGeneric(object):
 
             m = re.search(varpat, newfilepat)
 
-
         # now that have re pattern, parse the filename for values
         filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
 
@@ -241,7 +235,7 @@ class FtMgmtGeneric(object):
             raise ValueError("Pattern (%s) did not match filename (%s)" % (newfilepat, filename))
 
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_print("INFO: m.group() = %s" %  m.group())
+            miscutils.fwdebug_print("INFO: m.group() = %s" % m.group())
             miscutils.fwdebug_print("INFO: listvar = %s" % listvar)
 
         # only save values parsed from filename that were requested per metakeys
@@ -254,7 +248,6 @@ class FtMgmtGeneric(object):
                 mddict[key] = m.group(cnt+1)
             elif miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
                 miscutils.fwdebug_print("INFO: skipping key = %s because not in metakeys" % key)
-    
 
         if miscutils.fwdebug_check(6, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: mddict = %s" % mddict)

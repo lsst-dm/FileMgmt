@@ -16,7 +16,7 @@ import despymisc.miscutils as miscutils
 
 
 class arcp(object):
-    def __init__ (self, src, dst, config, argv):
+    def __init__(self, src, dst, config, argv):
         self.argv = argv
 
         if 'archive' not in config:
@@ -58,10 +58,10 @@ class arcp(object):
                 self.transfer_class = config['archive_transfer'][dst][src]
         else:
             err = True
-        
+
         if err:
             miscutils.fwdebug(2, "ARCP_DEBUG", "config = %s", config)
-            raise KeyError("'missing entry in config['archive_transfer'] for %s,%s" % (src,dst))
+            raise KeyError("'missing entry in config['archive_transfer'] for %s,%s" % (src, dst))
 
     def get_list_filenames(self, dbh, args):
         """ Get a lit of filenames whose specs are defined inputs to argparse """
@@ -84,7 +84,7 @@ class arcp(object):
             parser.add_argument('--%s' % c, action='store', default=None)
         myargs, unknown = parser.parse_known_args(args)
         myargs = vars(myargs)
-        key_vals = { k : myargs[k] for k in myargs if myargs[k] != None }
+        key_vals = {k: myargs[k] for k in myargs if myargs[k] != None}
 
         # create query string to get filenames
         querydict = {metatable: {'select_fields': ['filename'], 'key_vals': key_vals}}

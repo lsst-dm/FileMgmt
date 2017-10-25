@@ -19,6 +19,7 @@ import filemgmt.disk_utils_local as disk_utils_local
 DES_SERVICES = 'des_services'
 DES_HTTP_SECTION = 'des_http_section'
 
+
 class JobArchiveHttpCp(object):
     """
         Use http for transfers between job and home archive, and
@@ -28,7 +29,7 @@ class JobArchiveHttpCp(object):
     @staticmethod
     def requested_config_vals():
         """ Tell which values are req/opt for this object """
-        return {DES_SERVICES:'REQ', DES_HTTP_SECTION:'REQ'}
+        return {DES_SERVICES: 'REQ', DES_HTTP_SECTION: 'REQ'}
 
     def __init__(self, homeinfo, targetinfo, mvmtinfo, tstats, config=None):
         """ initialize object """
@@ -84,7 +85,6 @@ class JobArchiveHttpCp(object):
         if self.tstats is not None:
             self.tstats.stat_end_batch(status)
         return results
-
 
     def job2target(self, filelist):
         """ From inside job, push files to target archive from job scratch directory """

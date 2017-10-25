@@ -29,9 +29,9 @@ class FileMgmtNoDB ():
 
     @staticmethod
     def requested_config_vals():
-        return {'archive':'req', fmdefs.FILE_HEADER_INFO:'req', 'filetype_metadata':'req'}
+        return {'archive': 'req', fmdefs.FILE_HEADER_INFO: 'req', 'filetype_metadata': 'req'}
 
-    def __init__ (self, config=None, argv=None):
+    def __init__(self, config=None, argv=None):
         self.config = config
         self.argv = argv
 
@@ -40,13 +40,11 @@ class FileMgmtNoDB ():
         # returns python list of filenames
 
         raise Exception("NoDB filemgmt does not support this functionality")
-            
 
     def register_file_in_archive(self, filelist, args):
         # with no db, don't need to register
         miscutils.fwdebug_print("Nothing to do")
         return {}
-
 
     def file_has_metadata(self, filenames):
         return filenames
@@ -61,7 +59,7 @@ class FileMgmtNoDB ():
             if os.path.exists(archiveroot + '/' + filelist['path'] + '/' + f):
                 in_archive.append(f)
         return in_archive
-                
+
     def save_file_info(self, artifacts, metadata, prov, execids):
         pass
 
@@ -80,14 +78,12 @@ class FileMgmtNoDB ():
         else:
             return False
 
-
     def get_file_location(self, filelist, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
         fileinfo = self.get_file_archive_info(filelist, arname, compress_order)
         rel_filenames = {}
         for f, finfo in fileinfo.items():
             rel_filenames[f] = finfo['rel_filename']
         return rel_filenames
-
 
     # compression = compressed_only, uncompressed_only, prefer uncompressed, prefer compressed, either (treated as prefer compressed)
     def get_file_archive_info(self, filelist, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
@@ -103,7 +99,8 @@ class FileMgmtNoDB ():
             miscutils.fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
 
         if not isinstance(compress_order, list):
-            miscutils.fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)', 1)
+            miscutils.fwdie(
+                'Error:  Invalid compress_order.  It must be a list of compression extensions (including None)', 1)
 
         # walk archive to get all files
         fullnames = {}
@@ -111,8 +108,8 @@ class FileMgmtNoDB ():
             fullnames[p] = {}
 
         root = self.config['archive'][arname]['root']
-        root = root.rstrip("/")  # canonicalize - remove trailing / to ensure 
-        
+        root = root.rstrip("/")  # canonicalize - remove trailing / to ensure
+
         for (dirpath, dirnames, filenames) in os.walk(root, followlinks=True):
             for fname in filenames:
                 d = {}
@@ -125,7 +122,7 @@ class FileMgmtNoDB ():
                     compext = d['compression']
                 d['rel_filename'] = "%s/%s%s" % (d['path'], d['filename'], compext)
                 fullnames[d['compression']][d['filename']] = d
-                
+
         print "uncompressed:", len(fullnames[None])
         print "compressed:", len(fullnames['.fz'])
 
@@ -142,8 +139,6 @@ class FileMgmtNoDB ():
         print "archiveinfo = ", archiveinfo
         return archiveinfo
 
-
-
     # compression = compressed_only, uncompressed_only, prefer uncompressed, prefer compressed, either (treated as prefer compressed)
     def get_file_archive_info_path(self, path, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
 
@@ -158,7 +153,8 @@ class FileMgmtNoDB ():
             miscutils.fwdie('Error: Missing root in archive def (%s)' % self.config['archive'][arname], 1)
 
         if not isinstance(compress_order, list):
-            miscutils.fwdie('Error:  Invalid compress_order.  It must be a list of compression extensions (including None)', 1)
+            miscutils.fwdie(
+                'Error:  Invalid compress_order.  It must be a list of compression extensions (including None)', 1)
 
         # walk archive to get all files
         fullnames = {}
@@ -166,8 +162,8 @@ class FileMgmtNoDB ():
             fullnames[p] = {}
 
         root = self.config['archive'][arname]['root']
-        root = root.rstrip("/")  # canonicalize - remove trailing / to ensure 
-        
+        root = root.rstrip("/")  # canonicalize - remove trailing / to ensure
+
         list_by_name = {}
         for (dirpath, dirnames, filenames) in os.walk(root + '/' + path):
             for fname in filenames:
@@ -182,7 +178,7 @@ class FileMgmtNoDB ():
                 d['rel_filename'] = "%s/%s%s" % (d['path'], d['filename'], compext)
                 fullnames[d['compression']][d['filename']] = d
                 list_by_name[d['filename']] = True
-                
+
         print "uncompressed:", len(fullnames[None])
         print "compressed:", len(fullnames['.fz'])
 
@@ -201,4 +197,3 @@ class FileMgmtNoDB ():
 
     def commit(self):
         miscutils.fwdebug_print("Nothing to do")
-        

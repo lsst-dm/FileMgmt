@@ -28,6 +28,8 @@ def get_config_vals(archive_info, config, keylist):
     return info
 
 ######################################################################
+
+
 def read_json_single(json_file, allMandatoryExposureKeys):
     """ Reads json manifest file """
 
@@ -71,7 +73,7 @@ def read_json_single(json_file, allMandatoryExposureKeys):
                             miscutils.fwdebug_print("\tacttime = %s" % my_header[i]['acttime'])
                         if miscutils.fwdebug_check(6, 'FMUTILS_DEBUG'):
                             miscutils.fwdebug_print("Entire exposure %s = %s" % (i, my_header[i]))
-                    
+
                         numseq = my_header[i]['sequence']
                         mytime = my_header[i]['acttime']
                         #if mytime > 10 and numseq['seqnum'] == 2:
@@ -84,14 +86,14 @@ def read_json_single(json_file, allMandatoryExposureKeys):
                         try:
                             for mandatoryExposureKey in allMandatoryExposureKeys:
                                 if miscutils.fwdebug_check(3, 'FMUTILS_DEBUG'):
-                                    miscutils.fwdebug_print("mandatory key %s" % \
+                                    miscutils.fwdebug_print("mandatory key %s" %
                                                             mandatoryExposureKey)
                                 key = str(mandatoryExposureKey)
 
                                 if my_header[i][mandatoryExposureKey]:
                                     if miscutils.fwdebug_check(3, 'FMUTILS_DEBUG'):
-                                        miscutils.fwdebug_print("mandatory key '%s' found %s" % \
-                                                                (mandatoryExposureKey, 
+                                        miscutils.fwdebug_print("mandatory key '%s' found %s" %
+                                                                (mandatoryExposureKey,
                                                                  my_header[i][mandatoryExposureKey]))
                                     if miscutils.fwdebug_check(6, 'FMUTILS_DEBUG'):
                                         miscutils.fwdebug_print("allExposures in for: %s" % allExposures)
@@ -111,9 +113,8 @@ def read_json_single(json_file, allMandatoryExposureKeys):
                                     except KeyError:
                                         all_exposures[key] = [my_header[i][mandatoryExposureKey]]
 
-
                         except KeyError:
-                            miscutils.fwdebug_print("Error: missing key '%s' in json entity: %s " % \
+                            miscutils.fwdebug_print("Error: missing key '%s' in json entity: %s " %
                                                     (mandatoryExposureKey, my_header[i]))
                             raise
 
@@ -134,7 +135,8 @@ def read_json_single(json_file, allMandatoryExposureKeys):
                     camsym = 'D'   # no way to currently tell CAMSYM/INSTRUME from manifest file
 
                     if not newfield.startswith('SN-'):
-                        raise ValueError("Invalid field (%s).  set_type = '%s'" % (newfield, my_head['set_type']))
+                        raise ValueError("Invalid field (%s).  set_type = '%s'" %
+                                         (newfield, my_head['set_type']))
 
                     #if json_file contains a path or compression extension, then cut it to only the filename
                     jsonfile = miscutils.parse_fullname(json_file, miscutils.CU_PARSE_FILENAME)
@@ -168,5 +170,3 @@ def read_json_single(json_file, allMandatoryExposureKeys):
         miscutils.fwdebug_print("allExposures " % (all_exposures))
 
     return all_exposures
-
-
