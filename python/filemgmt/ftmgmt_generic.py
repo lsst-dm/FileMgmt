@@ -43,8 +43,8 @@ class FtMgmtGeneric(object):
 
         self.dbh.empty_gtt(dmdbdefs.DB_GTT_FILENAME)
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
-            miscutils.fwdebug_print("Loading filename_gtt with: %s" % byfilename.keys())
-        self.dbh.load_filename_gtt(byfilename.keys())
+            miscutils.fwdebug_print("Loading filename_gtt with: %s" % list(byfilename.keys()))
+        self.dbh.load_filename_gtt(list(byfilename.keys()))
 
         metadata_table = self.config['filetype_metadata'][self.filetype]['metadata_table']
 
@@ -132,17 +132,17 @@ class FtMgmtGeneric(object):
         metadefs = self.config['filetype_metadata'][self.filetype]
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: metadefs=%s" % (metadefs))
-        for hdname, hddict in metadefs['hdus'].items():
+        for hdname, hddict in list(metadefs['hdus'].items()):
             for status_sect in hddict:  # don't worry about missing here, ingest catches
                 # get value from filename
                 if 'f' in hddict[status_sect]:
-                    metakeys = hddict[status_sect]['f'].keys()
+                    metakeys = list(hddict[status_sect]['f'].keys())
                     mdata2 = self._gather_metadata_from_filename(fullname, metakeys)
                     metadata.update(mdata2)
 
                 # get value from wcl/config
                 if 'w' in hddict[status_sect]:
-                    metakeys = hddict[status_sect]['w'].keys()
+                    metakeys = list(hddict[status_sect]['w'].keys())
                     mdata2 = self._gather_metadata_from_config(fullname, metakeys)
                     metadata.update(mdata2)
 
@@ -150,17 +150,17 @@ class FtMgmtGeneric(object):
                 if 'h' in hddict[status_sect]:
                     miscutils.fwdie("ERROR (%s): cannot read values from header %s = %s" %
                                     (self.__class__.__name__, hdname,
-                                     hddict[status_sect]['h'].keys()), 1)
+                                     list(hddict[status_sect]['h'].keys())), 1)
 
                 # calculate value from different header values(s)
                 if 'c' in hddict[status_sect]:
                     miscutils.fwdie("ERROR (%s): cannot calculate values = %s" %
-                                    (self.__class__.__name__, hddict[status_sect]['c'].keys()), 1)
+                                    (self.__class__.__name__, list(hddict[status_sect]['c'].keys())), 1)
 
                 # copy value from 1 hdu to primary
                 if 'p' in hddict[status_sect]:
                     miscutils.fwdie("ERROR (%s): cannot copy values between headers = %s" %
-                                    (self.__class__.__name__, hddict[status_sect]['p'].keys()), 1)
+                                    (self.__class__.__name__, list(hddict[status_sect]['p'].keys())), 1)
 
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: end")

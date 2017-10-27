@@ -9,7 +9,7 @@ import json
 def get_config_vals(archive_info, config, keylist):
     """ Search given dicts for specific values """
     info = {}
-    for k, stat in keylist.items():
+    for k, stat in list(keylist.items()):
         if archive_info is not None and k in archive_info:
             info[k] = archive_info[k]
         elif config is not None and k in config:
@@ -40,7 +40,7 @@ def read_json_single(json_file, allMandatoryExposureKeys):
         for line in my_json:
             all_data = json.loads(line)
 
-            for key, value in all_data.items():
+            for key, value in list(all_data.items()):
                 if key == 'header':
                     #read the values for the header (date and set_type are here)
                     my_head = value

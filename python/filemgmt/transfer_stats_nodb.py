@@ -6,7 +6,7 @@
 
 __version__ = "$Rev$"
 
-import ConfigParser
+import configparser
 import despymisc.miscutils as miscutils
 import despydmdb.desdmdbi as desdmdbi
 
@@ -60,22 +60,22 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
         """ Print stats for transfer batch """
 
         # current epoch time, numfiles, numbytes, trans secs, status
-        print "TRANS_STATS_BATCH: %s %s %s %s %s %s" % \
+        print("TRANS_STATS_BATCH: %s %s %s %s %s %s" % \
               (time.time(), self.batchvals['transfer_name'],
                self.batchvals['numfiles'], self.filevals['totbytes'],
                self.filevals['end_time'] - self.filesvals['start_time'],
-               self.filevals['status'])
+               self.filevals['status']))
 
     ############################################################
     def print_file_stats(self):
         """ Print stats for transfer file """
 
         # current epoch time, file number, filename, filesize, trans secs, status
-        print "TRANS_STATS_FILE: %s %s %s %s %s %s" % \
+        print("TRANS_STATS_FILE: %s %s %s %s %s %s" % \
               (time.time(), self.batchvals['numfiles'],
                self.filevals['filename'], self.filevals['numbytes'],
                self.filevals['end_time'] - self.filesvals['start_time'],
-               self.filevals['status'])
+               self.filevals['status']))
 
     ############################################################
     def stat_beg_batch(self, transfer_name, src, dst, transclass=None):

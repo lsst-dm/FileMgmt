@@ -41,7 +41,7 @@ class FtMgmtSNManifest(FtMgmtGeneric):
             byfilename[filename] = fname
 
         self.dbh.empty_gtt(dmdbdefs.DB_GTT_FILENAME)
-        self.dbh.load_filename_gtt(byfilename.keys())
+        self.dbh.load_filename_gtt(list(byfilename.keys()))
 
         dbq = "select m.manifest_filename from %s m, %s g where m.manifest_filename=g.filename" % \
             ("MANIFEST_EXPOSURE", dmdbdefs.DB_GTT_FILENAME)
@@ -118,12 +118,12 @@ class FtMgmtSNManifest(FtMgmtGeneric):
         except cx_Oracle.DatabaseError as exc:
             error, = exc.args
             if error.code == 955:
-                print 'Table already exists'
+                print('Table already exists')
             elif error.code == 1031:
-                print 'Insufficient privileges'
-            print error.code
-            print error.message
-            print error.context
+                print('Insufficient privileges')
+            print(error.code)
+            print(error.message)
+            print(error.context)
             success = 0
             raise
         return success
@@ -149,7 +149,7 @@ class FtMgmtSNManifest(FtMgmtGeneric):
         #print "xx", all_exposures
         dict2ingest = {}
         for i in range(len(all_exposures['EXPTIME'])):
-            for key in newdicttionary.keys():
+            for key in list(newdicttionary.keys()):
                 keytoingest = key
                 valuetoingest = newdicttionary[key][i]
                 dict2ingest[keytoingest] = valuetoingest
@@ -167,7 +167,7 @@ class FtMgmtSNManifest(FtMgmtGeneric):
                     miscutils.fwdebug_print("Insert into EXPOSURES_IN_MANIFEST was successful..")
 
             except cx_Oracle.IntegrityError as exc:
-                print "error while inserting into EXPOSURES_IN_MANIFEST: ", exc
+                print("error while inserting into EXPOSURES_IN_MANIFEST: ", exc)
                 raise
 
         ########################################################################################
@@ -254,5 +254,5 @@ class FtMgmtSNManifest(FtMgmtGeneric):
                     miscutils.fwdebug_print("Insert into SN_SUBMIT_REQUEST was successful..")
 
             except cx_Oracle.IntegrityError as exc:
-                print "error while inserting into SN_SUBMIT_REQUEST: ", exc
+                print("error while inserting into SN_SUBMIT_REQUEST: ", exc)
                 raise

@@ -12,9 +12,7 @@ import traceback
 from abc import ABCMeta, abstractmethod
 
 
-class CompWorker:
-    __metaclass__ = ABCMeta
-
+class CompWorker(metaclass=ABCMeta):
     _passthroughargs = None
     _cleanup = None
     _dateFormat = '%Y-%m-%d %H:%M:%S'
@@ -45,7 +43,7 @@ class CompWorker:
         return self._errmsg
 
     def get_exe_version(self):
-        cmdlist = filter(None, [self.get_exebase()] + self.get_exe_version_args())
+        cmdlist = [_f for _f in [self.get_exebase()] + self.get_exe_version_args() if _f]
         return (subprocess.check_output(cmdlist)).strip()
 
     def get_commandargs(self):
@@ -53,9 +51,9 @@ class CompWorker:
 
     def get_commandargs_list(self):
         if self._cleanup:
-            return filter(None, self.get_cleanup() + self._passthroughargs)
+            return [_f for _f in self.get_cleanup() + self._passthroughargs if _f]
         else:
-            return filter(None, self._passthroughargs)
+            return [_f for _f in self._passthroughargs if _f]
 
     def execute(self, file):
         cmdlist = [self.get_exebase()] + self.get_commandargs_list() + [file]
@@ -86,6 +84,6 @@ if __name__ == '__main__':
         exit(1)
 
     compressor = miscutils.dynamically_load_class(args["class"])(args["cleanup"], args["exeargs"])
-    print "full_commandline=" + compressor.get_exebase() + ' ' + compressor.get_commandargs()
+    print("full_commandline=" + compressor.get_exebase() + ' ' + compressor.get_commandargs())
     # compressor.execute(args["file"])
-    print "version=" + compressor.get_exe_version()
+    print("version=" + compressor.get_exe_version())

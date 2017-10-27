@@ -55,7 +55,7 @@ def getFilesToCompress(args, dbh):
     fullsql = sqlstr + ' '.join(addlwhere) + " order by fa.path,fa.filename"
     cur.execute(fullsql, {'arhome': args["Archive"]})
     columns = [i[0].lower() for i in cur.description]
-    results = [dict(zip(columns, row)) for row in cur]
+    results = [dict(list(zip(columns, row))) for row in cur]
     cur.close()
     return results
 
@@ -91,8 +91,8 @@ def reportResults(successcount, failcount, inputfilemb, outputfilemb):
     else:
         cr = 0
     freedspace = (inputfilemb - outputfilemb)/float(1024)
-    print printprefix() + "FINISHED: compressed %s files with %s failures, CR=%.2f:1, freed %.3f GB" % (
-        str(successcount), str(failcount), cr, freedspace)
+    print(printprefix() + "FINISHED: compressed %s files with %s failures, CR=%.2f:1, freed %.3f GB" % (
+        str(successcount), str(failcount), cr, freedspace))
 
 
 def printprefix(base=None):
@@ -138,15 +138,15 @@ def compressFiles(artifacts, maintaskid, args, dbh):
         retcode = filecompressor.execute()
         if retcode != 0:
             failcount += 1
-            print formatmultiline(filecompressor.getErrMsg(), compressor.get_exebase())
+            print(formatmultiline(filecompressor.getErrMsg(), compressor.get_exebase()))
             try:
                 if failtaskid == None:
                     failtaskid = makeTask(compressor, maintaskid, dbh)
                 filecompressor.updatedb(task_id=failtaskid, do_commit=True)
-                print formaterror("compression failed for file %s" % filecompressor.getInfileFullpath())
+                print(formaterror("compression failed for file %s" % filecompressor.getInfileFullpath()))
             except:
-                print formaterror("after failed compression, could not update database for file %s"
-                                  % filecompressor.getInfileFullpath(), backtrace=True)
+                print(formaterror("after failed compression, could not update database for file %s"
+                                  % filecompressor.getInfileFullpath(), backtrace=True))
         else:
             try:
                 if successtaskid == None:
@@ -156,8 +156,8 @@ def compressFiles(artifacts, maintaskid, args, dbh):
                 inputfilemb += filecompressor.getInfileSize()/float(1048576)
                 outputfilemb += filecompressor.getOutfileSize()/float(1048576)
             except:
-                print formaterror("after successful compression, could not update database for input file %s, output file %s"
-                                  % (filecompressor.getInfileFullpath(), filecompressor.getOutfileFullpath), backtrace=True)
+                print(formaterror("after successful compression, could not update database for input file %s, output file %s"
+                                  % (filecompressor.getInfileFullpath(), filecompressor.getOutfileFullpath), backtrace=True))
                 # clear the cached success_taskid in case is was not committed becasue db update failed
                 if successcount == 0:
                     successtaskid = None
@@ -203,29 +203,29 @@ if __name__ == '__main__':
     try:
         dbh = desdmdbi.DesDmDbi(section=args['section'])
     except:
-        print formaterror("error connecting to database", backtrace=True)
+        print(formaterror("error connecting to database", backtrace=True))
         exit(1)
 
     try:
         artifacts = getFilesToCompress(args, dbh)
     except:
-        print formaterror("did not get file list from database", backtrace=True)
+        print(formaterror("did not get file list from database", backtrace=True))
         exit(1)
 
     filesizesummb = 0.0
     if args["noop"]:
-        print printprefix() + "Files that would be selected for compression with the parameters received:"
+        print(printprefix() + "Files that would be selected for compression with the parameters received:")
     for rowdict in artifacts:
         filesizesummb += float(rowdict['filesize'])/1048576
         if args["noop"]:
-            print '    ' + '/'.join([rowdict['archive_root'], rowdict['path'], rowdict['filename']])
+            print('    ' + '/'.join([rowdict['archive_root'], rowdict['path'], rowdict['filename']]))
 
-    print printprefix() + "%s files totalling %.3f GB selected for compression" % (str(len(artifacts)), filesizesummb/float(1024))
+    print(printprefix() + "%s files totalling %.3f GB selected for compression" % (str(len(artifacts)), filesizesummb/float(1024)))
 
     if args["cleanup"]:
-        print printprefix() + "Space savings at estimated 7.5:1 compression ratio: %.3f GB" % ((13.0/15.0)*(filesizesummb/float(1024)))
+        print(printprefix() + "Space savings at estimated 7.5:1 compression ratio: %.3f GB" % ((13.0/15.0)*(filesizesummb/float(1024))))
     else:
-        print printprefix() + "Additional space required at estimated 7.5:1 compression ratio: %.3f GB" % (filesizesummb/(1024*7.5))
+        print(printprefix() + "Additional space required at estimated 7.5:1 compression ratio: %.3f GB" % (filesizesummb/(1024*7.5)))
 
     retval = 1
     if not args["noop"]:
@@ -242,14 +242,14 @@ if __name__ == '__main__':
                         'cmdargs': ' '.join(sys.argv[1:])}
             dbh.basic_insert_row("compress_task", taskdict)
         except:
-            print formaterror("could not create main database provenance task", backtrace=True)
+            print(formaterror("could not create main database provenance task", backtrace=True))
 
         retval = compressFiles(artifacts, maintaskid, args, dbh)
 
         try:
             dbh.end_task(task_id=maintaskid, status=retval, do_commit=True)
         except:
-            print formaterror("could not create main database provenance task", backtrace=True)
+            print(formaterror("could not create main database provenance task", backtrace=True))
     else:
         retval = 0
 

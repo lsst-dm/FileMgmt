@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # go over each table
     for num, table in enumerate(tables):
-        print "Checking table %s" % (table.upper())
+        print("Checking table %s" % (table.upper()))
         cur1 = dbh1.cursor()
         cur2 = dbh2.cursor()
         # get the column names
@@ -54,16 +54,16 @@ if __name__ == '__main__':
 
         # make sure columns match in both tables
         if len(columns) != len(columns2):
-            print "Different number of columns for table %s: %s has %i and %s has %i" % (table, args['schema1'], len(columns), args['schema2'], len(columns2))
+            print("Different number of columns for table %s: %s has %i and %s has %i" % (table, args['schema1'], len(columns), args['schema2'], len(columns2)))
             continue
         hit = False
         for c in columns:
             if not c in columns2:
-                print "  %s is missing column %s" % (args['schema2'], c)
+                print("  %s is missing column %s" % (args['schema2'], c))
                 hit = True
         for c in columns2:
             if not c in columns:
-                print "  %s is missing column %s" % (args['schema1'], c)
+                print("  %s is missing column %s" % (args['schema1'], c))
                 hit = True
 
         if hit:
@@ -116,22 +116,22 @@ if __name__ == '__main__':
                         diff.append([d1[key1], d1[key2]])
                         break
             if len(onlys1) > 0:
-                print "  Entries only in %s, keys %s and %s" % (args['schema1'], key1, key2)
+                print("  Entries only in %s, keys %s and %s" % (args['schema1'], key1, key2))
                 for i in onlys1:
-                    print "    %s  %s" % (str(i[0]), str(i[1]))
-                print "\n"
+                    print("    %s  %s" % (str(i[0]), str(i[1])))
+                print("\n")
             if len(onlys2) > 0:
-                print "  Entries only in %s, keys %s and %s" % (args['schema2'], key1, key2)
+                print("  Entries only in %s, keys %s and %s" % (args['schema2'], key1, key2))
                 for i in onlys2:
-                    print "    %s  %s" % (str(i[0]), str(i[1]))
-                print "\n"
+                    print("    %s  %s" % (str(i[0]), str(i[1])))
+                print("\n")
             if len(diff) > 0:
-                print "  Entries that differ, keys %s and %s" % (key1, key2)
+                print("  Entries that differ, keys %s and %s" % (key1, key2))
                 for i in diff:
-                    print "    %s  %s" % (str(i[0]), str(i[1]))
-                print "\n"
+                    print("    %s  %s" % (str(i[0]), str(i[1])))
+                print("\n")
             if len(onlys1) == 0 and len(onlys1) == 0 and len(diff) == 0:
-                print "  All data match\n"
+                print("  All data match\n")
 
         else: # only 1 primary key
             key = keys[num].upper()
@@ -153,19 +153,19 @@ if __name__ == '__main__':
                         diff.append(d1[key])
                         break
             if len(onlys1) > 0:
-                print "  Entries only in %s, key %s" % (args['schema1'], key)
+                print("  Entries only in %s, key %s" % (args['schema1'], key))
                 for i in onlys1:
-                    print "    %s" % (str(i))
-                print "\n"
+                    print("    %s" % (str(i)))
+                print("\n")
             if len(onlys2) > 0:
-                print "  Entries only in %s, key %s" % (args['schema2'], key)
+                print("  Entries only in %s, key %s" % (args['schema2'], key))
                 for i in onlys2:
-                    print "    %s" % (str(i))
-                print "\n"
+                    print("    %s" % (str(i)))
+                print("\n")
             if len(diff) > 0:
-                print "  Entries that differ, key %s" % (key)
+                print("  Entries that differ, key %s" % (key))
                 for i in diff:
-                    print "    %s" % (str(i))
-                print "\n"
+                    print("    %s" % (str(i)))
+                print("\n")
             if len(onlys1) == 0 and len(onlys1) == 0 and len(diff) == 0:
-                print "  All data match\n"
+                print("  All data match\n")

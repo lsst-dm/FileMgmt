@@ -40,7 +40,7 @@ class ArchiveTransferGlobusOnline():
         files2copy = copy.deepcopy(filelist)
         problems = {}
         srctranslation = {}
-        for fname, fileinfo in filelist.items():
+        for fname, fileinfo in list(filelist.items()):
             files2copy[fname]['src'] = "%s/%s" % (srcroot, files2copy[fname]['src'])
             files2copy[fname]['dst'] = "%s/%s" % (dstroot, files2copy[fname]['dst'])
 
@@ -109,7 +109,7 @@ class ArchiveTransferGlobusOnline():
         dstlisting = goclient.get_directory_listing(dstpath, self.dst_archive_info['endpoint'], True)
 
         retresults = {}
-        for fullname, finfo in dstlisting.items():
+        for fullname, finfo in list(dstlisting.items()):
             filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
             if finfo is not None:   # include labels required by framework
                 if finfo['type'] == 'file':
@@ -119,7 +119,7 @@ class ArchiveTransferGlobusOnline():
 
         # check for missing files
         srclisting = goclient.get_directory_listing(srcpath, self.src_archive_info['endpoint'], True)
-        for fullname, finfo in srclisting.items():
+        for fullname, finfo in list(srclisting.items()):
             filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
             if finfo is not None and finfo['type'] == 'file' and filename not in retresults:
                 retresults[filename] = finfo

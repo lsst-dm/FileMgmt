@@ -169,11 +169,11 @@ class HttpUtils():
                 rtemp = re.search('Content-Length: ?(\d+)', curl_stdout)
                 if rtemp is not None:
                     if i > 0:
-                        print "Verify took %i tries to succeed" % (int(i) + 1)
+                        print("Verify took %i tries to succeed" % (int(i) + 1))
                     break
                 time.sleep(5)
                 if i == numTries - 1:
-                    print "Failed to verify %s after %i tries." % (dst, numTries)
+                    print("Failed to verify %s after %i tries." % (dst, numTries))
                     return False
             rfsize = int(rtemp.group(1))
             if fsize == 0:
@@ -256,7 +256,7 @@ class HttpUtils():
                 miscutils.fwdebug_print("curl stdout: %s" % curl_stdout.strip())
 
             if not isTest and x > 0:
-                print "output:", curl_stdout
+                print("output:", curl_stdout)
 
             sys.stdout.flush()
             if exitcode == 0:
@@ -266,13 +266,13 @@ class HttpUtils():
                     if self.verify(src, dst, useShell, fsize, numTries):
                         success = True
                         if x > 0:
-                            print "Transfer took %i tries to succeed" % (int(x) + 1)
+                            print("Transfer took %i tries to succeed" % (int(x) + 1))
                         break
 
                 elif httpcode in ['200', '201', '301'] and not verify:
                     success = True
                     if x > 0:
-                        print "Transfer took %i tries to succeed" % (int(x) + 1)
+                        print("Transfer took %i tries to succeed" % (int(x) + 1))
                     break
 
             # run some diagnostics
@@ -290,29 +290,29 @@ class HttpUtils():
                 miscutils.fwdebug_print("Sleeping %s secs" % secondsBetweenRetries)
                 time.sleep(secondsBetweenRetries)
             else:
-                print "\nDiagnostics:"
-                print "Directory info"
+                print("\nDiagnostics:")
+                print("Directory info")
                 sys.stdout.flush()
                 if miscutils.fwdebug_check(10, "HTTP_UTILS_DEBUG"):
                     stat = subprocess.Popen("pwd; find . -exec ls -ld {} \;", shell=True,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     curl_stdout = stat.communicate()[0]
-                    print curl_stdout
+                    print(curl_stdout)
                 elif src is not None:
                     stat = subprocess.Popen('pwd; ls -ld %s' % (src), shell=True,
                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     curl_stdout = stat.communicate()[0]
-                    print curl_stdout
+                    print(curl_stdout)
                 else:
                     stat = subprocess.Popen('pwd', shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                     curl_stdout = stat.communicate()[0]
-                    print curl_stdout
-                    print "Source file is not local"
-                print "\nFile system disk space usage"
+                    print(curl_stdout)
+                    print("Source file is not local")
+                print("\nFile system disk space usage")
                 sys.stdout.flush()
                 stat = subprocess.Popen("df -h .", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 curl_stdout = stat.communicate()[0]
-                print curl_stdout
+                print(curl_stdout)
 
                 sys.stdout.flush()
 
@@ -320,39 +320,39 @@ class HttpUtils():
                 if hostm:
                     hname = hostm.group(1)
                     try:   # don't let exception here halt
-                        print "Running commands to %s for diagnostics" % hname
-                        print "\nPinging %s" % hname
+                        print("Running commands to %s for diagnostics" % hname)
+                        print("\nPinging %s" % hname)
                         sys.stdout.flush()
                         stat = subprocess.Popen("ping -c 4 %s" % hname, shell=True,
                                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         curl_stdout = stat.communicate()[0]
-                        print curl_stdout
-                        print "\nRunning traceroute to %s" % hname
+                        print(curl_stdout)
+                        print("\nRunning traceroute to %s" % hname)
                         sys.stdout.flush()
                         stat = subprocess.Popen("traceroute %s" % hname, shell=True,
                                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                         curl_stdout = stat.communicate()[0]
-                        print curl_stdout
+                        print(curl_stdout)
                     except:   # print exception but continue
                         (type, value, trback) = sys.exc_info()
                         traceback.print_exception(type, value, trback, file=sys.stdout)
-                        print "\n\nIgnoring remote diagnostics exception.   Continuing.\n"
+                        print("\n\nIgnoring remote diagnostics exception.   Continuing.\n")
                 else:
-                    print "Couldn't find url in curl cmd:", cmd
-                    print "Skipping remote diagnostics.\n"
+                    print("Couldn't find url in curl cmd:", cmd)
+                    print("Skipping remote diagnostics.\n")
 
-                print "*" * 75
+                print("*" * 75)
                 sys.stdout.flush()
 
         if not success:
             if os.path.isfile(curlConsoleOutputFile):
-                print "Last 50 lines of curlConsoleOutputFile:"
+                print("Last 50 lines of curlConsoleOutputFile:")
                 with open(curlConsoleOutputFile, 'r') as f:
                     lines = f.readlines()
                     if len(lines) > 50:
-                        print '\n'.join(lines[len(lines)-50:])
+                        print('\n'.join(lines[len(lines)-50:]))
                     else:
-                        print '\n'.join(lines)
+                        print('\n'.join(lines))
 
             msg = "File copy failed with return code %d (%s), " % (exitcode, curl_exitcode_str(exitcode))
             if httpcode is not None:
@@ -391,7 +391,7 @@ class HttpUtils():
         total_copy_time_to_archive = 0.0
         status = 0
         try:
-            for filename, fdict in filelist.items():
+            for filename, fdict in list(filelist.items()):
                 fsize = 0
                 if 'filesize' in fdict and fdict['filesize'] is not None:
                     fsize = fdict['filesize']
@@ -467,9 +467,9 @@ class HttpUtils():
                     miscutils.fwdebug_print(str(err))
 
         finally:
-            print "[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
+            print("[Copy summary] copy_batch:%d  file_copies_to_archive:%d time_to_archive:%.3f copies_from_archive:%d time_from_archive:%.3f  end_time_for_batch:%.3f" % \
                 (HttpUtils.copyfiles_called, num_copies_to_archive, total_copy_time_to_archive,
-                 num_copies_from_archive, total_copy_time_from_archive, time.time())
+                 num_copies_from_archive, total_copy_time_from_archive, time.time()))
 
         HttpUtils.copyfiles_called += 1
         return (status, filelist)
@@ -515,7 +515,7 @@ class HttpUtils():
         self.copyfiles(test_filelist1, None)
         self.copyfiles(test_filelist2, None)
         if os.path.isfile('test_dh/testfile_dh2.txt') and os.path.getsize('test_dh/testfile_dh2.txt') == 12:
-            print "Transfer of test_dh2.txt seems ok"
+            print("Transfer of test_dh2.txt seems ok")
         else:
             miscutils.fwdie("Transfer of test_dh2.txt failed", fmdefs.FM_EXIT_FAILURE)
         self.run_curl_command(
@@ -524,7 +524,7 @@ class HttpUtils():
         self.copyfiles(test_filelist3, None)
         self.copyfiles(test_filelist4, None)
         if os.path.isfile('test_dh/testfile_dh3.txt') and os.path.getsize('test_dh/testfile_dh3.txt') == 12:
-            print "Transfer of test_dh3.txt (with an intermediate dir) seems ok"
+            print("Transfer of test_dh3.txt (with an intermediate dir) seems ok")
         else:
             miscutils.fwdie("Transfer of test_dh3.txt (with an intermediate dir) failed",
                             fmdefs.FM_EXIT_FAILURE)
@@ -534,8 +534,8 @@ class HttpUtils():
             "curl -K - -S -s -X DELETE http://desar2.cosmology.illinois.edu/DESTesting/bar/")
 
         (status, filelist5_out) = self.copyfiles(test_filelist5, None, secondsBetweenRetriesC=1, numTriesC=2)
-        if filelist5_out['testfile_dh5.txt'].has_key('err') and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':
-            print "Test of failed GET seems ok."
+        if 'err' in filelist5_out['testfile_dh5.txt'] and filelist5_out['testfile_dh5.txt']['err'] == 'File operation failed with return code 22, http status 404.':
+            print("Test of failed GET seems ok.")
         else:
             miscutils.fwdie("Test of failed GET failed", fmdefs.FM_EXIT_FAILURE)
 

@@ -24,9 +24,9 @@ class DESGlobusOnline():
             self.goclient, _ = globusonline.transfer.api_client.create_client_from_args(clientargs)
         except:
             (type, value, traceback) = sys.exc_info()
-            print "Error when trying to create globusonline client"
-            print "\t%s: %s" % (type, value)
-            print "\tTypically means problem with operator proxy.  Check that there is a valid proxy using grid-proxy-info"
+            print("Error when trying to create globusonline client")
+            print("\t%s: %s" % (type, value))
+            print("\tTypically means problem with operator proxy.  Check that there is a valid proxy using grid-proxy-info")
             sys.exit(fmdefs.FM_EXIT_FAILURE)
 
         self.proxy_valid_hrs = proxy_valid_hrs
@@ -42,9 +42,9 @@ class DESGlobusOnline():
 
     def makedirs(self, filelist, endpoint):
         # get list of dirs to make
-        print "makedirs: filelist=", filelist
+        print("makedirs: filelist=", filelist)
         dirlist = miscutils.get_list_directories(filelist)
-        print "makedirs: dirlist=", dirlist
+        print("makedirs: dirlist=", dirlist)
         for path in sorted(dirlist): # should already be sorted, but just in case
             miscutils.fwdebug(0, 'GLOBUS_ONLINE_DEBUG', 'endpoint=%s, path=%s' % (endpoint, path))
             try:
@@ -66,7 +66,7 @@ class DESGlobusOnline():
         result = self.endpoint_activate(dst_endpoint)
 
         # create dst directories
-        self.makedirs([finfo['dst'] for finfo in filelist.values()], dst_endpoint)
+        self.makedirs([finfo['dst'] for finfo in list(filelist.values())], dst_endpoint)
 
         ##    Get a submission id:
         code, reason, result = self.goclient.transfer_submission_id()
@@ -82,7 +82,7 @@ class DESGlobusOnline():
         #print t.as_data()
 
         # add files to transfer
-        for fname, finfo in filelist.items():
+        for fname, finfo in list(filelist.items()):
             sfile = finfo['src']
             dfile = finfo['dst']
             miscutils.fwdebug(2, 'GLOBUS_ONLINE_DEBUG', "\tadding to transfer %s = %s" % (sfile, dfile))
@@ -133,7 +133,7 @@ class DESGlobusOnline():
                 if result["nice_status_details"] is not None and result["nice_status_details"].startswith("Error"):
                     # only print error message once
                     if result["nice_status_details"] not in errstrs:
-                        print result["nice_status_details"]
+                        print(result["nice_status_details"])
                         errstrs[result["nice_status_details"]] = True
 
                     if result['subtasks_retrying'] != 0:
@@ -168,15 +168,15 @@ class DESGlobusOnline():
         #print "\n\n"
 
         status, reason, successes = self.goclient.task_successful_transfers(task_id)
-        print status
-        print reason
-        print "----------\n\n\n"
-        print "subtask_list=", result
-        print "\n\n\n"
+        print(status)
+        print(reason)
+        print("----------\n\n\n")
+        print("subtask_list=", result)
+        print("\n\n\n")
 
         transresults = copy.deepcopy(filelist)
         if len(successes['DATA']) != len(filelist):
-            for fname, finfo in transresults.items():
+            for fname, finfo in list(transresults.items()):
                 transresults[fname]['err'] = 'problems transferring file'
         return transresults
 
@@ -204,10 +204,10 @@ class DESGlobusOnline():
         actresult = self.endpoint_activate(endpoint)
         code, reason, data = self.goclient.endpoint_ls(endpoint, path)
         for f in data["DATA"]:
-            lsdict = dict(zip(self.lsdesc, [unicode(f[k]) for k in self.lsdesc]))
+            lsdict = dict(list(zip(self.lsdesc, [str(f[k]) for k in self.lsdesc])))
             #print self.lsdesc
             lsdict['path'] = path
-            print lsdict
+            print(lsdict)
             diskinfo["%s/%s" % (path, lsdict['name'])] = lsdict
             if recursive == True and lsdict['type'] == 'dir':
                 diskinfo.update(self.get_directory_listing("%s/%s" %
@@ -235,9 +235,9 @@ class DESGlobusOnline():
         # get directory listing from endpoint
         diskinfo = {}
         actresult = self.endpoint_activate(endpoint)
-        for path in pathlist.keys():
+        for path in list(pathlist.keys()):
             dirlist = self.get_directory_listing(path, endpoint, False)
-            for fullname, finfo in dirlist.items():
+            for fullname, finfo in list(dirlist.items()):
                 if fullname in filebypath[path]:
                     diskinfo[fullname] = finfo
 

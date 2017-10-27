@@ -137,7 +137,7 @@ def copyfiles(filelist, tstats, verify=False):
 
     results = {}
     status = 0
-    for filename, fdict in filelist.items():
+    for filename, fdict in list(filelist.items()):
         fsize = 0
         try:
             src = fdict['src']
@@ -206,7 +206,7 @@ def get_files_from_disk(relpath, archive_root, check_md5sum=False, debug=False):
 
     start_time = time.time()
     if debug:
-        print "Getting file information from disk: BEG"
+        print("Getting file information from disk: BEG")
 
     files_from_disk = {}
     duplicates = {}
@@ -224,7 +224,7 @@ def get_files_from_disk(relpath, archive_root, check_md5sum=False, debug=False):
 
     end_time = time.time()
     if debug:
-        print "Getting file information from disk: END (%s secs)" % (end_time - start_time)
+        print("Getting file information from disk: END (%s secs)" % (end_time - start_time))
     return files_from_disk, duplicates
 
 ####################################################################
@@ -262,7 +262,7 @@ def compare_db_disk(files_from_db, files_from_disk, duplicates, check_md5sum, ch
 
     start_time = time.time()
     if debug:
-        print "Comparing file information: BEG"
+        print("Comparing file information: BEG")
     comparison_info = {
         'equal': [],
         'dbonly': [],
@@ -317,5 +317,5 @@ def compare_db_disk(files_from_db, files_from_disk, duplicates, check_md5sum, ch
 
     end_time = time.time()
     if debug:
-        print "Comparing file information: END (%s secs)" % (end_time - start_time)
+        print("Comparing file information: END (%s secs)" % (end_time - start_time))
     return comparison_info

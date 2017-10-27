@@ -5,7 +5,7 @@ import despymisc.miscutils as miscutils
 def get_config_vals(archive_info, config, keylist):
     """ Search given dicts for specific values """
     info = {}
-    for k, stat in keylist.items():
+    for k, stat in list(keylist.items()):
         if archive_info is not None and k in archive_info:
             info[k] = archive_info[k]
         elif config is not None and k in config:

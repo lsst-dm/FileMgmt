@@ -48,13 +48,13 @@ def job_lengths_from_file(fname):
     for line in fileinput.input(fname):
         m = re.match(time+'Job executing on host:', line)
         if m:
-            if start_times.has_key(m.group(1)):
-                print "Warning: start value for %s already seen." % m.group(1)
+            if m.group(1) in start_times:
+                print("Warning: start value for %s already seen." % m.group(1))
             start_times[m.group(1)] = compute_seconds(m)
         m = re.match(time+'Job terminated.', line)
         if m:
-            if not start_times.has_key(m.group(1)):
-                print "Warning: no start value for %s, skipping job termination." % m.group(1)
+            if m.group(1) not in start_times:
+                print("Warning: no start value for %s, skipping job termination." % m.group(1))
                 continue
             endtime = compute_seconds(m)
             total_time += safer_time_difference(start_times[m.group(1)], endtime)
@@ -76,22 +76,22 @@ def multiple_job_lengths(flist):
 if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'htw:')
-    except getopt.GetoptError, x:
+    except getopt.GetoptError as x:
         sys.exit('Error: ' + x.msg)
     optsd = dict(opts)
-    if optsd.has_key('-h') or len(sys.argv) == 1:
+    if '-h' in optsd or len(sys.argv) == 1:
         Usage()
-    if optsd.has_key('-t'):
+    if '-t' in optsd:
         import doctest
         doctest.testmod()
         sys.exit()
     (N, sum) = multiple_job_lengths(args)
-    print "num_jobs total_CPU_time(s) total_CPU_time(h)",
-    if optsd.has_key('-w'):
+    print("num_jobs total_CPU_time(s) total_CPU_time(h)", end=' ')
+    if '-w' in optsd:
         (num_jobs, T) = job_lengths_from_file(optsd['-w'])
         assert num_jobs == 1
-        print " wall_time(s) wall_time(h)"
-        print " ".join(map(str, (N, sum, sum/3600.0, T, T/3600.0)))
+        print(" wall_time(s) wall_time(h)")
+        print(" ".join(map(str, (N, sum, sum/3600.0, T, T/3600.0))))
     else:
-        print
-        print " ".join(map(str, (N, sum, sum/3600.0)))
+        print()
+        print(" ".join(map(str, (N, sum, sum/3600.0))))

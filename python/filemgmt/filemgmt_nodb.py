@@ -76,7 +76,7 @@ class FileMgmtNoDB ():
     def get_file_location(self, filelist, arname, compress_order=fmdefs.FM_PREFER_COMPRESSED):
         fileinfo = self.get_file_archive_info(filelist, arname, compress_order)
         rel_filenames = {}
-        for f, finfo in fileinfo.items():
+        for f, finfo in list(fileinfo.items()):
             rel_filenames[f] = finfo['rel_filename']
         return rel_filenames
 
@@ -118,8 +118,8 @@ class FileMgmtNoDB ():
                 d['rel_filename'] = "%s/%s%s" % (d['path'], d['filename'], compext)
                 fullnames[d['compression']][d['filename']] = d
 
-        print "uncompressed:", len(fullnames[None])
-        print "compressed:", len(fullnames['.fz'])
+        print("uncompressed:", len(fullnames[None]))
+        print("compressed:", len(fullnames['.fz']))
 
         # go through given list of filenames and find archive location and compreesion
         archiveinfo = {}
@@ -131,7 +131,7 @@ class FileMgmtNoDB ():
                     archiveinfo[name] = fullnames[p][name]
                     break
 
-        print "archiveinfo = ", archiveinfo
+        print("archiveinfo = ", archiveinfo)
         return archiveinfo
 
     # compression = compressed_only, uncompressed_only, prefer uncompressed, prefer compressed, either (treated as prefer compressed)
@@ -174,12 +174,12 @@ class FileMgmtNoDB ():
                 fullnames[d['compression']][d['filename']] = d
                 list_by_name[d['filename']] = True
 
-        print "uncompressed:", len(fullnames[None])
-        print "compressed:", len(fullnames['.fz'])
+        print("uncompressed:", len(fullnames[None]))
+        print("compressed:", len(fullnames['.fz']))
 
         # go through given list of filenames and find archive location and compreesion
         archiveinfo = {}
-        for name in list_by_name.keys():
+        for name in list(list_by_name.keys()):
             #print name
             for p in compress_order:    # follow compression preference
                 #print "p = ", p
@@ -187,7 +187,7 @@ class FileMgmtNoDB ():
                     archiveinfo[name] = fullnames[p][name]
                     break
 
-        print "archiveinfo = ", archiveinfo
+        print("archiveinfo = ", archiveinfo)
         return archiveinfo
 
     def commit(self):

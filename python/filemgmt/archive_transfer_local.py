@@ -36,7 +36,7 @@ class ArchiveTransferLocal():
         files2copy = copy.deepcopy(filelist)
         problems = {}
         srctranslation = {}
-        for fname, finfo in files2copy.items():
+        for fname, finfo in list(files2copy.items()):
             finfo['src'] = '%s/%s' % (srcroot, finfo['src'])
             finfo['dst'] = '%s/%s' % (dstroot, finfo['dst'])
 

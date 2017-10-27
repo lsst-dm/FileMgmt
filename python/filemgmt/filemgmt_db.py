@@ -189,9 +189,9 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             try:
                 self.insert_many_indiv('FILE_ARCHIVE_INFO', colnames, insfilelist)
             except:
-                print "Error from insert_many_indiv in register_file_archive"
-                print "colnames =", colnames
-                print "filelist =", insfilelist
+                print("Error from insert_many_indiv in register_file_archive")
+                print("colnames =", colnames)
+                print("filelist =", insfilelist)
                 raise
 
     ###########################################################################
@@ -289,10 +289,10 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         """
         REQUIRED = "r"
         all_req_headers = set()
-        for hdu_dict in filetype_dict['hdus'].values():
+        for hdu_dict in list(filetype_dict['hdus'].values()):
             if REQUIRED in hdu_dict:
-                for cat_dict in hdu_dict[REQUIRED].values():
-                    all_req_headers = all_req_headers.union(cat_dict.keys())
+                for cat_dict in list(hdu_dict[REQUIRED].values()):
+                    all_req_headers = all_req_headers.union(list(cat_dict.keys()))
         return all_req_headers
 
     ###########################################################################
@@ -303,10 +303,10 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         """
         OPTIONAL = "o"
         all_opt_meta = set()
-        for hdu_dict in filetype_dict['hdus'].values():
+        for hdu_dict in list(filetype_dict['hdus'].values()):
             if OPTIONAL in hdu_dict:
-                for cat_dict in hdu_dict[OPTIONAL].values():
-                    all_opt_meta = all_opt_meta.union(cat_dict.keys())
+                for cat_dict in list(hdu_dict[OPTIONAL].values()):
+                    all_opt_meta = all_opt_meta.union(list(cat_dict.keys()))
         return all_opt_meta
 
     ###########################################################################
@@ -316,10 +316,10 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         For use by ingest_file_metadata. Creates a lookup from column to header.
         """
         columnMap = OrderedDict()
-        for hdu_dict in filetype_dict['hdus'].values():
-            for status_dict in hdu_dict.values():
-                for cat_dict in status_dict.values():
-                    for header, columns in cat_dict.iteritems():
+        for hdu_dict in list(filetype_dict['hdus'].values()):
+            for status_dict in list(hdu_dict.values()):
+                for cat_dict in list(status_dict.values()):
+                    for header, columns in cat_dict.items():
                         collist = columns.split(',')
                         for position, column in enumerate(collist):
                             if len(collist) > 1:
@@ -351,10 +351,10 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             if not isinstance(filemeta, dict):
                 raise TypeError("Invalid type for filemeta (should be dict): %s" % type(filemeta))
 
-            if FILENAME not in filemeta.keys():
+            if FILENAME not in list(filemeta.keys()):
                 raise KeyError("File metadata missing FILENAME")
 
-            if FILETYPE not in filemeta.keys():
+            if FILETYPE not in list(filemeta.keys()):
                 raise KeyError("File metadata missing FILETYPE (file: %s)" % filemeta[FILENAME])
 
             if filemeta[FILETYPE] not in dbdict:
@@ -365,14 +365,14 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             if miscutils.fwdebug_check(1, "FILEMGMT_DEBUG"):
                 all_opt_meta = self._get_optional_metadata(dbdict[filemeta[FILETYPE]])
                 for dbkey in all_opt_meta:
-                    if dbkey not in filemeta.keys() or filemeta[dbkey] == "":
+                    if dbkey not in list(filemeta.keys()) or filemeta[dbkey] == "":
                         miscutils.fwdebug_print("WARN: %s missing optional metadata %s" %
                                                 (filemeta[FILENAME], dbkey))
 
             # check that all required are present
             all_req_headers = self._get_required_headers(dbdict[filemeta[FILETYPE]])
             for dbkey in all_req_headers:
-                if dbkey not in filemeta.keys() or filemeta[dbkey] == "":
+                if dbkey not in list(filemeta.keys()) or filemeta[dbkey] == "":
                     raise KeyError("Missing required data (%s) (file: %s)" % (dbkey, filemeta[FILENAME]))
 
             # now load structures needed for upload
@@ -380,13 +380,13 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             mapped_headers = set()
             filemetatable = dbdict[filemeta[FILETYPE]][metatable]
 
-            if filemetatable not in metadataTables.keys():
+            if filemetatable not in list(metadataTables.keys()):
                 metadataTables[filemetatable] = OrderedDict()
                 metadataTables[filemetatable][COLMAP] = self._get_column_map(dbdict[filemeta[FILETYPE]])
                 metadataTables[filemetatable][ROWS] = []
 
             colmap = metadataTables[filemetatable][COLMAP]
-            for column, header in colmap.iteritems():
+            for column, header in colmap.items():
                 compheader = header.split(':')
                 if len(compheader) > 1:
                     hdr = compheader[0]
@@ -404,21 +404,21 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             # report elements that were in the file that do not map to a DB column
             for notmapped in set(filemeta.keys()) - mapped_headers:
                 if notmapped != 'fullname':
-                    print "WARN: file " + filemeta[FILENAME] + " header item " \
+                    print("WARN: file " + filemeta[FILENAME] + " header item " \
                         + notmapped + " does not match column for filetype " \
-                        + filemeta[FILETYPE]
+                        + filemeta[FILETYPE])
 
             # add the new data to the table set of rows
             metadataTables[filemetatable][ROWS].append(rowdata)
 
-            for metatable, metadict in metadataTables.iteritems():
+            for metatable, metadict in metadataTables.items():
                 if metatable.lower() != 'genfile' and metatable.lower() != 'desfile':
                     #self.insert_many(metatable, metadict[COLMAP].keys(), metadict[ROWS])
-                    self.insert_many_indiv(metatable, metadict[COLMAP].keys(), metadict[ROWS])
+                    self.insert_many_indiv(metatable, list(metadict[COLMAP].keys()), metadict[ROWS])
 
         except (KeyError, ValueError, TypeError):
-            print "filemeta:", filemeta
-            print "metadataTables = ", metadataTables
+            print("filemeta:", filemeta)
+            print("metadataTables = ", metadataTables)
             raise
     # end ingest_file_metadata
 
@@ -444,7 +444,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         fileinfo = self.get_file_archive_info(filelist, arname, compress_order)
         rel_filenames = {}
-        for fname, finfo in fileinfo.items():
+        for fname, finfo in list(fileinfo.items()):
             rel_filenames[fname] = finfo['rel_filename']
         return rel_filenames
 
@@ -489,7 +489,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             fullnames[comp] = {}
 
         for line in curs:
-            ldict = dict(zip(desc, line))
+            ldict = dict(list(zip(desc, line)))
 
             if ldict['compression'] is None:
                 compext = ""
@@ -553,7 +553,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         list_by_name = {}
         for line in curs:
-            ldict = dict(zip(desc, line))
+            ldict = dict(list(zip(desc, line)))
 
             #print "line = ", line
             if ldict['compression'] is None:
@@ -569,7 +569,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         # go through given list of filenames and find archive location and compreesion
         archiveinfo = {}
-        for name in list_by_name.keys():
+        for name in list(list_by_name.keys()):
             #print name
             for cmpord in compress_order:    # follow compression preference
                 #print "cmpord = ", cmpord
@@ -603,7 +603,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             try:
                 filetype_mgmt = filetype_mgmt_class(filetype, self, self.config, filepat)
             except Exception as err:
-                print "ERROR\nError: creating filemgmt object\n%s" % err
+                print("ERROR\nError: creating filemgmt object\n%s" % err)
                 raise
 
             self.filetype = filetype
@@ -635,7 +635,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             except IOError:
                 miscutils.fwdebug_print("\n\nError: Problem gathering data for file %s" % fname)
                 traceback.print_exc(1, sys.stdout)
-                print "\n\n"
+                print("\n\n")
                 if single:
                     raise
                 results[fname] = None
@@ -691,9 +691,9 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         try:
             self.insert_many_indiv('DESFILE', colnames, [fileinfo])
         except:
-            print "Error: problems saving to table desfile"
-            print "colnames =", colnames
-            print "fileinfo =", fileinfo
+            print("Error: problems saving to table desfile")
+            print("colnames =", colnames)
+            print("fileinfo =", fileinfo)
             raise
 
     ###########################################################################
@@ -705,7 +705,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
 
         allfiles = set()
         if provdefs.PROV_USED in prov:
-            for filenames in prov[provdefs.PROV_USED].values():
+            for filenames in list(prov[provdefs.PROV_USED].values()):
                 for fname in filenames.split(provdefs.PROV_DELIM):
                     allfiles.add(fname.strip())
         #if provdefs.PROV_WGB in prov:
@@ -713,8 +713,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         #        for fname in filenames.split(provdefs.PROV_DELIM):
         #            allfiles.add(fname.strip())
         if provdefs.PROV_WDF in prov:
-            for tuples in prov[provdefs.PROV_WDF].values():
-                for filenames in tuples.values():
+            for tuples in list(prov[provdefs.PROV_WDF].values()):
+                for filenames in list(tuples.values()):
                     for fname in filenames.split(provdefs.PROV_DELIM):
                         allfiles.add(fname.strip())
 
@@ -755,7 +755,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
             if miscutils.fwdebug_check(6, 'FILEMGMT_DEBUG'):
                 miscutils.fwdebug_print("ingesting used provenance")
 
-            for execname, filenames in prov[provdefs.PROV_USED].iteritems():
+            for execname, filenames in prov[provdefs.PROV_USED].items():
                 for fname in filenames.split(provdefs.PROV_DELIM):
                     rowdata = []
                     rowdata.append(execids[execname])
@@ -798,7 +798,7 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
         if provdefs.PROV_WDF in prov:
             if miscutils.fwdebug_check(3, 'FILEMGMT_DEBUG'):
                 miscutils.fwdebug_print("ingesting wdf provenance")
-            for tuples in prov[provdefs.PROV_WDF].values():
+            for tuples in list(prov[provdefs.PROV_WDF].values()):
                 if miscutils.fwdebug_check(6, 'FILEMGMT_DEBUG'):
                     miscutils.fwdebug_print("tuples = %s" % tuples)
 

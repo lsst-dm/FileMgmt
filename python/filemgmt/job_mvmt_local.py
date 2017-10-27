@@ -38,7 +38,7 @@ class JobArchiveLocal():
             raise Exception("Home archive info is None.   Should not be calling this function")
 
         absfilelist = copy.deepcopy(filelist)
-        for finfo in absfilelist.values():
+        for finfo in list(absfilelist.values()):
             finfo['src'] = self.home['root'] + '/' + finfo['src']
 
         if self.tstats is not None:
@@ -57,7 +57,7 @@ class JobArchiveLocal():
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
         absfilelist = copy.deepcopy(filelist)
-        for finfo in absfilelist.values():
+        for finfo in list(absfilelist.values()):
             finfo['src'] = self.target['root'] + '/' + finfo['src']
         if self.tstats is not None:
             self.tstats.stat_beg_batch(
@@ -75,7 +75,7 @@ class JobArchiveLocal():
         if self.target is None:
             raise Exception("Target archive info is None.   Should not be calling this function")
         absfilelist = copy.deepcopy(filelist)
-        for finfo in absfilelist.values():
+        for finfo in list(absfilelist.values()):
             finfo['dst'] = self.target['root'] + '/' + finfo['dst']
         if self.tstats is not None:
             self.tstats.stat_beg_batch('job2target', 'job_scratch',
@@ -94,7 +94,7 @@ class JobArchiveLocal():
         if self.home is None:
             raise Exception("Home archive info is None.   Should not be calling this function")
         absfilelist = copy.deepcopy(filelist)
-        for finfo in absfilelist.values():
+        for finfo in list(absfilelist.values()):
             finfo['dst'] = self.home['root'] + '/' + finfo['dst']
         if self.tstats is not None:
             self.tstats.stat_beg_batch('job2home', 'job_scratch',

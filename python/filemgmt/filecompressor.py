@@ -62,14 +62,14 @@ class FileCompressor:
         sys.stdout.flush()
         self._retcode = self._compressor.execute(self._infile_full)
         if self._retcode == 0:
-            print "done.",
+            print("done.", end=' ')
             finfo = diskutils.get_single_file_disk_info(
                 self._outfile_full, save_md5sum=True, archive_root=None)
             self._outfile_size = finfo['filesize']
             self._outfile_md5sum = finfo['md5sum']
-            print "CR=%.2f:1" % (float(self._infile_size) / self._outfile_size)
+            print("CR=%.2f:1" % (float(self._infile_size) / self._outfile_size))
         else:
-            print "ERROR"
+            print("ERROR")
             self._errmsg = self._compressor.get_errmsg()
         return self._retcode
 
@@ -206,6 +206,6 @@ if __name__ == '__main__':
         filecompressor.updatedb(task_id=10, do_commit=False)
         filecompressor.getProvenanceData(10, prov)
 
-    print str(prov)
+    print(str(prov))
     dbh.rollback()
     dbh.close()

@@ -19,7 +19,7 @@ def check_db_duplicates(dbh, filelist, archive):  #including compression
     desc = [d[0].lower() for d in curs.description]
 
     for row in results:
-        fdict = dict(zip(desc, row))
+        fdict = dict(list(zip(desc, row)))
         fname = fdict['filename']
         if fdict['compression'] is not None:
             fname += fdict['compression']
@@ -64,8 +64,8 @@ def get_paths_by_id(dbh, args):
     rows = curs.fetchall()
     cnt = len(rows)
     if cnt != 1:
-        print "Invalid archive name (%s).   Found %s rows in ops_archive" % (args.archive, cnt)
-        print "\tAborting"
+        print("Invalid archive name (%s).   Found %s rows in ops_archive" % (args.archive, cnt))
+        print("\tAborting")
         sys.exit(1)
 
     archive_root = rows[0][0]
@@ -100,7 +100,7 @@ def get_paths_by_id(dbh, args):
         pfwid = rows[0][3]
 
     if relpath is None:
-        print "Path is NULL in database."
+        print("Path is NULL in database.")
         sys.exit(1)
     archive_path = os.path.join(archive_root, relpath)
 
@@ -119,8 +119,8 @@ def get_paths_by_path(dbh, args):
     rows = curs.fetchall()
     cnt = len(rows)
     if cnt != 1:
-        print "Invalid archive name (%s).   Found %s rows in ops_archive" % (args.archive, cnt)
-        print "\tAborting"
+        print("Invalid archive name (%s).   Found %s rows in ops_archive" % (args.archive, cnt))
+        print("\tAborting")
         sys.exit(1)
 
     archive_root = rows[0][0]
@@ -150,8 +150,8 @@ def get_paths_by_path_compare(dbh, args):
     rows = curs.fetchall()
     cnt = len(rows)
     if cnt != 1:
-        print "Invalid archive name (%s).   Found %s rows in ops_archive" % (args.archive, cnt)
-        print "\tAborting"
+        print("Invalid archive name (%s).   Found %s rows in ops_archive" % (args.archive, cnt))
+        print("\tAborting")
         sys.exit(1)
 
     archive_root = rows[0][0]
@@ -185,7 +185,7 @@ def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False, 
 
     start_time = time.time()
     if debug:
-        print "Getting file information from db: BEG"
+        print("Getting file information from db: BEG")
 
     if filetype is not None:
         sql = "select fai.path, art.filename, art.compression, art.id, art.md5sum, art.filesize from desfile art, file_archive_info fai where art.pfw_attempt_id=%i and fai.desfile_id=art.id and art.filetype='%s' and fai.archive_name='%s'" % (
@@ -210,19 +210,19 @@ def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False, 
                     archive, relpath)
 
     if debug:
-        print "\nsql = %s\n" % sql
+        print("\nsql = %s\n" % sql)
 
     curs = dbh.cursor()
     curs.execute(sql)
     if debug:
-        print "executed"
+        print("executed")
     desc = [d[0].lower() for d in curs.description]
 
     filelist = []
 
     files_from_db = {}
     for row in curs:
-        fdict = dict(zip(desc, row))
+        fdict = dict(list(zip(desc, row)))
         fname = fdict['filename']
         if fdict['compression'] is not None:
             fname += fdict['compression']
@@ -237,5 +237,5 @@ def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False, 
     duplicates = check_db_duplicates(dbh, filelist, archive)
     end_time = time.time()
     if debug:
-        print "Getting file information from db: END (%s secs)" % (end_time - start_time)
+        print("Getting file information from db: END (%s secs)" % (end_time - start_time))
     return files_from_db, duplicates

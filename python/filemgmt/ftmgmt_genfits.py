@@ -67,17 +67,17 @@ class FtMgmtGenFits(FtMgmtGeneric):
         datadef = OrderedDict()
 
         metadefs = self.config['filetype_metadata'][self.filetype]
-        for hdname, hddict in metadefs['hdus'].items():
+        for hdname, hddict in list(metadefs['hdus'].items()):
             for status_sect in hddict:  # don't worry about missing here, ingest catches
                 # get value from filename
                 if 'f' in hddict[status_sect]:
-                    metakeys = hddict[status_sect]['f'].keys()
+                    metakeys = list(hddict[status_sect]['f'].keys())
                     mdata2 = self._gather_metadata_from_filename(fullname, metakeys)
                     metadata.update(mdata2)
 
                 # get value from wcl/config
                 if 'w' in hddict[status_sect]:
-                    metakeys = hddict[status_sect]['w'].keys()
+                    metakeys = list(hddict[status_sect]['w'].keys())
                     mdata2 = self._gather_metadata_from_config(fullname, metakeys)
                     metadata.update(mdata2)
 
@@ -85,8 +85,8 @@ class FtMgmtGenFits(FtMgmtGeneric):
                 if 'h' in hddict[status_sect]:
                     if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
                         miscutils.fwdebug_print("INFO: headers=%s" %
-                                                (hddict[status_sect]['h'].keys()))
-                    metakeys = hddict[status_sect]['h'].keys()
+                                                (list(hddict[status_sect]['h'].keys())))
+                    metakeys = list(hddict[status_sect]['h'].keys())
                     mdata2, ddef2 = self._gather_metadata_from_header(fullname, hdulist,
                                                                       hdname, metakeys)
                     metadata.update(mdata2)
@@ -94,7 +94,7 @@ class FtMgmtGenFits(FtMgmtGeneric):
 
                 # calculate value from different header values(s)
                 if 'c' in hddict[status_sect]:
-                    for funckey in hddict[status_sect]['c'].keys():
+                    for funckey in list(hddict[status_sect]['c'].keys()):
                         try:
                             specmf = getattr(spmeta, 'func_%s' % funckey.lower())
                         except AttributeError:
@@ -111,7 +111,7 @@ class FtMgmtGenFits(FtMgmtGeneric):
 
                 # copy value from 1 hdu to primary
                 if 'p' in hddict[status_sect]:
-                    metakeys = hddict[status_sect]['p'].keys()
+                    metakeys = list(hddict[status_sect]['p'].keys())
                     mdata2, ddef2 = self._gather_metadata_from_header(fullname, hdulist,
                                                                       hdname, metakeys)
                     #print 'ddef2 = ', ddef2
@@ -132,9 +132,9 @@ class FtMgmtGenFits(FtMgmtGeneric):
         update_info = OrderedDict()
         update_info[0] = OrderedDict()   # update primary header
 
-        for hdname, hddict in metadefs['hdus'].items():
+        for hdname, hddict in list(metadefs['hdus'].items()):
             update_info[hdname] = OrderedDict()
-            for stdict in hddict.values():
+            for stdict in list(hddict.values()):
                 # include values created by metadata functions and those copied from other hdu
                 for derived in ['c', 'p', 'w']:
                     if derived in stdict:
@@ -198,13 +198,13 @@ class FtMgmtGenFits(FtMgmtGeneric):
         upinfo2 = OrderedDict()
 
         # for each set of header updates
-        for updset in update_info.values():
+        for updset in list(update_info.values()):
             headers = ['0']   # default to primary header
             if 'headers' in updset:
                 headers = miscutils.fwsplit(update_info[updset], ',')
 
             hdu_updset = OrderedDict()
-            for key, val in updset.items():
+            for key, val in list(updset.items()):
                 if key != 'headers':
                     uval = ucomment = udatatype = None
                     header_info = miscutils.fwsplit(val, '/')
@@ -268,7 +268,7 @@ class FtMgmtGenFits(FtMgmtGeneric):
                 newhdname = hdname
 
             hdr = hdulist[newhdname].header
-            for key, info in all_update_info[hdname].items():
+            for key, info in list(all_update_info[hdname].items()):
                 uval = info[0]
                 ucomment = info[1]
                 udatatype = info[2]

@@ -6,7 +6,7 @@
 
 __version__ = "$Rev$"
 
-import ConfigParser
+import configparser
 import despymisc.miscutils as miscutils
 import despydmdb.desdmdbi as desdmdbi
 
@@ -42,7 +42,7 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
 
         try:
             desdmdbi.DesDmDbi.__init__(self, self.desservices, self.section)
-        except (ConfigParser.NoSectionError, IOError) as err:
+        except (configparser.NoSectionError, IOError) as err:
             miscutils.fwdie("Error: problem connecting to database: %s\n"
                             "\tCheck desservices file and environment variables" % err, 1)
 

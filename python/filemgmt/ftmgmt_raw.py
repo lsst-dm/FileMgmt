@@ -40,7 +40,7 @@ class FtMgmtRaw(FtMgmtGenFits):
             byfilename[filename] = fname
 
         self.dbh.empty_gtt(dmdbdefs.DB_GTT_FILENAME)
-        self.dbh.load_filename_gtt(byfilename.keys())
+        self.dbh.load_filename_gtt(list(byfilename.keys()))
 
         dbq = "select r.filename from rasicam_decam r, %s g where r.filename=g.filename" % \
             (dmdbdefs.DB_GTT_FILENAME)
@@ -192,9 +192,9 @@ def check_single_valid(keywords, fullname, verbose): # should raise exception if
 
         if verbose > 1:
             if want is not None and len(want) > 0:
-                print "HDU #%02d Missing requested keywords: %s" % (hdunum, want)
+                print("HDU #%02d Missing requested keywords: %s" % (hdunum, want))
             if extra is not None and len(extra) > 0:
-                print "HDU #%02d Extra keywords: %s" % (hdunum, extra)
+                print("HDU #%02d Extra keywords: %s" % (hdunum, extra))
 
         if req is not None and len(req) > 0:
             raise ValueError('Error: HDU #%02d Missing required keywords (%s)' % (hdunum, req))
@@ -218,7 +218,7 @@ def check_header_keywords(keywords, hdunum, hdr):
     if hdunum == 0:
         hdutype = 'pri'
 
-    for keyw, status in keywords[hdutype].items():
+    for keyw, status in list(keywords[hdutype].items()):
         if keyw not in hdr:
             if status == 'R':
                 req_missing.append(keyw)
@@ -254,7 +254,7 @@ def get_vals_from_header(primary_hdr):
                'LSKYPOW': 'f'}
 
     vals = {}
-    for key, ktype in keylist.items():
+    for key, ktype in list(keylist.items()):
         key = key.upper()
         if key in primary_hdr:
             value = primary_hdr[key]
