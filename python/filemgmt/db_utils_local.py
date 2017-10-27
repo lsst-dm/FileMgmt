@@ -38,20 +38,19 @@ def check_db_duplicates(dbh, filelist, archive):  #including compression
 
 
 def get_paths_by_id(dbh, args):
-    """ Make sure command line arguments have valid values 
+    """Make sure command line arguments have valid values.
 
-        Parameters
-        ----------
-        dbh : database connection
-            connection to use for checking the database related argumetns
+    Parameters
+    ----------
+    dbh : database connection
+        connection to use for checking the database related argumetns
 
-        args : dict
-            dictionary containing the command line arguemtns
+    args : dict
+        dictionary containing the command line arguemtns
 
-        Returns
-        -------
-        string containing the archive root
-
+    Returns
+    -------
+    string containing the archive root
     """
     valid = True
 
@@ -162,27 +161,26 @@ def get_paths_by_path_compare(dbh, args):
 
 
 def get_files_from_db(dbh, relpath, archive, pfwid, filetype=None, debug=False, quick=False):
-    """ Query DB to get list of files within that path inside the archive 
+    """Query DB to get list of files within that path inside the archive
 
-        Parameters
-        ----------
-        dbh : database connection
-            The database connection to use
+    Parameters
+    ----------
+    dbh : database connection
+        The database connection to use
 
-        relpath : str
-            The relative path of the directory to gather info for
+    relpath : str
+        The relative path of the directory to gather info for
 
-        archive : str
-            The archive name to use
+    archive : str
+        The archive name to use
 
-        debug : bool
-            Whether or not to report debugging information
+    debug : bool
+        Whether or not to report debugging information
 
-        Returns
-        -------
-        Dictionary containing the file info from the archive (path, name, filesize, md5sum)
+    Returns
+    -------
+    Dictionary containing the file info from the archive (path, name, filesize, md5sum)
     """
-
     start_time = time.time()
     if debug:
         print("Getting file information from db: BEG")

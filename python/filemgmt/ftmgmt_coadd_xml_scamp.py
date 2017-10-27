@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""
-Generic filetype management class used to do filetype specific tasks
-     such as metadata and content ingestion
+"""Generic filetype management class.
+
+Used to do filetype specific tasks such as metadata and content ingestion.
 """
 
 __version__ = "$Rev$"
@@ -14,9 +14,11 @@ import databaseapps.datafile_ingest_utils as dfiutils
 
 
 class FtMgmtCoaddXmlScamp(FtMgmtDatafile):
-    """  Class for managing filetype coadd_xml_scamp which needs data stored in 2 tables """
+    """Class for managing filetype coadd_xml_scamp.
 
-    ######################################################################
+    Needs data stored in 2 tables.
+    """
+
     def __init__(self, filetype, dbh, config, filepat=None):
         """ Initialize object """
         # config must have filetype_metadata and file_header_info
@@ -26,14 +28,12 @@ class FtMgmtCoaddXmlScamp(FtMgmtDatafile):
         self.filetype2 = 'coadd_xml_scamp_2'
         [self.tablename2, self.didatadefs2] = self.dbh.get_datafile_metadata(self.filetype2)
 
-    ######################################################################
     #def has_contents_ingested(self, listfullnames):
     #   For now, assume if ingested into table 1 then also ingested into table 2
 
-    ######################################################################
     def ingest_contents(self, listfullnames, **kwargs):
-        """ Ingest certain content into a non-metadata table """
-
+        """Ingest certain content into a non-metadata table.
+        """
         assert(isinstance(listfullnames, list))
 
         for fname in listfullnames:

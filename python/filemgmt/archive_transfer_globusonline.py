@@ -74,10 +74,9 @@ class ArchiveTransferGlobusOnline():
 
         return trans_results
 
-    ######################################################################
     def transfer_directory(self, relpath):
-        """ Transfer a directory between two archives """
-
+        """Transfer a directory between two archives.
+        """
         if miscutils.fwdebug_check(0, "ARCHIVE_TRANSFER_GLOBUSONLINE"):
             miscutils.fwdebug_print("\trelpath: %s" % relpath)
 

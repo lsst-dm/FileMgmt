@@ -1,13 +1,15 @@
-""" Miscellaneous FileMgmt utils """
+"""Miscellaneous FileMgmt utils.
+"""
+
 
 import despymisc.miscutils as miscutils
 import despymisc.misctime as misctime
 import json
 
 
-##################################################################################################
 def get_config_vals(archive_info, config, keylist):
-    """ Search given dicts for specific values """
+    """Search given dicts for specific values.
+    """
     info = {}
     for k, stat in list(keylist.items()):
         if archive_info is not None and k in archive_info:
@@ -22,12 +24,10 @@ def get_config_vals(archive_info, config, keylist):
             miscutils.fwdie('Error: Could not find required key (%s)' % k, 1, 2)
     return info
 
-######################################################################
-
 
 def read_json_single(json_file, allMandatoryExposureKeys):
-    """ Reads json manifest file """
-
+    """Reads json manifest file.
+    """
     if miscutils.fwdebug_check(3, 'FMUTILS_DEBUG'):
         miscutils.fwdebug_print("reading file %s" % json_file)
 

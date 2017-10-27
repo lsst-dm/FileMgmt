@@ -17,21 +17,23 @@ import despydmdb.dmdb_defs as dmdbdefs
 
 
 class FtMgmtGeneric(object):
-    """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
+    """Base/generic class for managing a filetype.
 
-    ######################################################################
+    Gets metadata, update metadata, etc.
+    """
+
     def __init__(self, filetype, dbh, config, filepat=None):
-        """ Initialize object """
+        """Initialize object.
+        """
         # config must have filetype_metadata and file_header_info
         self.filetype = filetype
         self.dbh = dbh
         self.config = config
         self.filepat = filepat
 
-    ######################################################################
     def has_metadata_ingested(self, listfullnames):
-        """ Check if file has row in metadata table """
-
+        """Check if file has row in metadata table.
+        """
         assert isinstance(listfullnames, list)
 
         # assume uncompressed and compressed files have same metadata
@@ -72,10 +74,9 @@ class FtMgmtGeneric(object):
             miscutils.fwdebug_print("Metadata check results: %s" % results)
         return results
 
-    ######################################################################
     def has_contents_ingested(self, listfullnames):
-        """ Check if file has contents ingested """
-
+        """Check if file has contents ingested.
+        """
         assert isinstance(listfullnames, list)
 
         # 0 contents to ingest, so true
@@ -85,10 +86,9 @@ class FtMgmtGeneric(object):
 
         return results
 
-    ######################################################################
     def check_valid(self, listfullnames):
-        """ Check if a valid file of the filetype """
-
+        """Check if a valid file of the filetype.
+        """
         assert isinstance(listfullnames, list)
 
         results = {}
@@ -97,15 +97,14 @@ class FtMgmtGeneric(object):
 
         return results
 
-    ######################################################################
     def ingest_contents(self, listfullnames, **kwargs):
-        """ Ingest certain content into a non-metadata table """
+        """Ingest certain content into a non-metadata table.
+        """
         pass
 
-    ######################################################################
     def perform_metadata_tasks(self, fullname, do_update, update_info):
-        """ Read metadata from file, updating file values """
-
+        """Read metadata from file, updating file values.
+        """
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: beg")
 
@@ -120,10 +119,9 @@ class FtMgmtGeneric(object):
             miscutils.fwdebug_print("INFO: end")
         return metadata
 
-    ######################################################################
     def _gather_metadata_file(self, fullname, **kwargs):
-        """ Gather metadata for a single file """
-
+        """Gather metadata for a single file.
+        """
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: beg  file=%s" % (fullname))
 
@@ -166,9 +164,9 @@ class FtMgmtGeneric(object):
             miscutils.fwdebug_print("INFO: end")
         return metadata
 
-    ######################################################################
     def _gather_metadata_from_config(self, fullname, metakeys):
-        """ Get values from config """
+        """Get values from config.
+        """
         metadata = OrderedDict()
 
         for wclkey in metakeys:
@@ -189,10 +187,9 @@ class FtMgmtGeneric(object):
 
         return metadata
 
-    ######################################################################
     def _gather_metadata_from_filename(self, fullname, metakeys):
-        """ Parse filename using given filepat """
-
+        """Parse filename using given filepat.
+        """
         if self.filepat is None:
             raise TypeError("None filepat for filetype %s" % self.filetype)
 

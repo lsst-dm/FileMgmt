@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-"""
-Generic filetype management class used to do filetype specific tasks
-     such as metadata and content ingestion
+"""Generic filetype management class used to do filetype specific tasks
+such as metadata and content ingestion
 """
 
 __version__ = "$Rev$"
@@ -19,18 +18,19 @@ import despymisc.misctime as misctime
 
 
 class FtMgmtSNManifest(FtMgmtGeneric):
-    """  Base/generic class for managing a filetype (get metadata, update metadata, etc) """
+    """Base/generic class for managing a filetype (get metadata, update
+    metadata, etc).
+    """
 
-    ######################################################################
     def __init__(self, filetype, dbh, config, filepat=None):
-        """ Initialize object """
+        """Initialize object.
+        """
         # config must have filetype_metadata and file_header_info
         FtMgmtGeneric.__init__(self, filetype, dbh, config, filepat)
 
-    ######################################################################
     def has_contents_ingested(self, listfullnames):
-        """ Check if file has contents ingested """
-
+        """Check if file has contents ingested.
+        """
         assert isinstance(listfullnames, list)
 
         # assume uncompressed and compressed files have same metadata
@@ -60,10 +60,9 @@ class FtMgmtSNManifest(FtMgmtGeneric):
 
         return results
 
-    ######################################################################
     def _gather_metadata_file(self, fullname, **kwargs):
-        """ Gather metadata for a single file """
-
+        """Gather metadata for a single file.
+        """
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: beg  file=%s" % (fullname))
 
@@ -86,12 +85,12 @@ class FtMgmtSNManifest(FtMgmtGeneric):
             miscutils.fwdebug_print("INFO: end")
         return metadata
 
-    ######################################################################
     def ingest_contents(self, listfullnames, **kwargs):
-        """ reads json manifest file and ingest into the DB tables
-            EXPOSURES_IN_MANIFEST and SN_SUBMIT_REQUEST values needed to
-            determine arrival of exposures taken for a SN field."""
+        """Reads json manifest file and ingest into the DB tables.
 
+        EXPOSURES_IN_MANIFEST and SN_SUBMIT_REQUEST values needed to
+        determine arrival of exposures taken for a SN field.
+        """
         assert isinstance(listfullnames, list)
 
         all_mandatory_exposure_keys = ['expid', 'object', 'date', 'acttime', 'filter']
@@ -100,14 +99,16 @@ class FtMgmtSNManifest(FtMgmtGeneric):
             all_exposures = fmutils.read_json_single(fname, all_mandatory_exposure_keys)
             self.ingestall_exposures(all_exposures)
 
-    ######################################################################
     def insert_dictionary_db(self, query, dictionary):
-        """Execute a query and return a cursor to a query
-        :param query: string with query statement
-        :param dictionary: dictionary to use in query
+        """Execute a query and return a cursor to a query.
 
+        Parameters
+        ----------
+        query: str
+            String with query statement.
+        dictionary: dict
+            Dictionary to use in query.
         """
-
         try:
             cur = self.dbh.cursor()
             cur.execute(query, dictionary)
@@ -128,20 +129,20 @@ class FtMgmtSNManifest(FtMgmtGeneric):
             raise
         return success
 
-    ######################################################################
     def ingestall_exposures(self, all_exposures):
+        """Ingest all the exposures in EXPOSURES_IN_MANIFEST and
+        SN_SUBMIT_REQUEST.
+
+        # If SEQNUM is > 1, then it means the same field was taken again
+        # during the same night. This will only happens in rare occasion when
+        # the sequence had to be aborted before it finished.
+
+        Parameters
+        ----------
+        all_exposures: dict
+            Dictionary with the following keys: set_type, createdAt, expid,
+            object, date, acttime, filter.
         """
-        Ingest all the exposures in EXPOSURES_IN_MANIFEST and SN_SUBMIT_REQUEST
-
-        #If SEQNUM is > 1, then it means the same field was taken again during the same night.
-        #This will only happens in rare occasion when the sequence had to be aborted before
-        #  it finished.
-
-        :param all_exposures: Dictionary with the following keys:
-        [set_type,createdAt,expid,object,date,acttime,filter]
-
-        """
-
         newdicttionary = {}
         for key in ['CAMSYM', 'EXPNUM', 'MANIFEST_FILENAME', 'FIELD', 'BAND', 'EXPTIME', 'NITE']:
             newdicttionary[key] = all_exposures[key]
@@ -170,12 +171,10 @@ class FtMgmtSNManifest(FtMgmtGeneric):
                 print("error while inserting into EXPOSURES_IN_MANIFEST: ", exc)
                 raise
 
-        ########################################################################################
-        #
         #Fix first expnum. First expnum is the first exposure for each filter set. In case of
         #one a field with one filter exposure, then first_expnum = expnum.
         #For more than one exposure / band/field, then first_expnum = first exposure of set.
-        #
+
 
         #Determine index of list for exptime = 10. (poiting exposure)
         allexps = all_exposures['EXPTIME']

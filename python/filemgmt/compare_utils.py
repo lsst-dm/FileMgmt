@@ -1,4 +1,7 @@
-""" Compare files from local disk and DB location tracking based upon an archive path """
+"""Compare files from local disk and DB location tracking based upon an
+archive path."""
+
+
 import os
 import time
 from sets import Set
@@ -15,20 +18,19 @@ class Args(object):
 
 
 def validate_args(dbh, args):
-    """ Make sure command line arguments have valid values 
+    """Make sure command line arguments have valid values.
 
-        Parameters
-        ----------
-        dbh : database connection
-            connection to use for checking the database related argumetns
+    Parameters
+    ----------
+    dbh : database connection
+        connection to use for checking the database related argumetns
 
-        args : dict
-            dictionary containing the command line arguemtns
+    args : dict
+        dictionary containing the command line arguemtns
 
-        Returns
-        -------
-        string containing the archive root
-
+    Returns
+    -------
+    string containing the archive root
     """
     if args.relpath is not None:
         archive_root, archive_path, relpath = dbutils.get_paths_by_path_compare(dbh, args)
@@ -47,25 +49,19 @@ def validate_args(dbh, args):
 
 
 def print_all_files(comparison_info, files_from_db, files_from_disk):
-    """ Print both lists of files 
+    """Print both lists of files.
 
-        Parameters
-        ----------
-        comparison_info : dict
-            Dictionary containing the results of the comparisons
+    Parameters
+    ----------
+    comparison_info : dict
+        Dictionary containing the results of the comparisons
 
-        files_from_db : dict
-            Dicitonary containing the file info from the database
+    files_from_db : dict
+        Dicitonary containing the file info from the database
 
-        files_from_disk : dict
-            Dictionary containing the file info from disk
-
-        Returns
-        -------
-        None
-
+    files_from_disk : dict
+        Dictionary containing the file info from disk
     """
-
     print("db path/name (filesize, md5sum)   F   disk path/name (filesize, md5sum)")
     allfiles = Set(files_from_db).union(Set(files_from_disk))
     fdisk_str = ""
@@ -106,29 +102,24 @@ def print_all_files(comparison_info, files_from_db, files_from_disk):
 
 
 def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, check_filesize, duplicates, db_duplicates):
-    """ Print only differences in file lists 
+    """Print only differences in file lists.
 
-        Parameters
-        ----------
-        comparision_info : dict
-            Dictionary containing the comparisions of disk and db for each file
+    Parameters
+    ----------
+    comparision_info : dict
+        Dictionary containing the comparisions of disk and db for each file
 
-        file_from_db : dict
-            Dicitonary containing the file info from the database
+    file_from_db : dict
+        Dicitonary containing the file info from the database
 
-        files_from_disk : dict
-            Dictionary containing the file info from disk
+    files_from_disk : dict
+        Dictionary containing the file info from disk
 
-        check_md5sum : bool
-            Whether or not to report the md5sum comparision
+    check_md5sum : bool
+        Whether or not to report the md5sum comparision
 
-        check_filesize : bool
-            Whether or not to report the filesize comparison
-
-
-        Returns
-        -------
-        None
+    check_filesize : bool
+        Whether or not to report the filesize comparison
     """
     pdup = []
 
@@ -269,7 +260,8 @@ def run_compare(args):
 
 
 def do_compare(dbh, args):
-    """ Main control """
+    """Main control.
+    """
     archive_root, archive_path, relpath, operator, pfwid = validate_args(dbh, args)
 
     #print archive_root

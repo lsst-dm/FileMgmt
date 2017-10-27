@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" Program to ingest data files that were created external to framework """
+"""Program to ingest data files that were created external to framework.
+"""
 
 import argparse
 import os
@@ -14,10 +15,9 @@ import filemgmt.errors as fmerrors
 __version__ = '$Rev$'
 
 
-###########################################################################
 def create_list_of_files(filemgmt, args):
-    """ Create list of files to register """
-
+    """Create list of files to register.
+    """
     filelist = None
     starttime = time.time()
     if args['filetype'] is not None:
@@ -34,20 +34,18 @@ def create_list_of_files(filemgmt, args):
     return filelist
 
 
-###########################################################################
 def save_register_info(filemgmt, task_id, provmsg, do_commit):
-    """ Save information into the FILE_REGISTRATION table """
+    """Save information into the FILE_REGISTRATION table.
+    """
     row = {'task_id': task_id, 'prov_msg': provmsg}
     filemgmt.basic_insert_row('FILE_REGISTRATION', row)
     if do_commit:
         filemgmt.commit()
 
-###########################################################################
-
 
 def parse_provided_list(listname):
-    """ create dictionary of files from list in file """
-
+    """Create dictionary of files from list in file.
+    """
     #cwd = os.getcwd()
     cwd = os.getenv('PWD')  # don't use getcwd as it canonicallizes path
     # which is not what we want for links internal to archive
@@ -78,10 +76,9 @@ def parse_provided_list(listname):
     return filelist
 
 
-###########################################################################
 def get_list_filenames(ingestpath, filetype):
-    """ create a dictionary by filetype of files in given path """
-
+    """Create a dictionary by filetype of files in given path.
+    """
     if ingestpath[0] != '/':
         cwd = os.getenv('PWD')  # don't use getcwd as it canonicallizes path
         # which is not what we want for links internal to archive
@@ -98,9 +95,9 @@ def get_list_filenames(ingestpath, filetype):
     return {filetype: filelist}
 
 
-###########################################################################
 def list_missing_metadata(filemgmt, ftype, filelist):
-    """ Return list of files from given set which are missing metadata """
+    """Return list of files from given set which are missing metadata.
+    """
     # filelist = list of file dicts
 
     if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
@@ -125,9 +122,9 @@ def list_missing_metadata(filemgmt, ftype, filelist):
     return misslist
 
 
-###########################################################################
 def list_missing_contents(filemgmt, ftype, filelist):
-    """ Return list of files from given set which still need contents ingested """
+    """Return list of files from given set which still need contents ingested.
+    """
     # filelist = list of file dicts
 
     if miscutils.fwdebug_check(6, "REGISTER_FILES_DEBUG"):
@@ -151,10 +148,9 @@ def list_missing_contents(filemgmt, ftype, filelist):
     return misslist
 
 
-###########################################################################
 def list_missing_archive(filemgmt, filelist, archive_name):
-    """ Return list of files from given list which are not listed in archive """
-
+    """Return list of files from given list which are not listed in archive.
+    """
     print("\tChecking which files are already registered in archive", end=' ')
     starttime = time.time()
     existing = filemgmt.is_file_in_archive(filelist, archive_name)
@@ -174,9 +170,9 @@ def list_missing_archive(filemgmt, filelist, archive_name):
     return misslist
 
 
-###########################################################################
 def save_file_info(filemgmt, task_id, ftype, filelist):
-    """ Save file metadata and contents """
+    """Save file metadata and contents.
+    """
     # filelist = list of file dicts
 
     # check which files already have metadata in database
@@ -205,12 +201,10 @@ def save_file_info(filemgmt, task_id, ftype, filelist):
         endtime = time.time()
         print("DONE (%0.2f secs)" % (endtime - starttime))
 
-###########################################################################
-
 
 def save_archive_location(filemgmt, filelist, archive_name):
-    """ save location in archive """
-
+    """Save location in archive.
+    """
     # check which files already are in archive
     missing_files = list_missing_archive(filemgmt, filelist, archive_name)
 
@@ -229,9 +223,9 @@ def save_archive_location(filemgmt, filelist, archive_name):
         print("DONE (%0.2f secs)" % (endtime - starttime))
 
 
-###########################################################################
 def process_files(filelist, filemgmt, task_id, archive_name, do_commit):
-    """ Ingests file metadata for all files in filelist """
+    """Ingests file metadata for all files in filelist.
+    """
     # filelist[fullname] = {'path': path, 'filetype': filetype, 'fullname':fullname,
     #                       'filename', 'compression'}
 
@@ -251,12 +245,10 @@ def process_files(filelist, filemgmt, task_id, archive_name, do_commit):
         if do_commit:
             filemgmt.commit()
 
-###########################################################################
-
 
 def parse_cmdline(argv):
-    """ Parse the command line """
-
+    """Parse the command line.
+    """
     parser = argparse.ArgumentParser(
         description='Ingest metadata for files generated outside DESDM framework')
     parser.add_argument('--des_services', action='store', help='')
@@ -307,11 +299,10 @@ def parse_cmdline(argv):
 
     return args
 
-###########################################################################
-
 
 def get_filemgmt_class(args):
-    """ Figure out which filemgmt class to use """
+    """Figure out which filemgmt class to use.
+    """
     filemgmt_class = None
 
     archive = args['archive_name']
@@ -347,11 +338,10 @@ def get_filemgmt_class(args):
 
     return filemgmt_class
 
-###########################################################################
-
 
 def main(argv):
-    """ Program entry point """
+    """Program entry point.
+    """
     starttime = time.time()
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout

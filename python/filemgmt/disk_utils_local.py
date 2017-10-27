@@ -1,5 +1,4 @@
-"""
-Generic routines for performing tasks on files that can be seen locally
+"""Generic routines for performing tasks on files that can be seen locally.
 """
 
 __version__ = "$Rev$"
@@ -15,30 +14,25 @@ import copy
 import despymisc.miscutils as miscutils
 
 
-######################################################################
 def get_md5sum_file(fullname, blksize=2**15):
-    """ Returns md5 checksum for given file """
-
+    """Returns md5 checksum for given file.
+    """
     md5 = hashlib.md5()
     with open(fullname, 'rb') as f:
         for chunk in iter(lambda: f.read(blksize), ''):
             md5.update(chunk)
     return md5.hexdigest()
 
-######################################################################
-
 
 def get_file_disk_info(arg):
-    """ Returns information about files on disk from given list or path"""
-
+    """Returns information about files on disk from given list or path.
+    """
     if isinstance(arg) is list:
         return get_file_disk_info_list(arg)
     elif type(arg) is str:
         return get_file_disk_info_path(arg)
     else:
         miscutils.fwdie("Error:  argument to get_file_disk_info isn't a list or a path (%s)" % type(arg), 1)
-
-######################################################################
 
 
 def get_single_file_disk_info(fname, save_md5sum=False, archive_root=None):
@@ -75,10 +69,9 @@ def get_single_file_disk_info(fname, save_md5sum=False, archive_root=None):
     return fdict
 
 
-######################################################################
 def get_file_disk_info_list(filelist, save_md5sum=False):
-    """ Returns information about files on disk from given list """
-
+    """Returns information about files on disk from given list.
+    """
     fileinfo = {}
     for fname in filelist:
         if os.path.exists(fname):
@@ -89,9 +82,9 @@ def get_file_disk_info_list(filelist, save_md5sum=False):
     return fileinfo
 
 
-######################################################################
 def get_file_disk_info_path(path, save_md5sum=False):
-    """ Returns information about files on disk from given path """
+    """Returns information about files on disk from given path.
+    """
     # if relative path, is treated relative to current directory
 
     if not os.path.exists(path):
@@ -106,9 +99,9 @@ def get_file_disk_info_path(path, save_md5sum=False):
     return fileinfo
 
 
-######################################################################
 def del_file_disk_list(filelist):
-    """ Deletes files on disk from given list """
+    """Deletes files on disk from given list.
+    """
     # deletes any directories it made empty by deleting files
 
     #### TODO
@@ -131,10 +124,9 @@ def del_file_disk_list(filelist):
     return fileinfo
 
 
-######################################################################
 def copyfiles(filelist, tstats, verify=False):
-    """ Copies files in given src,dst in filelist """
-
+    """Copies files in given src,dst in filelist.
+    """
     results = {}
     status = 0
     for filename, fdict in list(filelist.items()):
@@ -170,8 +162,6 @@ def copyfiles(filelist, tstats, verify=False):
             filelist[filename]['err'] = str(value)
     return (status, filelist)
 
-######################################################################
-
 
 def remove_file_if_exists(filename):
     try:
@@ -181,29 +171,26 @@ def remove_file_if_exists(filename):
             raise
 # end remove_file_if_exists
 
-######################################################################
-
 
 def get_files_from_disk(relpath, archive_root, check_md5sum=False, debug=False):
-    """ Check disk to get list of files within that path inside the archive 
+    """Check disk to get list of files within that path inside the archive.
 
-        Parameters
-        ----------
-        archive_root : str
-            The base root of the relpath entry
+    Parameters
+    ----------
+    archive_root : str
+        The base root of the relpath entry
 
-        check_md5sum : bool
-            Whether or not to compare md5sums
+    check_md5sum : bool
+        Whether or not to compare md5sums
 
-        debug : bool
-            Whether or not to report debugging info
+    debug : bool
+        Whether or not to report debugging info
 
-        Returns
-        -------
-        A dictionary contianing the info about the files on disk (filesize, md5sum, compression, filename, path)
-
+    Returns
+    -------
+    A dictionary contianing the info about the files on disk (filesize,
+    md5sum, compression, filename, path).
     """
-
     start_time = time.time()
     if debug:
         print("Getting file information from disk: BEG")
@@ -227,39 +214,32 @@ def get_files_from_disk(relpath, archive_root, check_md5sum=False, debug=False):
         print("Getting file information from disk: END (%s secs)" % (end_time - start_time))
     return files_from_disk, duplicates
 
-####################################################################
-
 
 def compare_db_disk(files_from_db, files_from_disk, duplicates, check_md5sum, check_filesize, debug=False, archive_root=""):
-    """ Compare file info from DB to info from disk 
+    """Compare file info from DB to info from disk.
 
-        Parameters
-        ----------
-        file_from_db : dict
-            Dicitonary containing the file info from the database
+    Parameters
+    ----------
+    file_from_db : dict
+        Dicitonary containing the file info from the database
 
-        files_from_disk : dict
-            Dictionary containing the file info from disk
+    files_from_disk : dict
+        Dictionary containing the file info from disk
 
-        check_md5sum : bool
-            Whether or not to report the md5sum comparision
+    check_md5sum : bool
+        Whether or not to report the md5sum comparision
 
-        check_filesize : bool
-            Whether or not to report the filesize comparison
+    check_filesize : bool
+        Whether or not to report the filesize comparison
 
-        debug : bool
-            Whenther or not to report debugging info
-            Default: False
+    debug : bool
+        Whenther or not to report debugging info
+        Default: False
 
-        archive_root : str
-            The archive root path
-            Default : False
-
-        Returns
-        -------
-        None
+    archive_root : str
+        The archive root path
+        Default : False
     """
-
     start_time = time.time()
     if debug:
         print("Comparing file information: BEG")

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-    Define a class to do file management tasks without DB
+""" Define a class to do file management tasks without DB.
 """
 
 __version__ = "$Rev$"

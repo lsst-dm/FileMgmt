@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-""" Delete files from local disk and DB location tracking based upon an archive path or reqnum/unitname/attnum triplet """
+"""Delete files from local disk and DB location tracking based upon an
+archive path or reqnum/unitname/attnum triplet."""
 
 import os
 import shutil
@@ -39,8 +40,8 @@ def parse_cmd_line(argv):
 
 
 def validate_args(dbh, args):
-    """ Make sure command line arguments have valid values """
-
+    """Make sure command line arguments have valid values.
+    """
     if args.relpath:
         ### sanity check relpath
         # make sure relpath is not an absolute path
@@ -77,7 +78,8 @@ def validate_args(dbh, args):
 
 
 def print_files(files_from_disk, comparison_info):
-    """ Print both lists of files """
+    """Print both lists of files.
+    """
 
     print("Files in both database and on disk:\n")
     for fn in list(files_from_disk.keys()):
@@ -101,7 +103,8 @@ def print_files(files_from_disk, comparison_info):
 
 
 def diff_files(comparison_info):
-    """ Print only differences in file lists """
+    """Print only differences in file lists.
+    """
     if len(comparison_info['dbonly']) == len(comparison_info['diskonly']) == 0:
         print(" No differneces found\n")
         return
@@ -122,8 +125,8 @@ def diff_files(comparison_info):
 
 
 def del_files_from_disk(path):
-    """ Delete files from disk """
-
+    """Delete files from disk.
+    """
     shutil.rmtree(path) #,ignore_errors=True)
 
 
@@ -174,8 +177,8 @@ def del_part_files_from_disk(files, archive_root):
 
 
 def main():
-    """ Main control """
-
+    """Main control.
+    """
     args = parse_cmd_line(sys.argv[1:])
     dofiles = False
     if args.filetype is not None:

@@ -1,6 +1,5 @@
-"""
-    Module to use when http for transfers between job and home archive, and
-    cp between job and target archive
+"""Module to use when http for transfers between job and home archive,
+and cp between job and target archive.
 """
 
 __version__ = "$Rev$"
@@ -16,18 +15,19 @@ DES_HTTP_SECTION = 'des_http_section'
 
 
 class JobArchiveHttpCp(object):
-    """
-        Use http for transfers between job and home archive, and
-        cp between job and target archive
+    """Use http for transfers between job and home archive, and cp between job
+    and target archive.
     """
 
     @staticmethod
     def requested_config_vals():
-        """ Tell which values are req/opt for this object """
+        """Tell which values are req/opt for this object.
+        """
         return {DES_SERVICES: 'REQ', DES_HTTP_SECTION: 'REQ'}
 
     def __init__(self, homeinfo, targetinfo, mvmtinfo, tstats, config=None):
-        """ initialize object """
+        """Initialize object.
+        """
         self.home = homeinfo
         self.target = targetinfo
         self.mvmt = mvmtinfo
@@ -41,7 +41,9 @@ class JobArchiveHttpCp(object):
                                        self.config[DES_HTTP_SECTION])
 
     def home2job(self, filelist):
-        """ From inside job, pull files from home archive to job scratch directory """
+        """From inside job, pull files from home archive to job scratch
+        directory.
+        """
         if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
             miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
         if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
@@ -63,7 +65,9 @@ class JobArchiveHttpCp(object):
         return results
 
     def target2job(self, filelist):
-        """ From inside job, pull files from target archive to job scratch directory """
+        """From inside job, pull files from target archive to job scratch
+        directory.
+        """
         if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
             miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
         if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
@@ -82,7 +86,9 @@ class JobArchiveHttpCp(object):
         return results
 
     def job2target(self, filelist):
-        """ From inside job, push files to target archive from job scratch directory """
+        """From inside job, push files to target archive from job scratch
+        directory.
+        """
         if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
             miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))
         if miscutils.fwdebug_check(6, "JOBFILEMVMT_DEBUG"):
@@ -101,7 +107,9 @@ class JobArchiveHttpCp(object):
         return results
 
     def job2home(self, filelist, verify=False):
-        """ From inside job, push files to home archive from job scratch directory """
+        """From inside job, push files to home archive from job scratch
+        directory.
+        """
         # if staging outside job, this function shouldn't be called
         if miscutils.fwdebug_check(3, "JOBFILEMVMT_DEBUG"):
             miscutils.fwdebug_print("len(filelist)=%s" % len(filelist))

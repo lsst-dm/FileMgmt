@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-""" Compare files from local disk and DB location tracking based upon an archive path """
+"""Compare files from local disk and DB location tracking based upon an
+archive path.
+"""
+
 import sys
 import argparse
 import filemgmt.compare_utils as compare
@@ -14,7 +17,6 @@ class Print(object):
         ----------
         wrapnum : int
             The wrapper number to prepend to the lines
-
     """
 
     def __init__(self, wrapnum):
@@ -22,13 +24,12 @@ class Print(object):
         self.wrapnum = int(wrapnum)
 
     def write(self, text):
-        """ Method to capture, reformat, and write out the requested text
+        """Method to capture, reformat, and write out the requested text
 
             Parameters
             ----------
             test : str
                 The text to reformat
-
         """
         text = text.rstrip()
         if len(text) == 0:
@@ -37,28 +38,26 @@ class Print(object):
         self.old_stdout.write('%04d: %s\n' % (self.wrapnum, text))
 
     def close(self):
-        """ Method to return stdout to its original handle
-
+        """Method to return stdout to its original handle.
         """
         return self.old_stdout
 
     def flush(self):
-        """ Method to force the buffer to flush
-
+        """Method to force the buffer to flush.
         """
         self.old_stdout.flush()
 
 
 def parse_cmd_line(argv):
-    """ Parse command line arguments 
+    """Parse command line arguments.
 
-        Parameters
-        ----------
-        args : command line arguments
+    Parameters
+    ----------
+    args : command line arguments
 
-        Returns
-        -------
-        Dictionary continaing the command line arguments
+    Returns
+    -------
+    Dictionary continaing the command line arguments
     """
     parser = argparse.ArgumentParser(description='Delete files from DB and disk based upon path')
     parser.add_argument('--des_services', action='store', help='')

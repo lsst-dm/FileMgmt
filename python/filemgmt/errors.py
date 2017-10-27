@@ -1,19 +1,20 @@
-"""
-    Define some exceptions.
+"""Define some exceptions.
 """
 
 __version__ = "$Rev$"
 
 
 class MetadataConfigError (Exception):
-    "Represent an error in the METADATA and/or FILETYPE tables."
+    """Represent an error in the METADATA and/or FILETYPE tables.
+    """
 
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
 
 class DuplicateDBFiletypeError (MetadataConfigError):
-    "Duplicate filetype in the FILETYPE table in the database."
+    """Duplicate filetype in the FILETYPE table in the database.
+    """
 
     def __init__(self, msg=None):
         if not msg:
@@ -22,7 +23,8 @@ class DuplicateDBFiletypeError (MetadataConfigError):
 
 
 class DuplicateDBHeaderError (MetadataConfigError):
-    "Duplicate header in the METADATA table in the database."
+    """Duplicate header in the METADATA table in the database.
+    """
 
     def __init__(self, msg=None):
         if not msg:
@@ -31,7 +33,8 @@ class DuplicateDBHeaderError (MetadataConfigError):
 
 
 class IdMetadataHeaderError (MetadataConfigError):
-    "Disallowed id header found in METADATA table in the database."
+    """Disallowed id header found in METADATA table in the database.
+    """
 
     def __init__(self, msg=None):
         if not msg:
@@ -40,14 +43,16 @@ class IdMetadataHeaderError (MetadataConfigError):
 
 
 class FileMetadataIngestError (Exception):
-    "Represent an error in the file metadata ingest routines."
+    """Represent an error in the file metadata ingest routines.
+    """
 
     def __init__(self, msg):
         Exception.__init__(self, msg)
 
 
 class RequiredMetadataMissingError (FileMetadataIngestError):
-    "A required file metadata element was not found in the dataset to ingest."
+    """A required file metadata element was not found in the dataset to ingest.
+    """
 
     def __init__(self, msg=None):
         if not msg:
@@ -56,7 +61,8 @@ class RequiredMetadataMissingError (FileMetadataIngestError):
 
 
 class DBMetadataNotFoundError (FileMetadataIngestError):
-    "There is an unknown filetype in the file submitted for ingest."
+    """There is an unknown filetype in the file submitted for ingest.
+    """
 
     def __init__(self, msg=None):
         if not msg:
