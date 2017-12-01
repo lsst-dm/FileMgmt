@@ -1,8 +1,3 @@
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 # lower case because appears as wcl section and wcl sections are converted to lowercase
 META_HEADERS = 'h'
 META_COMPUTE = 'c'
@@ -30,8 +25,8 @@ FW_MSG_INFO = 1
 
 PROV_USED_TABLE = "OPM_USED"
 #PROV_WGB_TABLE  = "OPM_WAS_GENERATED_BY"
-PROV_WDF_TABLE  = "OPM_WAS_DERIVED_FROM"
+PROV_WDF_TABLE = "OPM_WAS_DERIVED_FROM"
 PROV_TASK_ID = "TASK_ID"
 PROV_FILE_ID = "DESFILE_ID"
 PROV_PARENT_ID = "PARENT_DESFILE_ID"
-PROV_CHILD_ID  = "CHILD_DESFILE_ID"
+PROV_CHILD_ID = "CHILD_DESFILE_ID"
