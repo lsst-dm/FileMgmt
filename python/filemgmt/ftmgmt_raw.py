@@ -1,7 +1,13 @@
 #!/usr/bin/env python
 
-"""Generic filetype management class used to do filetype specific tasks such
-as metadata and content ingestion.
+# $Id$
+# $Rev::                                  $:  # Revision of last commit.
+# $LastChangedBy::                        $:  # Author of last commit.
+# $LastChangedDate::                      $:  # Date of last commit.
+
+"""
+Generic filetype management class used to do filetype specific tasks
+     such as metadata and content ingestion
 """
 
 __version__ = "$Rev$"
@@ -15,20 +21,20 @@ from filemgmt.ftmgmt_genfits import FtMgmtGenFits
 import despymisc.miscutils as miscutils
 import despymisc.create_special_metadata as spmeta
 
-
 class FtMgmtRaw(FtMgmtGenFits):
-    """Class for managing a raw filetype (get metadata, update metadata, etc).
-    """
+    """  Class for managing a raw filetype (get metadata, update metadata, etc) """
 
+    ######################################################################
     def __init__(self, filetype, dbh, config, filepat=None):
-        """Initialize object.
-        """
+        """ Initialize object """
         # config must have filetype_metadata, file_header_info, keywords_file (OPT)
         FtMgmtGenFits.__init__(self, filetype, dbh, config, filepat)
 
+
+    ######################################################################
     def has_contents_ingested(self, listfullnames):
-        """Check if exposure has row in rasicam_decam table.
-        """
+        """ Check if exposure has row in rasicam_decam table """
+
         assert isinstance(listfullnames, list)
 
         # assume uncompressed and compressed files have same metadata
@@ -39,10 +45,10 @@ class FtMgmtRaw(FtMgmtGenFits):
             byfilename[filename] = fname
 
         self.dbh.empty_gtt(dmdbdefs.DB_GTT_FILENAME)
-        self.dbh.load_filename_gtt(list(byfilename.keys()))
+        self.dbh.load_filename_gtt(byfilename.keys())
 
         dbq = "select r.filename from rasicam_decam r, %s g where r.filename=g.filename" % \
-            (dmdbdefs.DB_GTT_FILENAME)
+                 (dmdbdefs.DB_GTT_FILENAME)
         curs = self.dbh.cursor()
         curs.execute(dbq)
 
@@ -57,9 +63,10 @@ class FtMgmtRaw(FtMgmtGenFits):
 
         return results
 
+    ######################################################################
     def perform_metadata_tasks(self, fullname, do_update, update_info):
-        """Read metadata from file, updating file values.
-        """
+        """ Read metadata from file, updating file values """
+
         if miscutils.fwdebug_check(3, 'FTMGMT_DEBUG'):
             miscutils.fwdebug_print("INFO: beg")
 
@@ -68,6 +75,7 @@ class FtMgmtRaw(FtMgmtGenFits):
         primary_hdr = pyfits.getheader(fullname, 0)
         prihdu = pyfits.PrimaryHDU(header=primary_hdr)
         hdulist = pyfits.HDUList([prihdu])
+
 
         # read metadata and call any special calc functions
         metadata, _ = self._gather_metadata_file(fullname, hdulist=hdulist)
@@ -85,9 +93,11 @@ class FtMgmtRaw(FtMgmtGenFits):
             miscutils.fwdebug_print("INFO: end")
         return metadata
 
+
+    ######################################################################
     def ingest_contents(self, listfullnames, **kwargs):
-        """Ingest data into non-metadata table - rasicam_decam.
-        """
+        """ Ingest data into non-metadata table - rasicam_decam"""
+
         assert isinstance(listfullnames, list)
 
         dbtable = 'rasicam_decam'
@@ -117,9 +127,11 @@ class FtMgmtRaw(FtMgmtGenFits):
             else:
                 raise Exception("No RASICAM header keywords identified for %s" % filename)
 
+
+    ######################################################################
     def check_valid(self, listfullnames):
-        """Check whether the given files are valid raw files.
-        """
+        """ Check whether the given files are valid raw files """
+
         assert isinstance(listfullnames, list)
 
         results = {}
@@ -134,7 +146,7 @@ class FtMgmtRaw(FtMgmtGenFits):
 
         miscutils.fwdebug_print("keyfile = %s" % keyfile)
         if keyfile is not None and os.path.exists(keyfile):
-            keywords = {'pri': {}, 'ext': {}}
+            keywords = {'pri':{}, 'ext':{}}
             with open(keyfile, 'r') as keyfh:
                 for line in keyfh:
                     line = line.upper()
@@ -154,9 +166,10 @@ class FtMgmtRaw(FtMgmtGenFits):
         return results
 
 
+######################################################################
 def check_single_valid(keywords, fullname, verbose): # should raise exception if not valid
-    """Check whether the given file is a valid raw file.
-    """
+    """ Check whether the given file is a valid raw file """
+
     # check fits file
     hdulist = pyfits.open(fullname)
     prihdr = hdulist[0].header
@@ -166,6 +179,7 @@ def check_single_valid(keywords, fullname, verbose): # should raise exception if
     actual_filename = miscutils.parse_fullname(fullname, miscutils.CU_PARSE_FILENAME)
     if actual_filename != correct_filename:
         raise ValueError('Error: invalid filename (%s)' % actual_filename)
+
 
     instrume = prihdr['INSTRUME'].lower()
 
@@ -187,19 +201,18 @@ def check_single_valid(keywords, fullname, verbose): # should raise exception if
 
         if verbose > 1:
             if want is not None and len(want) > 0:
-                print("HDU #%02d Missing requested keywords: %s" % (hdunum, want))
+                print "HDU #%02d Missing requested keywords: %s" % (hdunum, want)
             if extra is not None and len(extra) > 0:
-                print("HDU #%02d Extra keywords: %s" % (hdunum, extra))
+                print "HDU #%02d Extra keywords: %s" % (hdunum, extra)
 
         if req is not None and len(req) > 0:
             raise ValueError('Error: HDU #%02d Missing required keywords (%s)' % (hdunum, req))
 
     return True
 
-
+######################################################################
 def check_header_keywords(keywords, hdunum, hdr):
-    """Check for keywords in header.
-    """
+    """ Check for keywords in header """
     # missing has the keywords which are missing in the file and are required for processing
     # extra are the keywords which are not required and are present in the system
     # not required are the ones which are not required and are not present
@@ -212,7 +225,7 @@ def check_header_keywords(keywords, hdunum, hdr):
     if hdunum == 0:
         hdutype = 'pri'
 
-    for keyw, status in list(keywords[hdutype].items()):
+    for keyw, status in keywords[hdutype].items():
         if keyw not in hdr:
             if status == 'R':
                 req_missing.append(keyw)
@@ -222,34 +235,35 @@ def check_header_keywords(keywords, hdunum, hdr):
     # check for extra keywords
     for keyw in hdr:
         if keyw not in keywords[hdutype] or \
-                keywords[hdutype][keyw] == 'N':
+            keywords[hdutype][keyw] == 'N':
             extra.append(keyw)
 
     return (req_missing, want_missing, extra)
 
 
-def get_vals_from_header(primary_hdr):
-    """Get values from primary header.
 
-    Helper function for ingest_contents to get values from primary header
-    for insertion into rasicam_DECam table.
-    """
+
+######################################################################
+def get_vals_from_header(primary_hdr):
+    """ Helper function for ingest_contents to get values from primary header
+        for insertion into rasicam_DECam table """
+
     #  Keyword list needed to update the database.
     #     i=int, f=float, b=bool, s=str, date=date
-    keylist = {'EXPNUM': 'i',
-               'INSTRUME': 's',
-               'SKYSTAT': 'b',
-               'SKYUPDAT': 'date',
-               'GSKYPHOT': 'b',
-               'LSKYPHOT': 'b',
-               'GSKYVAR': 'f',
-               'GSKYHOT': 'f',
-               'LSKYVAR': 'f',
-               'LSKYHOT': 'f',
-               'LSKYPOW': 'f'}
+    keylist = {'EXPNUM':'i',
+               'INSTRUME':'s',
+               'SKYSTAT':'b',
+               'SKYUPDAT':'date',
+               'GSKYPHOT':'b',
+               'LSKYPHOT':'b',
+               'GSKYVAR':'f',
+               'GSKYHOT':'f',
+               'LSKYVAR':'f',
+               'LSKYHOT':'f',
+               'LSKYPOW':'f'}
 
     vals = {}
-    for key, ktype in list(keylist.items()):
+    for key, ktype in keylist.items():
         key = key.upper()
         if key in primary_hdr:
             value = primary_hdr[key]

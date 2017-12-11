@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 
-"""Generic filetype management class.
+# $Id$
+# $Rev::                                  $:  # Revision of last commit.
+# $LastChangedBy::                        $:  # Author of last commit.
+# $LastChangedDate::                      $:  # Date of last commit.
 
-Used to do filetype specific tasks such as metadata and content ingestion.
+"""
+Generic filetype management class used to do filetype specific tasks
+     such as metadata and content ingestion
 """
 
 __version__ = "$Rev$"
@@ -12,13 +17,10 @@ from filemgmt.ftmgmt_datafile import FtMgmtDatafile
 import despymisc.miscutils as miscutils
 import databaseapps.datafile_ingest_utils as dfiutils
 
-
 class FtMgmtCoaddXmlScamp(FtMgmtDatafile):
-    """Class for managing filetype coadd_xml_scamp.
+    """  Class for managing filetype coadd_xml_scamp which needs data stored in 2 tables """
 
-    Needs data stored in 2 tables.
-    """
-
+    ######################################################################
     def __init__(self, filetype, dbh, config, filepat=None):
         """ Initialize object """
         # config must have filetype_metadata and file_header_info
@@ -28,12 +30,16 @@ class FtMgmtCoaddXmlScamp(FtMgmtDatafile):
         self.filetype2 = 'coadd_xml_scamp_2'
         [self.tablename2, self.didatadefs2] = self.dbh.get_datafile_metadata(self.filetype2)
 
+
+    ######################################################################
     #def has_contents_ingested(self, listfullnames):
     #   For now, assume if ingested into table 1 then also ingested into table 2
 
+
+    ######################################################################
     def ingest_contents(self, listfullnames, **kwargs):
-        """Ingest certain content into a non-metadata table.
-        """
+        """ Ingest certain content into a non-metadata table """
+
         assert(isinstance(listfullnames, list))
 
         for fname in listfullnames:
@@ -41,17 +47,17 @@ class FtMgmtCoaddXmlScamp(FtMgmtDatafile):
             numrows = dfiutils.datafile_ingest_main(self.dbh, self.filetype, fname,
                                                     self.tablename, self.didatadefs)
             if numrows == None or numrows == 0:
-                miscutils.fwdebug_print("WARN: 0 rows ingested from %s for table %s" %
+                miscutils.fwdebug_print("WARN: 0 rows ingested from %s for table %s" % \
                                         (self.tablename, fname))
             elif miscutils.fwdebug_check(1, 'FTMGMT_DEBUG'):
-                miscutils.fwdebug_print("INFO: %s rows ingested from %s for table %s" %
+                miscutils.fwdebug_print("INFO: %s rows ingested from %s for table %s" % \
                                         (numrows, self.tablename2, fname))
 
             numrows = dfiutils.datafile_ingest_main(self.dbh, self.filetype2, fname,
                                                     self.tablename2, self.didatadefs2)
             if numrows == None or numrows == 0:
-                miscutils.fwdebug_print("WARN: 0 rows ingested from %s for table %s" %
+                miscutils.fwdebug_print("WARN: 0 rows ingested from %s for table %s" % \
                                         (self.tablename2, fname))
             elif miscutils.fwdebug_check(1, 'FTMGMT_DEBUG'):
-                miscutils.fwdebug_print("INFO: %s rows ingested from %s for table %s" %
+                miscutils.fwdebug_print("INFO: %s rows ingested from %s for table %s" % 
                                         (numrows, self.tablename2, fname))

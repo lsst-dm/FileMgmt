@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+# $Id: compworker.py 11430 2013-04-12 21:41:16Z tomashek $
+# $Rev::                                  $:  # Revision of last commit.
+# $LastChangedBy::                        $:  # Author of last commit.
+# $LastChangedDate::                      $:  # Date of last commit.
+
 __version__ = "$Rev: 11430 $"
 
 import os
@@ -12,14 +17,16 @@ import traceback
 from abc import ABCMeta, abstractmethod
 
 
-class CompWorker(metaclass=ABCMeta):
+class CompWorker:
+    __metaclass__ = ABCMeta
+
     _passthroughargs = None
     _cleanup = None
     _dateFormat = '%Y-%m-%d %H:%M:%S'
     _retcode = None
     _errmsg = None
 
-    def __init__(self, cleanup=False, args=""):
+    def __init__(self,cleanup=False,args=""):
         self._passthroughargs = args.split()
         self._cleanup = cleanup
 
@@ -43,7 +50,7 @@ class CompWorker(metaclass=ABCMeta):
         return self._errmsg
 
     def get_exe_version(self):
-        cmdlist = [_f for _f in [self.get_exebase()] + self.get_exe_version_args() if _f]
+        cmdlist = filter(None,[self.get_exebase()] + self.get_exe_version_args())
         return (subprocess.check_output(cmdlist)).strip()
 
     def get_commandargs(self):
@@ -51,14 +58,14 @@ class CompWorker(metaclass=ABCMeta):
 
     def get_commandargs_list(self):
         if self._cleanup:
-            return [_f for _f in self.get_cleanup() + self._passthroughargs if _f]
+            return filter(None,self.get_cleanup() + self._passthroughargs)
         else:
-            return [_f for _f in self._passthroughargs if _f]
+            return filter(None,self._passthroughargs)
 
     def execute(self, file):
         cmdlist = [self.get_exebase()] + self.get_commandargs_list() + [file]
         try:
-            self._errmsg = subprocess.check_output(cmdlist, stderr=subprocess.STDOUT, shell=False)
+            self._errmsg = subprocess.check_output(cmdlist, stderr=subprocess.STDOUT,shell=False)
             self._retcode = 0
         except subprocess.CalledProcessError as e:
             self._retcode = e.returncode
@@ -69,13 +76,14 @@ class CompWorker(metaclass=ABCMeta):
         return self._retcode
 
 
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Calls a subprogram to compress a file')
-    parser.add_argument('--file', action='store')
-    parser.add_argument('--exeargs', action='store', default="")
-    parser.add_argument('--cleanup', action='store_true', default=False)
-    parser.add_argument('--class', action='store', default="filemgmt.fpackcompworker.FpackCompWorker")
+    parser.add_argument('--file',action='store')
+    parser.add_argument('--exeargs',action='store',default="")
+    parser.add_argument('--cleanup',action='store_true',default=False)
+    parser.add_argument('--class',action='store',default="filemgmt.fpackcompworker.FpackCompWorker")
 
     args, unknown_args = parser.parse_known_args()
     args = vars(args)
@@ -83,7 +91,9 @@ if __name__ == '__main__':
     if "file" not in args or "class" not in args:
         exit(1)
 
-    compressor = miscutils.dynamically_load_class(args["class"])(args["cleanup"], args["exeargs"])
-    print("full_commandline=" + compressor.get_exebase() + ' ' + compressor.get_commandargs())
+    compressor = miscutils.dynamically_load_class(args["class"])(args["cleanup"],args["exeargs"])
+    print "full_commandline=" + compressor.get_exebase() + ' ' + compressor.get_commandargs()
     # compressor.execute(args["file"])
-    print("version=" + compressor.get_exe_version())
+    print "version=" + compressor.get_exe_version()
+
+

@@ -2,7 +2,6 @@
 
 # OSG/FNAL User Support, December 2013
 
-
 def Usage():
     sys.exit("""Summarize statistics from the output of the instrumented copyfiles()
    in eups/packages/Linux64/FileMgmt/python/filemgmt/http_utils.py
@@ -34,7 +33,7 @@ def summarize_copy_stats(fname):
     #  ('fromarchive') or from ('toarchive') the job, and whose second
     #  element is the total number of bytes spent copying that file in
     #  that direction.
-
+    
     for line in fileinput.input(fname):
         F = line.split()
         num_copies = max(num_copies, int(F[2])+1)
@@ -44,19 +43,18 @@ def summarize_copy_stats(fname):
         elif F[7] == 'toarchive':
             num_bytes_to += int(F[4])
         else:
-            raise Exception("Field 5 of 'Copy info:' must be either toarchive or fromarchive.")
+            raise Exception, "Field 5 of 'Copy info:' must be either toarchive or fromarchive."
         time_used += float(F[5])
         fname = F[3]
         x = []
-        if fname not in copy_stats:
+        if not copy_stats.has_key(fname):
             copy_stats[fname] = {}
-        if F[7] not in copy_stats[fname]:
+        if not copy_stats[fname].has_key(F[7]):
             copy_stats[fname][F[7]] = [0, 0]
         x = copy_stats[fname][F[7]]
         x[0] += 1
         x[1] += int(F[4])
     return (num_copies, num_files, num_bytes_from, num_bytes_to, time_used, copy_stats)
-
 
 def record_repeated_copies(per_file_stats):
     """Return a dictionary of length-2 lists.
@@ -69,47 +67,44 @@ need, the second element is the list of those file names.
 {1: [83923590, ['20130924_scamp_update_head.config']], 2: [144000, ['D00158966_r_c11_r131p01_scampcat.fits']]}
 """
     R = {}
-    for fname in list(per_file_stats.keys()):
-        def safe_dereference(fname, direction, n):
-            if direction in per_file_stats[fname]:
+    for fname in per_file_stats.keys():
+        def safe_dereference(fname,direction,n):
+            if per_file_stats[fname].has_key(direction):
                 return per_file_stats[fname][direction][n]
             else:
                 return 0
-
-        def sum_stat(n): return safe_dereference(fname, 'fromarchive', n) + \
-            safe_dereference(fname, 'toarchive', n)
+        def sum_stat(n): return safe_dereference(fname,'fromarchive',n) + safe_dereference(fname,'toarchive',n)
         times_copied = sum_stat(0)
         bytes_copied = sum_stat(1)
-        if times_copied not in R:
+        if not R.has_key(times_copied):
             R[times_copied] = [0, []]
         R[times_copied][0] += bytes_copied
         R[times_copied][1].append(fname)
     return R
 
-
 if __name__ == "__main__":
     try:
-        opts, args = getopt.getopt(sys.argv[1:], 'thL')
-    except getopt.GetoptError as x:
+        opts, args = getopt.getopt(sys.argv[1:],'thL')
+    except getopt.GetoptError, x:
         sys.exit('Error: ' + x.msg)
     optsd = dict(opts)
-    if '-h' in optsd:
-        Usage()
-    if '-t' in optsd:
+    if optsd.has_key('-h'):
+       Usage()
+    if optsd.has_key('-t'):
         import doctest
         doctest.testmod()   # verbose=True
         sys.exit()
     cs = summarize_copy_stats('-')
     R = record_repeated_copies(cs[5])
-    if '-L' not in optsd:
-        print("times_copied   total_bytes_copied  num_files")
-        for times_copied in list(R.keys()):
-            print("%d  %d  %s" % (times_copied, R[times_copied][0], len(R[times_copied][1])))
-        print()
-        print("num_copies num_files bytes_from_archive  bytes_to_archive time_used(s)")
-        print(" ".join(map(str, cs[0:5])))
+    if not optsd.has_key('-L'):
+        print "times_copied   total_bytes_copied  num_files"
+        for times_copied in R.keys():
+            print "%d  %d  %s" % (times_copied, R[times_copied][0], len(R[times_copied][1]))
+        print
+        print "num_copies num_files bytes_from_archive  bytes_to_archive time_used(s)"
+        print " ".join(map(str,cs[0:5]))
     else:
-        for times_copied in list(R.keys()):
-            print("times_copied:%d" % times_copied)
-            print("total_bytes_copied:%d" % R[times_copied][0])
-            print("files_copied:\n    " + "\n    ".join(R[times_copied][1]))
+        for times_copied in R.keys():
+            print "times_copied:%d" % times_copied
+            print "total_bytes_copied:%d" % R[times_copied][0]
+            print "files_copied:\n    " + "\n    ".join(R[times_copied][1])
