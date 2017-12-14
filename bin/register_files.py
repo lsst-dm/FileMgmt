@@ -1,8 +1,4 @@
 #!/usr/bin/env python
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
 
 """ Program to ingest data files that were created external to framework """
 
@@ -15,8 +11,6 @@ import time
 import despymisc.miscutils as miscutils
 import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.errors as fmerrors
-
-__version__ = '$Rev$'
 
 
 ###########################################################################
@@ -353,8 +347,6 @@ def main(argv):
     starttime = time.time()
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout
-    revmatch = re.search(r'\$Rev:\s+(\d+)\s+\$', __version__)
-    print '\nUsing revision %s of %s\n' % (revmatch.group(1), os.path.basename(sys.argv[0]))
 
     args = parse_cmdline(argv)
 

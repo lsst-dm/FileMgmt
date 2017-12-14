@@ -1,15 +1,8 @@
 #!/usr/bin/env python
 
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 """
     Define a database utility class for tracking transfer statistics
 """
-
-__version__ = "$Rev$"
 
 import ConfigParser
 import despymisc.miscutils as miscutils

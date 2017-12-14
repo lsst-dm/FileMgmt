@@ -1,10 +1,5 @@
 #!/usr/bin/env python
 
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 """
 Contains utilities for use with generating WCL for collecting file metadata/updating headers
 """

@@ -1,18 +1,9 @@
 #!/usr/bin/env python
 
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
-# pylint: disable=print-statement
-
 """
     Extend core DM db class with functionality for managing files
     (metadata ingestion, "location" registering)
 """
-
-__version__ = "$Rev$"
 
 import os
 import re
