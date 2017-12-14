@@ -12,8 +12,6 @@ import despymisc.miscutils as miscutils
 import filemgmt.filemgmt_defs as fmdefs
 import filemgmt.errors as fmerrors
 
-__version__ = '$Rev$'
-
 
 def create_list_of_files(filemgmt, args):
     """Create list of files to register.
@@ -345,8 +343,6 @@ def main(argv):
     starttime = time.time()
 
     sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout
-    revmatch = re.search(r'\$Rev:\s+(\d+)\s+\$', __version__)
-    print('\nUsing revision %s of %s\n' % (revmatch.group(1), os.path.basename(sys.argv[0])))
 
     args = parse_cmdline(argv)
 

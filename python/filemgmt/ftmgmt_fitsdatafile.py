@@ -5,8 +5,6 @@ Generic filetype management class used to do filetype specific tasks
      such as metadata and content ingestion
 """
 
-__version__ = "$Rev$"
-
 from filemgmt.ftmgmt_genfits import FtMgmtGenFits
 
 import despymisc.miscutils as miscutils

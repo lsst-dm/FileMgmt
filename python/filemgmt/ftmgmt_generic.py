@@ -5,8 +5,6 @@ Generic filetype management class used to do filetype specific tasks
      such as metadata and content ingestion
 """
 
-__version__ = "$Rev$"
-
 from collections import OrderedDict
 import copy
 import re

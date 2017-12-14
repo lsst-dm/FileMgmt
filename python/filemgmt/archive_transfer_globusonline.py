@@ -1,8 +1,6 @@
 """
 """
 
-__version__ = "$Rev$"
-
 import os
 import copy
 

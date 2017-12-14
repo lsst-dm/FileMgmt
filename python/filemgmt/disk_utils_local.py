@@ -1,8 +1,6 @@
 """Generic routines for performing tasks on files that can be seen locally.
 """
 
-__version__ = "$Rev$"
-
 import os
 import sys
 import shutil

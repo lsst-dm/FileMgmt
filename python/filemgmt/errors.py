@@ -1,7 +1,6 @@
 """Define some exceptions.
 """
 
-__version__ = "$Rev$"
 
 
 class MetadataConfigError (Exception):

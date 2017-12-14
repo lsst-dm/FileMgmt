@@ -4,8 +4,6 @@
 such as metadata and content ingestion
 """
 
-__version__ = "$Rev$"
-
 import cx_Oracle
 from collections import defaultdict
 import json

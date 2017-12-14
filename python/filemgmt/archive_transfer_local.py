@@ -1,9 +1,6 @@
 """
 """
 
-__version__ = "$Rev$"
-
-
 import copy
 import despymisc.miscutils as miscutils
 #import filemgmt.filemgmt_defs as fmdefs

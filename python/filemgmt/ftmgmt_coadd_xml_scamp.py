@@ -5,8 +5,6 @@
 Used to do filetype specific tasks such as metadata and content ingestion.
 """
 
-__version__ = "$Rev$"
-
 from filemgmt.ftmgmt_datafile import FtMgmtDatafile
 
 import despymisc.miscutils as miscutils

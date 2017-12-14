@@ -1,7 +1,6 @@
 """Miscellaneous FileMgmt utils.
 """
 
-
 import despymisc.miscutils as miscutils
 import despymisc.misctime as misctime
 import json

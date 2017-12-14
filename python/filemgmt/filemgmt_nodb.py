@@ -3,8 +3,6 @@
 """ Define a class to do file management tasks without DB.
 """
 
-__version__ = "$Rev$"
-
 import os
 import sys
 import socket

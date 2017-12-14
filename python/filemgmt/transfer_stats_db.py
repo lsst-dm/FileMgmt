@@ -3,8 +3,6 @@
 """Define a database utility class for tracking transfer statistics.
 """
 
-__version__ = "$Rev$"
-
 import configparser
 import despymisc.miscutils as miscutils
 import despydmdb.desdmdbi as desdmdbi

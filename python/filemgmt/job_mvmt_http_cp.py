@@ -2,8 +2,6 @@
 and cp between job and target archive.
 """
 
-__version__ = "$Rev$"
-
 import copy
 
 import despymisc.miscutils as miscutils

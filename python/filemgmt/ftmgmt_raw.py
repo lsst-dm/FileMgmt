@@ -4,8 +4,6 @@
 as metadata and content ingestion.
 """
 
-__version__ = "$Rev$"
-
 from datetime import datetime
 import pyfits
 import os

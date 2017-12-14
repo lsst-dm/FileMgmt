@@ -1,11 +1,8 @@
 #!/usr/bin/env python
 
 """Extend core DM db class with functionality for managing files.
-
 (metadata ingestion, "location" registering)
 """
-
-__version__ = "$Rev$"
 
 import os
 import re

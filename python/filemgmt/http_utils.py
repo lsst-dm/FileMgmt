@@ -2,8 +2,6 @@
 Routines for performing tasks on files available through http.
 """
 
-__version__ = "$Rev: 18486 $"
-
 import os
 import sys
 import shutil
