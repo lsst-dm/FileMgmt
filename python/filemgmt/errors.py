@@ -1,13 +1,7 @@
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 """
     Define some exceptions.
 """
 
-__version__ = "$Rev$"
 
 class MetadataConfigError (Exception):
     "Represent an error in the METADATA and/or FILETYPE tables."

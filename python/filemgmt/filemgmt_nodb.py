@@ -1,15 +1,8 @@
 #!/usr/bin/env python
 
-# $Id$
-# $Rev::                                  $:  # Revision of last commit.
-# $LastChangedBy::                        $:  # Author of last commit.
-# $LastChangedDate::                      $:  # Date of last commit.
-
 """
     Define a class to do file management tasks without DB
 """
-
-__version__ = "$Rev$"
 
 import os
 import sys
