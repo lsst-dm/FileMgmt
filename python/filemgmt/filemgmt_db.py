@@ -372,6 +372,8 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                 metadataTables[filemetatable][COLMAP] = self._get_column_map(dbdict[filemeta[FILETYPE]])
                 metadataTables[filemetatable][ROWS] = []
 
+
+            column_types = self.get_column_types(filemetatable)
             colmap = metadataTables[filemetatable][COLMAP]
             for column, header in colmap.items():
                 compheader = header.split(':')
@@ -387,6 +389,10 @@ class FileMgmtDB(desdmdbi.DesDmDbi):
                         mapped_headers.add(header)
                     else:
                         rowdata[column] = None
+
+                # Convert data type to match DB column type
+                if rowdata[column] is not None:
+                    rowdata[column] = column_types[column](rowdata[column])
 
             # report elements that were in the file that do not map to a DB column
             for notmapped in set(filemeta.keys()) - mapped_headers:
