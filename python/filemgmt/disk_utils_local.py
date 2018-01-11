@@ -17,7 +17,7 @@ def get_md5sum_file(fullname, blksize=2**15):
     """
     md5 = hashlib.md5()
     with open(fullname, 'rb') as f:
-        for chunk in iter(lambda: f.read(blksize), ''):
+        for chunk in iter(lambda: f.read(blksize), b''):
             md5.update(chunk)
     return md5.hexdigest()
 
