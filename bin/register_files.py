@@ -342,8 +342,6 @@ def main(argv):
     """
     starttime = time.time()
 
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)  # turn off buffering of stdout
-
     args = parse_cmdline(argv)
 
     if args['version']:
