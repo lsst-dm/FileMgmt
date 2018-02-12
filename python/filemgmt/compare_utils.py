@@ -4,7 +4,6 @@ archive path."""
 
 import os
 import time
-from sets import Set
 
 import despydmdb.desdmdbi as desdmdbi
 from . import disk_utils_local as diskutils
@@ -63,7 +62,7 @@ def print_all_files(comparison_info, files_from_db, files_from_disk):
         Dictionary containing the file info from disk
     """
     print("db path/name (filesize, md5sum)   F   disk path/name (filesize, md5sum)")
-    allfiles = Set(files_from_db).union(Set(files_from_disk))
+    allfiles = set(files_from_db) | set(files_from_disk)
     fdisk_str = ""
     for fname in allfiles:
         if fname in files_from_db:
