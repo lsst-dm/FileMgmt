@@ -105,8 +105,8 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
 
     Parameters
     ----------
-    comparision_info : dict
-        Dictionary containing the comparisions of disk and db for each file
+    comparison_info : dict
+        Dictionary containing the comparisons of disk and db for each file
 
     file_from_db : dict
         Dicitonary containing the file info from the database
@@ -115,7 +115,7 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
         Dictionary containing the file info from disk
 
     check_md5sum : bool
-        Whether or not to report the md5sum comparision
+        Whether or not to report the md5sum comparison
 
     check_filesize : bool
         Whether or not to report the filesize comparison
@@ -139,9 +139,9 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
         if len(comparison_info['pathdup']) > 0:
             print("\n The following files had multiple paths on disk (path  filesize):")
             listing = {}
-            for fname in comparsion_info['pathdup']:
+            for fname in comparison_info['pathdup']:
                 pdup.append(fname)
-                listing[comparsion_info['pathdup']['relpath']] = comparsion_info['pathdup']['filesize']
+                listing[comparison_info['pathdup']['relpath']] = comparison_info['pathdup']['filesize']
             first = True
             for pth in sorted(listing):
                 start = " "
@@ -166,7 +166,7 @@ def diff_files(comparison_info, files_from_db, files_from_disk, check_md5sum, ch
             print("  The following files have multiple disk paths on disk (path  filesize):")
             for fname in comparison_info['duplicates']:
                 pdup.append(fname)
-                listing[comparsion_info['duplicates']['relpath']] = comparsion_info['duplicates']['filesize']
+                listing[comparison_info['duplicates']['relpath']] = comparison_info['duplicates']['filesize']
             first = True
             for pth in sorted(listing):
                 start = " "
