@@ -1,30 +1,33 @@
 #!/usr/bin/env python
 
-"""
-    Define a database utility class for tracking transfer statistics
+"""Define a database utility class for tracking transfer statistics.
 """
 
-import ConfigParser
+import configparser
 import despymisc.miscutils as miscutils
 import despydmdb.desdmdbi as desdmdbi
 
+
 class TransferStatsDB(desdmdbi.DesDmDbi):
-    """
-        Class with functionality for tracking transfer statistics in DB
+    """Class with functionality for tracking transfer statistics in DB.
     """
 
     @staticmethod
     def requested_config_vals():
-        """ return dictionary describing what values this class uses along
-            with whether they are optional or required """
-        return {'use_db':'opt', 'des_services':'opt', 'des_db_section':'req',
-                'parent_task_id':'req', 'root_task_id':'req',
-                'transfer_stats_per_file':'opt'}
+        """
 
+        Returns
+        -------
+        Dictionary describing what values this class uses along with whether
+        they are optional or required.
+        """
+        return {'use_db': 'opt', 'des_services': 'opt', 'des_db_section': 'req',
+                'parent_task_id': 'req', 'root_task_id': 'req',
+                'transfer_stats_per_file': 'opt'}
 
     def __init__(self, config, fullcfg=None):
         if not miscutils.use_db(config):
-            miscutils.fwdie("Error:  TransferStatsDB class requires DB "\
+            miscutils.fwdie("Error:  TransferStatsDB class requires DB "
                             " but was told not to use DB", 1)
 
         self.currvals = {}
@@ -40,8 +43,8 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
 
         try:
             desdmdbi.DesDmDbi.__init__(self, self.desservices, self.section)
-        except (ConfigParser.NoSectionError, IOError) as err:
-            miscutils.fwdie("Error: problem connecting to database: %s\n" \
+        except (configparser.NoSectionError, IOError) as err:
+            miscutils.fwdie("Error: problem connecting to database: %s\n"
                             "\tCheck desservices file and environment variables" % err, 1)
 
         self.parent_task_id = config['parent_task_id']
@@ -73,10 +76,10 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
 
         return str(mydict)
 
-
     def stat_beg_batch(self, transfer_name, src, dst, transclass=None):
-        """ Starting a batch transfer between src and dst (archive or job scratch) """
-
+        """Starting a batch transfer between src and dst (archive or job
+        scratch).
+        """
         if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
             miscutils.fwdebug_print("beg %s %s %s %s" % (transfer_name, src, dst, transclass))
         self.currvals['transfer_name'] = transfer_name
@@ -100,10 +103,9 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
             miscutils.fwdebug_print("end")
         return self.currvals['batch_task_id']
 
-
     def stat_end_batch(self, status, totbytes=0, numfiles=0, task_id=None):
-        """ Update rows for end of a batch transfer and commit """
-
+        """Update rows for end of a batch transfer and commit.
+        """
         if miscutils.fwdebug_check(3, 'TRANSFERSTATS_DEBUG'):
             miscutils.fwdebug_print("beg - %s %s %s" % (status, totbytes, task_id))
         if task_id is None:
@@ -126,8 +128,9 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
             miscutils.fwdebug_print("end")
 
     def stat_beg_file(self, filename):
-        """ Insert a row into a file transfer stats table (and task table) and commit """
-
+        """Insert a row into a file transfer stats table (and task table)
+        and commit.
+        """
         self.currvals['numfiles'] += 1
         self.currvals['file_task_id'] = -1
 
@@ -155,11 +158,9 @@ class TransferStatsDB(desdmdbi.DesDmDbi):
                 miscutils.fwdebug_print("end - file_task_id = %s" % self.currvals['file_task_id'])
         return self.currvals['file_task_id']
 
-
-
     def stat_end_file(self, status, nbytes=0, task_id=None):
-        """ Update rows for end of file transfer and commit """
-
+        """Update rows for end of file transfer and commit.
+        """
         if nbytes is not None:
             self.currvals['totbytes'] += nbytes
 
