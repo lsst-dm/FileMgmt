@@ -7,7 +7,7 @@ ingestion.
 """
 
 from collections import OrderedDict
-import pyfits
+from astropy.io import fits
 
 from filemgmt.ftmgmt_generic import FtMgmtGeneric
 import despymisc.miscutils as miscutils
@@ -35,9 +35,9 @@ class FtMgmtGenFits(FtMgmtGeneric):
 
         # open file
         if do_update:
-            hdulist = pyfits.open(fullname, 'update')
+            hdulist = fits.open(fullname, 'update')
         else:
-            hdulist = pyfits.open(fullname)
+            hdulist = fits.open(fullname)
 
         # read metadata and call any special calc functions
         metadata, datadefs = self._gather_metadata_file(fullname, hdulist=hdulist)
