@@ -5,7 +5,7 @@ as metadata and content ingestion.
 """
 
 from datetime import datetime
-import pyfits
+from astropy.io import fits
 import os
 
 import despydmdb.dmdb_defs as dmdbdefs
@@ -62,10 +62,10 @@ class FtMgmtRaw(FtMgmtGenFits):
             miscutils.fwdebug_print("INFO: beg")
 
         # open file
-        #hdulist = pyfits.open(fullname, 'update')
-        primary_hdr = pyfits.getheader(fullname, 0)
-        prihdu = pyfits.PrimaryHDU(header=primary_hdr)
-        hdulist = pyfits.HDUList([prihdu])
+        #hdulist = fits.open(fullname, 'update')
+        primary_hdr = fits.getheader(fullname, 0)
+        prihdu = fits.PrimaryHDU(header=primary_hdr)
+        hdulist = fits.HDUList([prihdu])
 
         # read metadata and call any special calc functions
         metadata, _ = self._gather_metadata_file(fullname, hdulist=hdulist)
@@ -103,7 +103,7 @@ class FtMgmtRaw(FtMgmtGenFits):
                 hdulist = kwargs['hdulist']
                 primary_hdr = hdulist[0].header
             else:
-                primary_hdr = pyfits.getheader(fullname, 0)
+                primary_hdr = fits.getheader(fullname, 0)
 
             row = get_vals_from_header(primary_hdr)
             row['filename'] = filename
@@ -156,7 +156,7 @@ def check_single_valid(keywords, fullname, verbose): # should raise exception if
     """Check whether the given file is a valid raw file.
     """
     # check fits file
-    hdulist = pyfits.open(fullname)
+    hdulist = fits.open(fullname)
     prihdr = hdulist[0].header
 
     # check exposure has correct filename (sometimes get NOAO-science-archive renamed exposures)
